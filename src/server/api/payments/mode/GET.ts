@@ -4,10 +4,9 @@
  * Safe to call unauthenticated — only reveals test/live, never the key itself.
  */
 import type { Request, Response } from 'express';
-import { getSecret } from '#airo/secrets';
 
 export default function handler(_req: Request, res: Response) {
-  const key_id = getSecret('RAZORPAY_KEY_ID');
+  const key_id = process.env.RAZORPAY_KEY_ID;
   const isTest = typeof key_id === 'string' && key_id.startsWith('rzp_test_');
-  res.json({ mode: isTest ? 'test' : 'live' });
-}
+  res.json({ mode: isTest ? 'test' : 'live' }); }
+

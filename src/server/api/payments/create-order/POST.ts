@@ -2,23 +2,15 @@
  * POST /api/payments/create-order
  * Creates a Razorpay order for employer wallet top-up.
  * Body: { amount_paise: number }
- * Returns: { order_id, amount, currency, key_id }
- */
-import type { Request, Response } from 'express';
-import Razorpay from 'razorpay';
-import { pool } from '@/server/db/pool.js';
-import { toWebRequest } from '@/lib/auth/express-adapter.js';
-import { getAuth } from '@/lib/auth/auth.js';
-import { getSecret } from '#airo/secrets';
+ * Returns: { order_id, amount, currency, key_id }  */ import type { Request, Response } from 'express'; import Razorpay from 'razorpay'; import { pool } from '@/server/db/pool.js'; import { toWebRequest } from '@/lib/auth/express-adapter.js'; import { getAuth } from '@/lib/auth/auth.js';
 
 function getRazorpay() {
-  const key_id = getSecret('RAZORPAY_KEY_ID');
-  const key_secret = getSecret('RAZORPAY_KEY_SECRET');
+  const key_id = process.env.RAZORPAY_KEY_ID;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET;
   if (!key_id || !key_secret || typeof key_id !== 'string' || typeof key_secret !== 'string') {
     throw new Error('Razorpay credentials not configured');
   }
-  return new Razorpay({ key_id, key_secret });
-}
+  return new Razorpay({ key_id, key_secret }); }
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -50,7 +42,7 @@ export default async function handler(req: Request, res: Response) {
     await pool.query(
       `INSERT INTO wallet_transaction
          (employer_user_id, razorpay_order_id, amount_paise, currency, status, receipt)
-       VALUES (?, ?, ?, 'INR', 'created', ?)`,
+       VALUES ($1, $2, $3, 'INR', 'created', $4)`,
       [session.user.id, order.id, amount_paise, receipt],
     );
 
@@ -60,7 +52,7 @@ export default async function handler(req: Request, res: Response) {
       order_id: order.id,
       amount: order.amount,
       currency: order.currency,
-      key_id: getSecret('RAZORPAY_KEY_ID'),
+      key_id: process.env.RAZORPAY_KEY_ID,
     });
   } catch (err) {
     console.error('[payments.create-order] ERROR:', err);

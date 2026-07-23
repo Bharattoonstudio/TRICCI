@@ -1,4 +1,4 @@
-.ts/**
+/**
  * POST /api/candidate/cv-parse
  * Accepts multipart/form-data with a `cv` file field.
  * Extracts text from PDF/DOC buffer and uses OpenAI to parse structured profile data.

@@ -33,7 +33,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <div className="mb-4">
               <img
-                src="/airo-assets/images/logo/tricci-main"
+                src="/assets/tricci-logo.png"
                 alt="TRICCI — We Make It Easy"
                 className="h-14 w-auto object-contain"
                 loading="lazy"

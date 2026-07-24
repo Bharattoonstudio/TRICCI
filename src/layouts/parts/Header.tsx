@@ -152,7 +152,7 @@ export default function Header() {
           {/* Logo */}
           <Link to={isAuthenticated ? config.dashboard : '/'} className="flex items-center shrink-0">
             <img
-              src="/airo-assets/images/logo/tricci-main"
+              src="/assets/tricci-logo.png"
               alt="TRICCI — We Make It Easy"
               className="h-12 w-auto object-contain self-center"
               fetchPriority="high"

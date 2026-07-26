@@ -64,7 +64,7 @@ import payments_create_order_post_56 from "./api/payments/create-order/POST";
 import payments_mode_get_57 from "./api/payments/mode/GET";
 import payments_verify_payment_post_58 from "./api/payments/verify-payment/POST";
 import payments_wallet_get_59 from "./api/payments/wallet/GET";
-import submissions_post_60 from "./api/submissions/POST";
+import submissions_post_60, { multerMiddleware as submissions_post_60_upload } from "./api/submissions/POST";
 import submissions_id_status_put_61 from "./api/submissions/[id]/status/PUT";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
@@ -171,7 +171,7 @@ app.post("/api/payments/create-order", payments_create_order_post_56);
 app.get("/api/payments/mode", payments_mode_get_57);
 app.post("/api/payments/verify-payment", payments_verify_payment_post_58);
 app.get("/api/payments/wallet", payments_wallet_get_59);
-app.post("/api/submissions", submissions_post_60);
+app.post("/api/submissions", submissions_post_60_upload, submissions_post_60);
 app.put("/api/submissions/:id/status", submissions_id_status_put_61);
 // </api-registrations>
 

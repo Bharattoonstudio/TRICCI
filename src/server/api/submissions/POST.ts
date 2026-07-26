@@ -76,9 +76,9 @@ export default async function handler(req: Request, res: Response) {
       cvUrl,
       coverNote: notes?.trim() || null,
       status: 'pending',
-    });
+    }).returning();
 
-    const insertId = (result as { insertId?: number }).insertId ?? 0;
+    const insertId = result?.id ?? 0;
 
     res.status(201).json({
       ok: true,

@@ -1,0 +1,845 @@
+{
+  "pages/home/hero-team": {
+    "mediaType": "video",
+    "currentUrl": "https://blobby.wsimg.com/getty/videos/2164162486",
+    "thumbnailUrl": "https://media.gettyimages.com/id/2164162486/video/senior-business-people-taking-to-young-woman-to-recruit-at-job-interview-meeting-female.mp4?b=1&s=192_srp&k=20&c=Kj-cbv1CmndP-_x3S1_4dsaQ3XOWFaPwpo3eP-4p_wY=",
+    "searchQuery": "professional team meeting recruitment hiring business India office collaboration",
+    "alternatives": [],
+    "userModified": true,
+    "createdAt": "2026-06-11T15:47:12.921Z",
+    "lastUpdated": "2026-06-13T03:43:13.284Z",
+    "gettyId": "2164162486"
+  },
+  "blog/recruitment-fee-transparency": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2193545991",
+    "searchQuery": "business handshake deal agreement professional India office",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1746057953",
+      "https://img1.wsimg.com/isteam/getty/2201043347"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-11T17:11:43.427Z",
+    "lastUpdated": "2026-06-11T17:11:43.427Z",
+    "gettyId": "2193545991",
+    "alternativeGettyIds": [
+      "1746057953",
+      "2201043347"
+    ],
+    "requestedSize": {
+      "width": 1200,
+      "height": 630,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "graphicalStyles": "photography",
+    "minimumSize": "large"
+  },
+  "blog/consultant-career-guide": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2222660208",
+    "searchQuery": "recruitment consultant professional career growth success",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2254392962",
+      "https://img1.wsimg.com/isteam/getty/644335608"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-11T17:11:44.908Z",
+    "lastUpdated": "2026-06-11T17:11:44.908Z",
+    "gettyId": "2222660208",
+    "alternativeGettyIds": [
+      "2254392962",
+      "644335608"
+    ],
+    "requestedSize": {
+      "width": 1200,
+      "height": 630,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "graphicalStyles": "photography",
+    "minimumSize": "large"
+  },
+  "blog/candidate-job-search": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2220840006",
+    "searchQuery": "professional job interview candidate resume career opportunity",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2259001918",
+      "https://img1.wsimg.com/isteam/getty/2194311922"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-11T17:11:48.357Z",
+    "lastUpdated": "2026-06-11T17:11:48.357Z",
+    "gettyId": "2220840006",
+    "alternativeGettyIds": [
+      "2259001918",
+      "2194311922"
+    ],
+    "requestedSize": {
+      "width": 1200,
+      "height": 630,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "graphicalStyles": "photography",
+    "minimumSize": "large"
+  },
+  "blog/india-hiring-trends": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2238396810",
+    "searchQuery": "diverse business team meeting collaboration modern office",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2232180704",
+      "https://img1.wsimg.com/isteam/getty/2251544656"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-11T17:11:55.967Z",
+    "lastUpdated": "2026-06-11T17:11:55.967Z",
+    "gettyId": "2238396810",
+    "alternativeGettyIds": [
+      "2232180704",
+      "2251544656"
+    ],
+    "requestedSize": {
+      "width": 1200,
+      "height": 630,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "graphicalStyles": "photography",
+    "minimumSize": "large"
+  },
+  "pages/home/hero-consultant": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1354898601",
+    "searchQuery": "Indian recruitment consultant professional working laptop office",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2032326125",
+      "https://img1.wsimg.com/isteam/getty/2040050477"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-11T18:13:59.924Z",
+    "lastUpdated": "2026-06-16T09:20:05.682Z",
+    "gettyId": "1354898601",
+    "alternativeGettyIds": [
+      "2032326125",
+      "2040050477"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/home/hero-candidates": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1443300027",
+    "searchQuery": "Indian job seeker candidate happy interview success career",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1665704806",
+      "https://img1.wsimg.com/isteam/getty/1350845254"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-11T18:14:02.425Z",
+    "lastUpdated": "2026-06-16T09:20:06.368Z",
+    "gettyId": "1443300027",
+    "alternativeGettyIds": [
+      "1665704806",
+      "1350845254"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/refresh/hero": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2256495544",
+    "searchQuery": "colorful neon gaming arcade retro fun vibrant",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2235461759",
+      "https://img1.wsimg.com/isteam/getty/1300036832",
+      "https://img1.wsimg.com/isteam/getty/2207338377",
+      "https://img1.wsimg.com/isteam/getty/2241137765"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-12T01:05:18.437Z",
+    "lastUpdated": "2026-06-12T01:05:18.437Z",
+    "gettyId": "2256495544",
+    "alternativeGettyIds": [
+      "2235461759",
+      "1300036832",
+      "2207338377",
+      "2241137765"
+    ],
+    "requestedSize": {
+      "width": 1400,
+      "height": 500,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "moods": "vivid,bold,dramatic",
+    "minimumSize": "large"
+  },
+  "pages/candidate/frustrated-job-seeker": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2233257780",
+    "searchQuery": "frustrated job seeker stressed person looking at laptop career struggle",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1352185989",
+      "https://img1.wsimg.com/isteam/getty/2214215822"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T01:48:18.065Z",
+    "lastUpdated": "2026-06-16T09:20:44.830Z",
+    "gettyId": "2233257780",
+    "alternativeGettyIds": [
+      "1352185989",
+      "2214215822"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/candidate/happy-job-seeker": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2238399719",
+    "searchQuery": "happy excited job seeker celebrating new job offer career success",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1463545909",
+      "https://img1.wsimg.com/isteam/getty/2187408483"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T01:48:19.718Z",
+    "lastUpdated": "2026-06-16T09:20:45.879Z",
+    "gettyId": "2238399719",
+    "alternativeGettyIds": [
+      "1463545909",
+      "2187408483"
+    ],
+    "orientations": "horizontal"
+  },
+  "company/benefit-verified-consultants": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1455167765",
+    "searchQuery": "professional consultants meeting handshake verified trust business",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1340856012",
+      "https://img1.wsimg.com/isteam/getty/1276706759"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:02:55.784Z",
+    "lastUpdated": "2026-06-16T09:20:26.020Z",
+    "gettyId": "1455167765",
+    "alternativeGettyIds": [
+      "1340856012",
+      "1276706759"
+    ],
+    "orientations": "horizontal"
+  },
+  "company/benefit-fill-faster": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1373263676",
+    "searchQuery": "team reviewing resumes shortlisting candidates hiring fast",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2192636625",
+      "https://img1.wsimg.com/isteam/getty/1728140476"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:02:56.823Z",
+    "lastUpdated": "2026-06-16T09:20:26.821Z",
+    "gettyId": "1373263676",
+    "alternativeGettyIds": [
+      "2192636625",
+      "1728140476"
+    ],
+    "orientations": "horizontal"
+  },
+  "company/benefit-fee-transparency": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1474996349",
+    "searchQuery": "transparent invoice payment agreement clear business finance",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2251977157",
+      "https://img1.wsimg.com/isteam/getty/2252856363"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:02:58.400Z",
+    "lastUpdated": "2026-06-16T09:20:27.475Z",
+    "gettyId": "1474996349",
+    "alternativeGettyIds": [
+      "2251977157",
+      "2252856363"
+    ],
+    "orientations": "horizontal"
+  },
+  "company/benefit-compliance-trust": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2182719749",
+    "searchQuery": "digital security compliance trust shield professional business",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2259259662",
+      "https://img1.wsimg.com/isteam/getty/2228374244"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:03:01.264Z",
+    "lastUpdated": "2026-06-16T09:20:31.287Z",
+    "gettyId": "2182719749",
+    "alternativeGettyIds": [
+      "2259259662",
+      "2228374244"
+    ],
+    "orientations": "horizontal"
+  },
+  "company/benefit-pay-on-success": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2147591229",
+    "searchQuery": "happy team celebrating successful hire recruitment win",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1380764339",
+      "https://img1.wsimg.com/isteam/getty/2248691043"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:03:04.727Z",
+    "lastUpdated": "2026-06-16T09:20:32.500Z",
+    "gettyId": "2147591229",
+    "alternativeGettyIds": [
+      "1380764339",
+      "2248691043"
+    ],
+    "orientations": "horizontal"
+  },
+  "company/benefit-save-time": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2228519482",
+    "searchQuery": "business professional working efficiently on computer laptop office",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2240940845",
+      "https://img1.wsimg.com/isteam/getty/2105399620"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:03:11.926Z",
+    "lastUpdated": "2026-06-16T09:20:37.113Z",
+    "gettyId": "2228519482",
+    "alternativeGettyIds": [
+      "2240940845",
+      "2105399620"
+    ],
+    "orientations": "horizontal"
+  },
+  "consultant/benefit-fee-share": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1481248245",
+    "searchQuery": "consultant earning commission money success celebration professional",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2229544876",
+      "https://img1.wsimg.com/isteam/getty/2263303616"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:06:35.637Z",
+    "lastUpdated": "2026-06-16T09:20:19.363Z",
+    "gettyId": "1481248245",
+    "alternativeGettyIds": [
+      "2229544876",
+      "2263303616"
+    ],
+    "orientations": "horizontal"
+  },
+  "consultant/benefit-live-mandates": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2188611282",
+    "searchQuery": "recruiter browsing job listings laptop office professional",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1354898601",
+      "https://img1.wsimg.com/isteam/getty/2166103102"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:06:37.244Z",
+    "lastUpdated": "2026-06-16T09:20:20.853Z",
+    "gettyId": "2188611282",
+    "alternativeGettyIds": [
+      "1354898601",
+      "2166103102"
+    ],
+    "orientations": "horizontal"
+  },
+  "consultant/benefit-grow-business": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1481194928",
+    "searchQuery": "business growth upward chart success entrepreneur professional",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2254727238",
+      "https://img1.wsimg.com/isteam/getty/2171088734"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:06:39.116Z",
+    "lastUpdated": "2026-06-16T09:20:21.242Z",
+    "gettyId": "1481194928",
+    "alternativeGettyIds": [
+      "2254727238",
+      "2171088734"
+    ],
+    "orientations": "horizontal"
+  },
+  "consultant/benefit-submit-candidates": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2154608723",
+    "searchQuery": "recruiter submitting candidate profile online portal HR professional",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1567383783",
+      "https://img1.wsimg.com/isteam/getty/1491361277"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:06:40.166Z",
+    "lastUpdated": "2026-06-16T09:20:22.228Z",
+    "gettyId": "2154608723",
+    "alternativeGettyIds": [
+      "1567383783",
+      "1491361277"
+    ],
+    "orientations": "horizontal"
+  },
+  "consultant/benefit-fast-turnaround": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2255727897",
+    "searchQuery": "fast interview handshake hiring decision quick professional",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2122150950",
+      "https://img1.wsimg.com/isteam/getty/2217119332"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:06:42.008Z",
+    "lastUpdated": "2026-06-16T09:20:23.296Z",
+    "gettyId": "2255727897",
+    "alternativeGettyIds": [
+      "2122150950",
+      "2217119332"
+    ],
+    "orientations": "horizontal"
+  },
+  "consultant/benefit-transparent-dashboard": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2262384858",
+    "searchQuery": "analytics dashboard transparent data tracking professional business",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2186025962",
+      "https://img1.wsimg.com/isteam/getty/1486828834"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:06:43.208Z",
+    "lastUpdated": "2026-06-16T09:20:25.609Z",
+    "gettyId": "2262384858",
+    "alternativeGettyIds": [
+      "2186025962",
+      "1486828834"
+    ],
+    "orientations": "horizontal"
+  },
+  "candidate/benefit-find-job-faster": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1369917172",
+    "searchQuery": "Indian job seeker searching jobs online laptop happy career",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2194432029",
+      "https://img1.wsimg.com/isteam/getty/1433282660"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:09:55.933Z",
+    "lastUpdated": "2026-06-16T09:20:38.200Z",
+    "gettyId": "1369917172",
+    "alternativeGettyIds": [
+      "2194432029",
+      "1433282660"
+    ],
+    "orientations": "horizontal"
+  },
+  "candidate/benefit-ai-cv": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2217030312",
+    "searchQuery": "AI resume optimization CV writing professional career document",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2229084032",
+      "https://img1.wsimg.com/isteam/getty/2249077406"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:09:57.377Z",
+    "lastUpdated": "2026-06-16T09:20:39.656Z",
+    "gettyId": "2217030312",
+    "alternativeGettyIds": [
+      "2229084032",
+      "2249077406"
+    ],
+    "orientations": "horizontal"
+  },
+  "candidate/benefit-job-alerts": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2029921510",
+    "searchQuery": "job alert notification mobile phone career opportunity",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1469817399",
+      "https://img1.wsimg.com/isteam/getty/2255162750"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:09:59.113Z",
+    "lastUpdated": "2026-06-16T09:20:40.331Z",
+    "gettyId": "2029921510",
+    "alternativeGettyIds": [
+      "1469817399",
+      "2255162750"
+    ],
+    "orientations": "horizontal"
+  },
+  "candidate/benefit-one-click-apply": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1463050489",
+    "searchQuery": "easy online job application one click apply digital",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1751757853",
+      "https://img1.wsimg.com/isteam/getty/2249896895"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:10:00.599Z",
+    "lastUpdated": "2026-06-16T09:20:43.432Z",
+    "gettyId": "1463050489",
+    "alternativeGettyIds": [
+      "1751757853",
+      "2249896895"
+    ],
+    "orientations": "horizontal"
+  },
+  "candidate/benefit-track-applications": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1686497935",
+    "searchQuery": "tracking job applications status pipeline career progress",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2269266938",
+      "https://img1.wsimg.com/isteam/getty/2233617902"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:10:02.486Z",
+    "lastUpdated": "2026-06-16T09:20:43.900Z",
+    "gettyId": "1686497935",
+    "alternativeGettyIds": [
+      "2269266938",
+      "2233617902"
+    ],
+    "orientations": "horizontal"
+  },
+  "candidate/benefit-data-privacy": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2267168143",
+    "searchQuery": "data privacy security protection personal information digital",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2204337763",
+      "https://img1.wsimg.com/isteam/getty/1453891792"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T02:10:04.907Z",
+    "lastUpdated": "2026-06-16T09:20:44.288Z",
+    "gettyId": "2267168143",
+    "alternativeGettyIds": [
+      "2204337763",
+      "1453891792"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/home/hero": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2218411125",
+    "searchQuery": "Indian professionals team working office recruitment hiring",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2009989108",
+      "https://img1.wsimg.com/isteam/getty/2170330318"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T03:37:12.873Z",
+    "lastUpdated": "2026-06-16T09:19:55.237Z",
+    "gettyId": "2218411125",
+    "alternativeGettyIds": [
+      "2009989108",
+      "2170330318"
+    ],
+    "orientations": "horizontal",
+    "minimumSize": "large"
+  },
+  "pages/founder/portrait": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1455343221",
+    "searchQuery": "confident Indian male business founder entrepreneur professional portrait suit",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2211259454",
+      "https://img1.wsimg.com/isteam/getty/2203578368",
+      "https://img1.wsimg.com/isteam/getty/694184490",
+      "https://img1.wsimg.com/isteam/getty/2246081797"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:19:22.428Z",
+    "lastUpdated": "2026-06-13T04:19:22.428Z",
+    "gettyId": "1455343221",
+    "alternativeGettyIds": [
+      "2211259454",
+      "2203578368",
+      "694184490",
+      "2246081797"
+    ],
+    "orientations": "vertical,square",
+    "compositions": "headshot,portrait",
+    "numberOfPeople": "one",
+    "ethnicity": "south_asian"
+  },
+  "pages/founder/office-bg": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2247136480",
+    "searchQuery": "modern Indian corporate office interior professional workspace",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1363104923",
+      "https://img1.wsimg.com/isteam/getty/2170330318"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:19:27.968Z",
+    "lastUpdated": "2026-06-16T09:20:47.777Z",
+    "gettyId": "2247136480",
+    "alternativeGettyIds": [
+      "1363104923",
+      "2170330318"
+    ],
+    "orientations": "horizontal",
+    "minimumSize": "large"
+  },
+  "pages/founder/problem-companies": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2204917953",
+    "searchQuery": "frustrated HR manager overwhelmed with resumes hiring problem",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/170902540",
+      "https://img1.wsimg.com/isteam/getty/2200808291"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:26:59.809Z",
+    "lastUpdated": "2026-06-16T09:20:48.803Z",
+    "gettyId": "2204917953",
+    "alternativeGettyIds": [
+      "170902540",
+      "2200808291"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/founder/problem-consultants": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1348017782",
+    "searchQuery": "recruiter consultant struggling with fee disputes payment problem",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1131900968",
+      "https://img1.wsimg.com/isteam/getty/2181182515"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:27:02.592Z",
+    "lastUpdated": "2026-06-16T09:20:49.729Z",
+    "gettyId": "1348017782",
+    "alternativeGettyIds": [
+      "1131900968",
+      "2181182515"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/founder/problem-candidates": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2207250037",
+    "searchQuery": "person waiting anxiously looking at phone no response disappointed",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2207250041",
+      "https://img1.wsimg.com/isteam/getty/2270959202"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:27:04.715Z",
+    "lastUpdated": "2026-06-16T09:20:59.456Z",
+    "gettyId": "2207250037",
+    "alternativeGettyIds": [
+      "2207250041",
+      "2270959202"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/founder/offer-companies": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1365436670",
+    "searchQuery": "company hiring success qualified candidates interview professional",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1341047641",
+      "https://img1.wsimg.com/isteam/getty/2212512899"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:27:06.315Z",
+    "lastUpdated": "2026-06-16T09:20:51.953Z",
+    "gettyId": "1365436670",
+    "alternativeGettyIds": [
+      "1341047641",
+      "2212512899"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/founder/offer-consultants": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2247699078",
+    "searchQuery": "recruitment consultant success earning placement business growth",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1351693432",
+      "https://img1.wsimg.com/isteam/getty/2152006842"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:27:07.369Z",
+    "lastUpdated": "2026-06-16T09:20:54.200Z",
+    "gettyId": "2247699078",
+    "alternativeGettyIds": [
+      "1351693432",
+      "2152006842"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/founder/offer-candidates": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2241176969",
+    "searchQuery": "candidate celebrating job offer success career achievement happy",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1665704806",
+      "https://img1.wsimg.com/isteam/getty/1502317574"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-13T04:27:08.582Z",
+    "lastUpdated": "2026-06-16T09:20:54.578Z",
+    "gettyId": "2241176969",
+    "alternativeGettyIds": [
+      "1665704806",
+      "1502317574"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/home/social-proof-companies": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2231544650",
+    "searchQuery": "Indian corporate office team hiring manager professional meeting",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1820145962",
+      "https://img1.wsimg.com/isteam/getty/2246081363"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-16T06:43:30.450Z",
+    "lastUpdated": "2026-06-16T09:20:08.343Z",
+    "gettyId": "2231544650",
+    "alternativeGettyIds": [
+      "1820145962",
+      "2246081363"
+    ],
+    "orientations": "vertical"
+  },
+  "pages/home/social-proof-consultant": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1398113483",
+    "searchQuery": "confident Indian recruitment consultant professional portrait office",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2246601277",
+      "https://img1.wsimg.com/isteam/getty/2189660258"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-16T06:43:31.683Z",
+    "lastUpdated": "2026-06-16T09:21:01.116Z",
+    "gettyId": "1398113483",
+    "alternativeGettyIds": [
+      "2246601277",
+      "2189660258"
+    ],
+    "orientations": "vertical"
+  },
+  "pages/home/social-proof-candidate": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2231901396",
+    "searchQuery": "happy Indian professional new job success career portrait",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1398113483",
+      "https://img1.wsimg.com/isteam/getty/1455343221"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-16T06:43:32.949Z",
+    "lastUpdated": "2026-06-16T09:21:02.119Z",
+    "gettyId": "2231901396",
+    "alternativeGettyIds": [
+      "1398113483",
+      "1455343221"
+    ],
+    "orientations": "vertical"
+  },
+  "pages/home/ai-feature-matching": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2263211571",
+    "searchQuery": "AI technology matching algorithm data analytics recruitment",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2231038244",
+      "https://img1.wsimg.com/isteam/getty/1934635026"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-16T07:07:18.580Z",
+    "lastUpdated": "2026-06-16T09:20:06.951Z",
+    "gettyId": "2263211571",
+    "alternativeGettyIds": [
+      "2231038244",
+      "1934635026"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/home/ai-feature-dashboard": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2096475191",
+    "searchQuery": "business analytics dashboard data visualization modern interface",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2249426372",
+      "https://img1.wsimg.com/isteam/getty/2255195673"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-16T07:07:26.499Z",
+    "lastUpdated": "2026-06-16T09:20:07.616Z",
+    "gettyId": "2096475191",
+    "alternativeGettyIds": [
+      "2249426372",
+      "2255195673"
+    ],
+    "orientations": "horizontal"
+  },
+  "pages/home/ai-feature-cv": {
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2229995150",
+    "searchQuery": "resume CV document review professional career optimization",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2272215156",
+      "https://img1.wsimg.com/isteam/getty/2241521780"
+    ],
+    "userModified": false,
+    "createdAt": "2026-06-16T07:07:32.777Z",
+    "lastUpdated": "2026-06-16T09:20:00.797Z",
+    "gettyId": "2229995150",
+    "alternativeGettyIds": [
+      "2272215156",
+      "2241521780"
+    ],
+    "orientations": "horizontal"
+  },
+  "logo/tricci-main": {
+    "mediaType": "image",
+    "currentUrl": "/airo-assets/uploads/logo-tricci-main-16a6b8a8.jpg",
+    "searchQuery": "",
+    "alternatives": [
+      "/airo-assets/uploads/logo-tricci-main-214464d7.jpg"
+    ],
+    "userModified": true,
+    "createdAt": "2026-06-21T14:32:26.179Z",
+    "lastUpdated": "2026-06-21T14:34:28.770Z",
+    "uploadSources": {
+      "/airo-assets/uploads/logo-tricci-main-214464d7.jpg": "3xpx7jnl0v_1782031712711_file_PkjCsq0b3g.jpg",
+      "/airo-assets/uploads/logo-tricci-main-16a6b8a8.jpg": "3xpx7jnl0v_1782052331681_file_yQ1MZKX0yi.jpeg"
+    },
+    "uploadContentHash": "0e15d3ef9da59b42f1f1e995bb8788ea5f834c7c1246de482f5032098730c3c0",
+    "naturalOrientation": "horizontal"
+  },
+  "pages/home/explainer": {
+    "mediaType": "video",
+    "currentUrl": "https://blobby.wsimg.com/getty/videos/2267477555",
+    "thumbnailUrl": "https://media.gettyimages.com/id/2267477555/video/digital-interface-concept-with-human-silhouette-representing-technology-innovation-data-and.mp4?b=1&s=192_srp&k=20&c=9olnNCwtublspSvdnHc7yhPkpZjZQrxhP94N0ZfWKOs=",
+    "searchQuery": "business explainer how it works recruitment platform",
+    "alternatives": [],
+    "userModified": false,
+    "createdAt": "2026-06-21T14:49:17.435Z",
+    "lastUpdated": "2026-06-21T14:49:17.435Z",
+    "gettyId": "2267477555"
+  }
+}

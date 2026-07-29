@@ -204,6 +204,12 @@ export const candidateApplication = pgTable('candidate_application', {
   // Status: applied | shortlisted | rejected | placed
   status: varchar('status', { length: 32 }).notNull().default('applied'),
   coverNote: text('cover_note'),
+  // Optional per-application CV: set when the candidate approves an
+  // AI-enhanced, JD-tailored CV for this specific job. When null, the
+  // employer/consultant views fall back to the candidate's profile CV.
+  cvUrl: varchar('cv_url', { length: 512 }),
+  cvFileName: varchar('cv_file_name', { length: 255 }),
+  cvMatchScore: integer('cv_match_score'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 }, (t) => [index('idx_candidate_app_job').on(t.jobId), index('idx_candidate_app_user').on(t.candidateUserId)]);

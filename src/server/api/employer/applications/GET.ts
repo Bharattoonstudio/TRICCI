@@ -6,7 +6,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { candidateApplication, job, user, candidateProfile } from '@/server/db/schema.js';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 
@@ -55,7 +55,11 @@ export default async function handler(req: Request, res: Response) {
         candidateEmail: user.email,
         candidatePhone: candidateProfile.phone,
         candidateTitle: candidateProfile.currentTitle,
-        candidateCvUrl: candidateProfile.cvUrl,
+        // Prefer the AI-enhanced, JD-tailored CV the candidate approved for
+        // THIS application (if any), otherwise fall back to their profile CV.
+        candidateCvUrl: sql<string | null>`COALESCE(${candidateApplication.cvUrl}, ${candidateProfile.cvUrl})`,
+        candidateCvFileName: sql<string | null>`COALESCE(${candidateApplication.cvFileName}, ${candidateProfile.cvFileName})`,
+        cvMatchScore: candidateApplication.cvMatchScore,
         candidateSkills: candidateProfile.skills,
         candidateExperience: candidateProfile.totalExperience,
       })

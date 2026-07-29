@@ -28,8 +28,10 @@ import auth_action_post_20 from "./api/auth/[action]/POST";
 import auth_action_detail_get_21 from "./api/auth/[action]/[detail]/GET";
 import auth_action_detail_post_22 from "./api/auth/[action]/[detail]/POST";
 import candidate_applications_get_23 from "./api/candidate/applications/GET";
-import candidate_cv_parse_post_24 from "./api/candidate/cv-parse/POST";
-import candidate_cv_upload_post_25 from "./api/candidate/cv-upload/POST";
+import candidate_cv_parse_post_24, { multerMiddleware as candidate_cv_parse_post_24_upload } from "./api/candidate/cv-parse/POST";
+import candidate_cv_enhance_post from "./api/candidate/cv-enhance/POST";
+import candidate_cv_enhance_pdf_post from "./api/candidate/cv-enhance/pdf/POST";
+import candidate_cv_upload_post_25, { multerMiddleware as candidate_cv_upload_post_25_upload } from "./api/candidate/cv-upload/POST";
 import candidate_profile_get_26 from "./api/candidate/profile/GET";
 import candidate_profile_put_27 from "./api/candidate/profile/PUT";
 import commission_config_get_28 from "./api/commission/config/GET";
@@ -69,6 +71,7 @@ import submissions_id_status_put_61 from "./api/submissions/[id]/status/PUT";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
+import { otpSendRateLimiter, otpVerifyRateLimiter, setupRateLimitCleanup } from "./auth-rate-limit";
 
 function normalizeCommerceApiBaseUrlEnv() {
 	if (process.env.GODADDY_API_BASE_URL) return;
@@ -135,8 +138,10 @@ app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);
 app.post("/api/auth/:action/:detail", auth_action_detail_post_22);
 app.get("/api/candidate/applications", candidate_applications_get_23);
-app.post("/api/candidate/cv-parse", candidate_cv_parse_post_24);
-app.post("/api/candidate/cv-upload", candidate_cv_upload_post_25);
+app.post("/api/candidate/cv-parse", candidate_cv_parse_post_24_upload, candidate_cv_parse_post_24);
+app.post("/api/candidate/cv-enhance", candidate_cv_enhance_post);
+app.post("/api/candidate/cv-enhance/pdf", candidate_cv_enhance_pdf_post);
+app.post("/api/candidate/cv-upload", candidate_cv_upload_post_25_upload, candidate_cv_upload_post_25);
 app.get("/api/candidate/profile", candidate_profile_get_26);
 app.put("/api/candidate/profile", candidate_profile_put_27);
 app.get("/api/commission/config", commission_config_get_28);
@@ -163,10 +168,10 @@ app.post("/api/jobs/parse-jd", jobs_parse_jd_post_48);
 app.get("/api/jobs/:id", jobs_id_get_49);
 app.post("/api/jobs/:id/apply", jobs_id_apply_post_50);
 app.get("/api/og", og_get_51);
-app.post("/api/otp/send", otp_send_post_52);
-app.post("/api/otp/send-public", otp_send_public_post_53);
-app.post("/api/otp/verify", otp_verify_post_54);
-app.post("/api/otp/verify-public", otp_verify_public_post_55);
+app.post("/api/otp/send", otpSendRateLimiter, otp_send_post_52);
+app.post("/api/otp/send-public", otpSendRateLimiter, otp_send_public_post_53);
+app.post("/api/otp/verify", otpVerifyRateLimiter, otp_verify_post_54);
+app.post("/api/otp/verify-public", otpVerifyRateLimiter, otp_verify_public_post_55);
 app.post("/api/payments/create-order", payments_create_order_post_56);
 app.get("/api/payments/mode", payments_mode_get_57);
 app.post("/api/payments/verify-payment", payments_verify_payment_post_58);
@@ -174,6 +179,10 @@ app.get("/api/payments/wallet", payments_wallet_get_59);
 app.post("/api/submissions", submissions_post_60_upload, submissions_post_60);
 app.put("/api/submissions/:id/status", submissions_id_status_put_61);
 // </api-registrations>
+
+// Setup rate limiting cleanup interval
+setupRateLimitCleanup();
+console.log('[Security] Rate limit cleanup initialized');
 
 // Run DB migrations at startup
 import("./db/migrations/commission_config.js").then(m => m.migrateCommissionConfig()).catch(console.error);
@@ -183,6 +192,7 @@ import("./db/migrations/consultant_agreement.js").then(m => m.migrateConsultantA
 import("./db/migrations/consultant_reminder_sent_at.js").then(m => m.up()).catch(console.error);
 import("./db/migrations/candidate_application.js").then(m => m.migrateCandidateApplication()).catch(console.error);
 import("./db/migrations/candidate_cv_columns.js").then(m => m.migrateCandidateCvColumns()).catch(console.error).then(() => console.log('[migration] candidate_cv_columns: runner finished'));
+import("./db/migrations/candidate_application_cv_columns.js").then(m => m.migrateCandidateApplicationCvColumns()).catch(console.error);
 import("./db/migrations/assessments_scorecards.js").then(m => m.migrateAssessmentsAndScorecards()).catch(console.error);
 import("./db/migrations/indexes.js").then(m => m.migrateIndexes()).catch(console.error);
 import("./db/migrations/placements.js").then(m => m.migratePlacements()).catch(console.error);

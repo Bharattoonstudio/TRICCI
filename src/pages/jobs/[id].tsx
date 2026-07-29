@@ -4,11 +4,12 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   MapPin, Briefcase, Clock, Users, ChevronLeft, CheckCircle2,
-  Building2, Home, ArrowRight, Bookmark, BookOpen, ListChecks
+  Building2, Home, ArrowRight, Bookmark, BookOpen, ListChecks, Sparkles
 } from 'lucide-react';
 import type { Job } from '@/server/api/jobs/GET';
 import { trackJobView, trackJobApply } from '@/lib/analytics';
 import ShareButtons from '@/components/ShareButtons';
+import CvEnhanceModal, { type ApprovedCv } from '@/components/candidate/CvEnhanceModal';
 import { useSession } from '@/lib/auth/auth-client';
 
 const BLOG_SIDEBAR = [
@@ -71,6 +72,9 @@ export default function JobDetailPage() {
   const [consultantFee, setConsultantFee] = useState(6);
   // Apply state
   const [applyState, setApplyState] = useState<'idle' | 'loading' | 'success' | 'already' | 'error'>('idle');
+  // AI CV Enhancer state
+  const [showEnhanceModal, setShowEnhanceModal] = useState(false);
+  const [approvedCv, setApprovedCv] = useState<ApprovedCv | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -118,7 +122,11 @@ export default function JobDetailPage() {
       const res = await fetch(`/api/jobs/${job.id}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(
+          approvedCv
+            ? { cvUrl: approvedCv.cvUrl, cvFileName: approvedCv.cvFileName, cvMatchScore: approvedCv.matchScore }
+            : {}
+        ),
       });
       const data = await res.json();
       if (res.status === 409 || data.error === 'already_applied') {
@@ -406,19 +414,41 @@ export default function JobDetailPage() {
                         {applyState === 'already' ? 'Already Applied' : 'Application Submitted!'}
                       </div>
                     ) : (
-                      <button
-                        onClick={handleApply}
-                        disabled={applyState === 'loading'}
-                        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-60 disabled:cursor-not-allowed">
-                        {applyState === 'loading' ? (
-                          <><span className="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> Submitting…</>
-                        ) : (
-                          <>Apply Now <ArrowRight size={15} /></>
+                      <>
+                        {approvedCv && (
+                          <div className="w-full flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 font-semibold py-2 px-3 rounded-xl text-xs mb-2">
+                            <Sparkles size={13} className="shrink-0" />
+                            Enhanced CV ready ({approvedCv.matchScore}% match) — will be submitted with this application
+                          </div>
                         )}
-                      </button>
+                        <button
+                          onClick={() => setShowEnhanceModal(true)}
+                          className="w-full flex items-center justify-center gap-2 border border-primary/30 text-primary font-semibold py-2.5 rounded-xl hover:bg-primary/5 transition-colors text-sm mb-2"
+                        >
+                          <Sparkles size={14} /> {approvedCv ? 'Re-run AI CV Enhancer' : 'Enhance my CV for this JD (AI)'}
+                        </button>
+                        <button
+                          onClick={handleApply}
+                          disabled={applyState === 'loading'}
+                          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                          {applyState === 'loading' ? (
+                            <><span className="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> Submitting…</>
+                          ) : (
+                            <>Apply Now <ArrowRight size={15} /></>
+                          )}
+                        </button>
+                      </>
                     )}
                     {applyState === 'error' && (
                       <p className="text-xs text-red-500 text-center mt-2">Something went wrong. Please try again.</p>
+                    )}
+                    {job && (
+                      <CvEnhanceModal
+                        jobId={job.id}
+                        open={showEnhanceModal}
+                        onClose={() => setShowEnhanceModal(false)}
+                        onApprove={(result) => setApprovedCv(result)}
+                      />
                     )}
                   </>
                 ) : (

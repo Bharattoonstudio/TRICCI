@@ -4,49 +4,15 @@
  * Extracts text from PDF/DOC buffer and uses OpenAI to parse structured profile data.
  */
 import type { Request, Response } from 'express';
+import multer from 'multer';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { extractTextFromPdfBuffer, extractTextFromDocBuffer } from '@/lib/cv-text.js';
 
-/** Best-effort plain-text extraction from a PDF buffer (no native deps) */
-function extractTextFromPdfBuffer(buf: Buffer): string {
-  const raw = buf.toString('latin1');
-
-  // Pull all string objects between ( ) — covers most text-encoded PDFs
-  const chunks: string[] = [];
-
-  // BT...ET blocks
-  const btEt = raw.match(/BT[\s\S]*?ET/g) ?? [];
-  for (const block of btEt) {
-    const strings = block.match(/\(([^)\\]*(?:\\.[^)\\]*)*)\)/g) ?? [];
-    for (const s of strings) {
-      const inner = s.slice(1, -1)
-        .replace(/\\n/g, '\n')
-        .replace(/\\r/g, '\r')
-        .replace(/\\t/g, '\t')
-        .replace(/\\\\/g, '\\')
-        .replace(/\\(.)/g, '$1');
-      chunks.push(inner);
-    }
-  }
-
-  let text = chunks.join(' ');
-
-  // Fallback: grab all printable ASCII if BT/ET yielded nothing useful
-  if (text.trim().length < 80) {
-    text = raw.replace(/[^\x20-\x7E\n\r\t]/g, ' ');
-  }
-
-  return text.replace(/\s{3,}/g, '\n').trim().slice(0, 7000);
-}
-
-/** Best-effort plain-text extraction from a DOC/DOCX buffer */
-function extractTextFromDocBuffer(buf: Buffer): string {
-  return buf.toString('utf-8')
-    .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
-    .replace(/\s{3,}/g, '\n')
-    .trim()
-    .slice(0, 7000);
-}
+// Same fix as cv-upload: this route also had no multer middleware wired up
+// in entry.ts, so req.file was always undefined here too.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+export const multerMiddleware = upload.single('cv');
 
 const SYSTEM_PROMPT = `You are a CV parser. Extract structured data from the CV text and return ONLY valid JSON.
 Use exactly these field names (omit any field you cannot find):

@@ -109,7 +109,21 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const jobId = String(req.params.id);
-    const { coverNote } = req.body as { coverNote?: string };
+    const { coverNote, cvUrl, cvFileName, cvMatchScore } = req.body as {
+      coverNote?: string;
+      cvUrl?: string;
+      cvFileName?: string;
+      cvMatchScore?: number;
+    };
+
+    // Only accept a per-application CV if it looks like a URL our own
+    // upload/enhance endpoints would have produced — prevents arbitrary
+    // URL injection into candidateApplication.cv_url.
+    const safeCvUrl = typeof cvUrl === 'string' && cvUrl.startsWith('/airo-assets/uploads/cvs/') ? cvUrl : null;
+    const safeCvFileName = safeCvUrl && typeof cvFileName === 'string' ? cvFileName.slice(0, 255) : null;
+    const safeMatchScore = safeCvUrl && typeof cvMatchScore === 'number' && Number.isFinite(cvMatchScore)
+      ? Math.max(0, Math.min(100, Math.round(cvMatchScore)))
+      : null;
 
     // Verify job exists and is active
     const [jobRow] = await db
@@ -132,6 +146,9 @@ export default async function handler(req: Request, res: Response) {
         candidateUserId: session.user.id,
         status: 'applied',
         coverNote: coverNote?.trim() || null,
+        cvUrl: safeCvUrl,
+        cvFileName: safeCvFileName,
+        cvMatchScore: safeMatchScore,
       });
     } catch (insertErr: unknown) {
       const mysqlErr = insertErr as { code?: string; errno?: number };

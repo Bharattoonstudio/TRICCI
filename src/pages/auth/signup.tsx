@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Eye, EyeOff, AlertCircle, Loader2, Building2, Star, User, Shield, CheckCircle, Mail, Phone } from 'lucide-react';
 import { signIn, signUp } from '@/lib/auth/auth-client';
 import { trackSignup } from '@/lib/analytics';
+import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput, validateSignupForm } from '@/lib/validation';
 
 type Role = 'employer' | 'consultant' | 'candidate';
 type Step = 'role' | 'details' | 'mobile_otp';
@@ -94,11 +95,32 @@ export default function SignupPage() {
   async function handleDetailsContinue(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedRole) return;
+    
     setError('');
-    if (!name.trim()) { setError('Please enter your name.'); return; }
-    if (!email.trim()) { setError('Please enter your email.'); return; }
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
-    if (!phone.match(/^[6-9]\d{9}$/)) { setError('Enter a valid 10-digit Indian mobile number.'); return; }
+
+    // Sanitize inputs
+    const sanitizedName = sanitizeInput(name);
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedPhone = sanitizeInput(phone).replace(/\s/g, '').replace(/^(\+91)?/, '');
+
+    // Validate all fields
+    const validation = validateSignupForm({
+      email: sanitizedEmail,
+      phone: sanitizedPhone,
+      password,
+      name: sanitizedName,
+    });
+
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      setError(firstError || 'Please fix the errors above');
+      return;
+    }
+
+    // Update state with sanitized values
+    setName(sanitizedName);
+    setEmail(sanitizedEmail);
+    setPhone(sanitizedPhone);
 
     // Auto-send OTP before advancing to step 3
     setLoading(true);
@@ -106,8 +128,22 @@ export default function SignupPage() {
       const res = await fetch('/api/otp/send-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, email, purpose: 'signup_mobile' }),
+        body: JSON.stringify({ 
+          phone: sanitizedPhone, 
+          email: sanitizedEmail, 
+          purpose: 'signup_mobile',
+          role: selectedRole
+        }),
       });
+
+      // Handle rate limiting
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After');
+        throw new Error(
+          `Too many attempts. Please try again in ${retryAfter || 15} seconds.`
+        );
+      }
+
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(d.error ?? 'Failed to send OTP');
@@ -128,11 +164,28 @@ export default function SignupPage() {
     setOtp('');
     setOtpLoading(true);
     try {
+      const sanitizedPhone = sanitizeInput(phone).replace(/\s/g, '').replace(/^(\+91)?/, '');
+      const sanitizedEmail = sanitizeInput(email);
+
       const res = await fetch('/api/otp/send-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, email, purpose: 'signup_mobile' }),
+        body: JSON.stringify({ 
+          phone: sanitizedPhone, 
+          email: sanitizedEmail, 
+          purpose: 'signup_mobile',
+          role: selectedRole
+        }),
       });
+
+      // Handle rate limiting
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After');
+        throw new Error(
+          `Too many attempts. Please try again in ${retryAfter || 15} seconds.`
+        );
+      }
+
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(d.error ?? 'Failed to resend OTP');
@@ -148,14 +201,39 @@ export default function SignupPage() {
   // Verify OTP then create account
   async function handleVerifyAndCreate() {
     setOtpError('');
-    if (otp.length !== 6) { setOtpError('Enter the 6-digit OTP.'); return; }
+    
+    // Validate OTP format
+    if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+      setOtpError('Enter the 6-digit OTP.');
+      return;
+    }
+
     setOtpLoading(true);
     try {
+      const sanitizedPhone = sanitizeInput(phone).replace(/\s/g, '').replace(/^(\+91)?/, '');
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedOtp = sanitizeInput(otp);
+
       const res = await fetch('/api/otp/verify-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, email, otp, purpose: 'signup_mobile' }),
+        body: JSON.stringify({ 
+          phone: sanitizedPhone, 
+          email: sanitizedEmail, 
+          otp: sanitizedOtp, 
+          purpose: 'signup_mobile',
+          role: selectedRole
+        }),
       });
+
+      // Handle rate limiting
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After');
+        throw new Error(
+          `Too many attempts. Please try again in ${retryAfter || 15} seconds.`
+        );
+      }
+
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(d.error ?? 'Invalid OTP');
@@ -173,12 +251,17 @@ export default function SignupPage() {
     if (!selectedRole) return;
     setLoading(true);
     try {
+      // Ensure all data is sanitized before sending
+      const sanitizedName = sanitizeInput(name);
+      const sanitizedEmail = sanitizeInput(email);
+      
       const result = await signUp.email({
-        name,
-        email,
+        name: sanitizedName,
+        email: sanitizedEmail,
         password,
         // @ts-expect-error — BetterAuth additional fields
         role: selectedRole,
+        phone: sanitizeInput(phone),
       });
       if (result.error) {
         setOtpError(result.error.message ?? 'Could not create account. Please try again.');
@@ -507,8 +590,8 @@ export default function SignupPage() {
                       <div className="bg-green-500/8 border border-green-500/20 rounded-xl p-3 flex items-start gap-2">
                         <Phone size={13} className="text-green-400 shrink-0 mt-0.5" />
                         <div className="text-xs text-foreground">
-                          <p>SMS also sent to <strong>+91 {phone}</strong></p>
-                          <p className="text-muted-foreground mt-0.5">Check your messages if email is delayed.</p>
+                          <p>Also sending SMS to <strong>+91 {phone}</strong></p>
+                          <p className="text-muted-foreground mt-0.5">May take a minute — the email code above works immediately.</p>
                         </div>
                       </div>
                     )}

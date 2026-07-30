@@ -1,40 +1,72 @@
-import { eq } from 'drizzle-orm';
-import { jobTable } from '@/server/db/schema';
-import { auth } from '@/server/auth';
+import type { Request, Response } from 'express';
+import { db } from '../../db/client.js';
+import { job as jobTable } from '../../db/schema.js';
+import { eq, and } from 'drizzle-orm';
+import { toWebRequest } from '@/lib/auth/express-adapter.js';
+import { getAuth } from '@/lib/auth/auth.js';
 
-export async function GET(req: Request) {
+interface JobResponse {
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  ctcLabel: string;
+  feePercent: number;
+  status: string;
+  priority: number;
+  applicants: number;
+  postedDays: number;
+  skills?: string[];
+  description?: string;
+  interviewRounds?: { label: string; description: string }[];
+}
+
+export default async function handler(req: Request, res: Response) {
   try {
-    // 1. Require authentication
-    const session = await auth();
+    // Get current logged-in employer
+    const auth = getAuth();
+    const session = await auth.api.getSession({ headers: toWebRequest(req).headers }).catch(() => null);
+    
     if (!session?.user?.id) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // 2. Check if user is an employer
-    if (session.user.role !== 'employer') {
-      return Response.json({ error: 'Forbidden: Only employers can access this' }, { status: 403 });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const employerId = session.user.id;
+    const userRole = (session.user as { role?: string })?.role;
 
-    // 3. Fetch only jobs posted by this employer
-    const jobs = await db
+    // Only employers can access their own jobs
+    if (userRole !== 'employer') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Fetch only THIS employer's jobs
+    const rows = await db
       .select()
       .from(jobTable)
-      .where(eq(jobTable.postedByUserId, employerId));
+      .where(and(
+        eq(jobTable.postedByUserId, employerId)
+      ));
 
-    // 4. Return jobs with total count
-    return Response.json({
-      jobs,
-      total: jobs.length,
-      message: 'Successfully fetched employer jobs'
-    });
+    // Map to response format
+    const jobs: JobResponse[] = rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      department: r.department,
+      location: r.location,
+      ctcLabel: r.ctcLabel,
+      feePercent: r.feePercent,
+      status: r.status,
+      priority: r.priority,
+      applicants: r.applicants,
+      postedDays: r.postedDays,
+      skills: r.skills as string[],
+      description: r.description,
+      interviewRounds: r.interviewRounds as { label: string; description: string }[] | undefined,
+    }));
 
-  } catch (error) {
-    console.error('Error fetching employer jobs:', error);
-    return Response.json(
-      { error: 'Failed to fetch jobs' },
-      { status: 500 }
-    );
+    res.json({ jobs, total: jobs.length });
+  } catch (err) {
+    console.error('[GET /api/employer/jobs] Error:', err);
+    res.status(500).json({ error: 'Failed to fetch jobs' });
   }
 }

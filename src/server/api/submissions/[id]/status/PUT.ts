@@ -12,6 +12,7 @@ import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
+import { logAudit } from '@/lib/audit.js';
 
 const VALID_STATUSES = [
   'pending', 'review', 'shortlisted', 'interview',
@@ -225,6 +226,7 @@ export default async function handler(req: Request, res: Response) {
         submissionId: submission.id,
         candidateName: submission.candidateName,
         candidateEmail: submission.candidateEmail,
+        currentStatus: submission.status,
         jobId: submission.jobId,
         consultantUserId: submission.consultantUserId,
         jobTitle: job.title,
@@ -246,6 +248,15 @@ export default async function handler(req: Request, res: Response) {
       .update(submission)
       .set({ status: status as SubmissionStatus, updatedAt: new Date() })
       .where(eq(submission.id, id));
+
+    logAudit({
+      entityType: 'submission',
+      entityId: String(id),
+      action: 'submission.status_changed',
+      actorUserId: session.user.id,
+      actorRole: role,
+      metadata: { from: row.currentStatus, to: status, jobId: row.jobId, jobTitle: row.jobTitle, candidateName: row.candidateName },
+    });
 
     // ── Fetch stakeholder emails in parallel ──────────────────────────────────
     const [consultantUser, employerUser] = await Promise.all([

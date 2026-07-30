@@ -14,6 +14,7 @@ const ConsultantDashboard = lazy(() => import('./pages/consultant/dashboard'));
 const CandidateProfile = lazy(() => import('./pages/candidate/profile'));
 const BillingPage = lazy(() => import('./pages/billing/index'));
 const AdminDashboard = lazy(() => import('./pages/admin/dashboard'));
+const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
 const AdminLoginPage = lazy(() => import('./pages/admin/login'));
 const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
 const LoginPage = lazy(() => import('./pages/auth/login'));
@@ -140,6 +141,7 @@ export const routes: RouteObject[] = [
   // Admin login & setup (public — no auth required)
   { path: '/admin/login', element: <AdminLoginPage /> },
   { path: '/admin/setup', element: <AdminSetupPage /> },
+  { path: '/admin/audit-log', element: <AdminAuditLogPage /> },
 
   { path: '*', element: <NotFoundPage /> },
 ];

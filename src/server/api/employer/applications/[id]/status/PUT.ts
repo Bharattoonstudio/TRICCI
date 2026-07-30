@@ -15,6 +15,7 @@ import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
+import { logAudit } from '@/lib/audit.js';
 
 const VALID_STATUSES = ['shortlisted', 'rejected', 'placed'] as const;
 type AppStatus = typeof VALID_STATUSES[number];
@@ -78,6 +79,15 @@ export default async function handler(req: Request, res: Response) {
       .update(candidateApplication)
       .set({ status: status as AppStatus, updatedAt: new Date() })
       .where(eq(candidateApplication.id, id));
+
+    logAudit({
+      entityType: 'application',
+      entityId: String(id),
+      action: 'application.status_changed',
+      actorUserId: session.user.id,
+      actorRole: role,
+      metadata: { from: row.currentStatus, to: status, jobId: row.jobId, jobTitle: row.jobTitle },
+    });
 
     // Fire notification email to candidate (non-blocking)
     if (row.candidateEmail) {

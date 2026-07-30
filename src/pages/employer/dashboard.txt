@@ -1,0 +1,48 @@
+FILE: src/pages/employer/dashboard.tsx
+LINE: ~410 (Search for the line, it might be different line number)
+
+═════════════════════════════════════════════════════════════════════
+
+FIND THIS LINE:
+─────────────
+fetch('/api/jobs')
+
+
+CHANGE IT TO:
+─────────────
+fetch('/api/employer/jobs')
+
+
+THAT'S IT! ONE LINE CHANGE.
+
+═════════════════════════════════════════════════════════════════════
+
+HOW TO FIND AND CHANGE:
+
+1. Open file: src/pages/employer/dashboard.tsx
+2. Press Ctrl+F (or Cmd+F on Mac)
+3. Search for: fetch('/api/jobs')
+4. Replace with: fetch('/api/employer/jobs')
+5. Save the file
+6. Done!
+
+═════════════════════════════════════════════════════════════════════
+
+CONTEXT (What the code looks like around it):
+
+BEFORE:
+  const response = await fetch('/api/jobs');
+  const data = await response.json();
+
+AFTER:
+  const response = await fetch('/api/employer/jobs');
+  const data = await response.json();
+
+═════════════════════════════════════════════════════════════════════
+
+WHY THIS CHANGE?
+
+Old: /api/jobs → Returns ALL jobs from ALL employers (SECURITY LEAK)
+New: /api/employer/jobs → Returns ONLY this employer's jobs (SECURE)
+
+═════════════════════════════════════════════════════════════════════

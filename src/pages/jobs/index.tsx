@@ -5,7 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, MapPin, Briefcase, Clock, Users, ChevronRight,
-  SlidersHorizontal, X, Building2, Home, Filter, BookOpen
+  SlidersHorizontal, X, Building2, Home, Filter, BookOpen, Lock
 } from 'lucide-react';
 import type { Job } from '@/server/api/jobs/GET';
 import ShareButtons from '@/components/ShareButtons';
@@ -105,6 +105,11 @@ function JobCard({ job, index }: { job: Job; index: number }) {
                   <Clock size={10} />
                   {timeAgo(job.postedDays)}
                 </span>
+                {job.companyHidden && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 flex items-center gap-1">
+                    <Lock size={9} /> Confidential
+                  </span>
+                )}
               </div>
               <h2 className="text-lg font-black text-foreground group-hover:text-primary transition-colors leading-tight"
                 style={{ fontFamily: 'var(--font-heading)' }}>

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import { db } from '../../db/client.js';
-import { job as jobTable } from '../../db/schema.js';
+import { db } from '@/server/db/client.js';
+import { job as jobTable } from '@/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';

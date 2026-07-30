@@ -7,7 +7,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { candidateApplication, job, user } from '@/server/db/schema.js';
+import { candidateApplication, job, user, notification } from '@/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -203,6 +203,13 @@ export default async function handler(req: Request, res: Response) {
               ),
               text: `Hi ${employerUser.name},\n\n${candidateUser.name} has applied for ${jobRow.title}.\n\nReview at: ${BASE}/employer/dashboard\n\n— The TRICCI Team`,
             }).catch(e => console.error('[apply] employer email failed:', e));
+
+            db.insert(notification).values({
+              userId: jobRow.postedByUserId,
+              type: 'application',
+              message: `${candidateUser.name} applied for ${jobRow.title}`,
+              link: '/employer/dashboard',
+            }).catch(e => console.error('[apply] notification insert failed:', e));
           }
         }
       }

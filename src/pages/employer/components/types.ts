@@ -44,6 +44,7 @@ export interface DashboardJob {
   ctcMax?: number;
   fee: number;
   status: string;
+  priority?: number;
   applicants: number;
   shortlisted: number;
   postedDays: number;

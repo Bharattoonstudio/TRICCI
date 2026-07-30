@@ -169,6 +169,11 @@ export const job = pgTable('job', {
   applicants: integer('applicants').notNull().default(0),
   feePercent: doublePrecision('fee_percent').notNull().default(8.5),
   interviewRounds: jsonb('interview_rounds').$type<{ label: string; description: string }[]>(),
+  // Job visibility: 'public' (default, shown to everyone) | 'consultant_only'
+  // (hidden from the public candidate job board, visible to consultants/admin)
+  // | 'confidential' (same as consultant_only, PLUS company name is masked
+  // even for consultants unless they are the job owner or an admin).
+  visibility: varchar('visibility', { length: 24 }).notNull().default('public'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
@@ -213,6 +218,39 @@ export const candidateApplication = pgTable('candidate_application', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 }, (t) => [index('idx_candidate_app_job').on(t.jobId), index('idx_candidate_app_user').on(t.candidateUserId)]);
+
+// ── Communication log ──────────────────────────────────────────────────────
+// A shared timeline of notes/calls/WhatsApp/email/meeting entries attached
+// to a job, a consultant submission, or a candidate application — so every
+// interaction lives with the record instead of scattered across inboxes.
+export const communicationLog = pgTable('communication_log', {
+  id: serial('id').primaryKey(),
+  // 'job' | 'submission' | 'application'
+  entityType: varchar('entity_type', { length: 24 }).notNull(),
+  // job.id (varchar) OR submission/candidateApplication numeric id, stored as text
+  entityId: varchar('entity_id', { length: 64 }).notNull(),
+  // 'whatsapp' | 'email' | 'call' | 'meeting' | 'note'
+  type: varchar('type', { length: 16 }).notNull().default('note'),
+  message: text('message').notNull(),
+  createdByUserId: varchar('created_by_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [index('idx_comm_log_entity').on(t.entityType, t.entityId)]);
+
+// ── Audit trail ─────────────────────────────────────────────────────────────
+// Append-only log of important mutations (job created, visibility changed,
+// application/submission status changed, etc.) for dispute resolution and
+// enterprise compliance needs.
+export const auditLog = pgTable('audit_log', {
+  id: serial('id').primaryKey(),
+  entityType: varchar('entity_type', { length: 32 }).notNull(),
+  entityId: varchar('entity_id', { length: 64 }).notNull(),
+  action: varchar('action', { length: 64 }).notNull(),
+  actorUserId: varchar('actor_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  actorRole: varchar('actor_role', { length: 16 }),
+  // Free-form JSON details: { from, to, note, ... } depending on the action
+  metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [index('idx_audit_log_entity').on(t.entityType, t.entityId), index('idx_audit_log_created').on(t.createdAt)]);
 
 // ── Platform commission configuration ────────────────────────────────────────
 // Single-row config table (id = 1 always). Admin sets platformFeePct (what

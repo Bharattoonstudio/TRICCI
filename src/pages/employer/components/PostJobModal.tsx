@@ -42,7 +42,7 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
   const [form, setForm] = useState({
     title: '', department: '', location: '', locationType: 'hybrid',
     ctcMin: '', ctcMax: '', fee: '8', description: '', skills: '',
-    experience: '', responsibilities: '', requirements: '',
+    experience: '', responsibilities: '', requirements: '', visibility: 'public',
   });
   const [rounds, setRounds] = useState<{ label: string; description: string }[]>([
     { label: 'HR Screening', description: 'Initial call to assess fitment and expectations' },
@@ -121,6 +121,7 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
           requirements: form.requirements,
           interviewRounds: rounds.filter(r => r.label.trim()),
           jobCode,
+          visibility: form.visibility,
         }),
       });
       if (!res.ok) {
@@ -402,6 +403,24 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
                     <button key={t} type="button" onClick={() => update('locationType', t)}
                       className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border capitalize transition-colors ${form.locationType === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
                       {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Job Visibility */}
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-1.5 block">Job Visibility</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'public', label: 'Public', hint: 'Shown to everyone' },
+                    { value: 'consultant_only', label: 'Consultants Only', hint: 'Hidden from candidates' },
+                    { value: 'confidential', label: 'Confidential', hint: 'Company name hidden too' },
+                  ] as const).map(opt => (
+                    <button key={opt.value} type="button" onClick={() => update('visibility', opt.value)}
+                      className={`text-left p-3 rounded-xl border transition-colors ${form.visibility === opt.value ? 'bg-primary/10 border-primary' : 'bg-muted border-border hover:border-primary/40'}`}>
+                      <p className={`text-xs font-bold ${form.visibility === opt.value ? 'text-primary' : 'text-foreground'}`}>{opt.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{opt.hint}</p>
                     </button>
                   ))}
                 </div>

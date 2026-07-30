@@ -72,6 +72,15 @@ import payments_verify_payment_post_58 from "./api/payments/verify-payment/POST"
 import payments_wallet_get_59 from "./api/payments/wallet/GET";
 import submissions_post_60, { multerMiddleware as submissions_post_60_upload } from "./api/submissions/POST";
 import submissions_id_status_put_61 from "./api/submissions/[id]/status/PUT";
+import employer_jobs_get_62 from "./api/employer/jobs/GET";
+import employer_jobs_id_status_put_63 from "./api/employer/jobs/[id]/status/PUT";
+import notifications_get_64 from "./api/notifications/GET";
+import notifications_mark_read_put_65 from "./api/notifications/mark-read/PUT";
+import organization_invite_post_66 from "./api/organization/invite/POST";
+import organization_members_get_67 from "./api/organization/members/GET";
+import organization_members_id_delete_68 from "./api/organization/members/[id]/DELETE";
+import organization_members_id_reset_password_post_69 from "./api/organization/members/[id]/reset-password/POST";
+import organization_accept_invite_post_70 from "./api/organization/accept-invite/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -186,6 +195,15 @@ app.post("/api/payments/verify-payment", payments_verify_payment_post_58);
 app.get("/api/payments/wallet", payments_wallet_get_59);
 app.post("/api/submissions", submissions_post_60_upload, submissions_post_60);
 app.put("/api/submissions/:id/status", submissions_id_status_put_61);
+app.get("/api/employer/jobs", employer_jobs_get_62);
+app.put("/api/employer/jobs/:id/status", employer_jobs_id_status_put_63);
+app.get("/api/notifications", notifications_get_64);
+app.put("/api/notifications/mark-read", notifications_mark_read_put_65);
+app.post("/api/organization/invite", organization_invite_post_66);
+app.get("/api/organization/members", organization_members_get_67);
+app.delete("/api/organization/members/:id", organization_members_id_delete_68);
+app.post("/api/organization/members/:id/reset-password", organization_members_id_reset_password_post_69);
+app.post("/api/organization/accept-invite", organization_accept_invite_post_70);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval

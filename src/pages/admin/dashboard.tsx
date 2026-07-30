@@ -920,6 +920,16 @@ function SettingsPanel() {
         </button>
       </div>
 
+      {/* Audit Log */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <h3 className="font-black text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Audit Log</h3>
+        <p className="text-sm text-muted-foreground mb-4">Review who did what — job creation, status changes, and notes across the platform.</p>
+        <Link to="/admin/audit-log"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm font-semibold hover:bg-muted/70 transition-colors">
+          <ClipboardList size={14} /> View Audit Log
+        </Link>
+      </div>
+
       {/* Danger Zone */}
       <div className="bg-card border border-red-500/20 rounded-2xl p-6">
         <h3 className="font-black text-red-400 mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Sign Out</h3>

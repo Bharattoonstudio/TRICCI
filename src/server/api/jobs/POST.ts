@@ -4,6 +4,7 @@ import { db } from '../../db/client.js';
 import { job as jobTable, employerProfile, user } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { notifyMatchingSubscribers } from '../../lib/jobAlertMatcher.js';
+import { logAudit } from '@/lib/audit.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
@@ -91,6 +92,7 @@ export default async function handler(req: Request, res: Response) {
       requirements,
       interviewRounds,
       jobCode: providedJobCode,
+      visibility: rawVisibility,
     } = req.body as Record<string, unknown>;
 
     // Validate required fields
@@ -127,6 +129,11 @@ export default async function handler(req: Request, res: Response) {
     const roundsArr: { label: string; description: string }[] = Array.isArray(interviewRounds)
       ? (interviewRounds as { label: string; description: string }[])
       : [];
+
+    const VALID_VISIBILITY = ['public', 'consultant_only', 'confidential'] as const;
+    const visibility = typeof rawVisibility === 'string' && (VALID_VISIBILITY as readonly string[]).includes(rawVisibility)
+      ? rawVisibility
+      : 'public';
 
     const id = uniqueId(String(title), String(location));
 
@@ -178,6 +185,16 @@ export default async function handler(req: Request, res: Response) {
       status: 'active',
       applicants: 0,
       feePercent: feeNum,
+      visibility,
+    });
+
+    logAudit({
+      entityType: 'job',
+      entityId: id,
+      action: 'job.created',
+      actorUserId: session.user.id,
+      actorRole: role,
+      metadata: { title: String(title).trim(), visibility, jobCode },
     });
 
     res.status(201).json({ id, jobCode, message: 'Job posted successfully' });
@@ -205,9 +222,13 @@ export default async function handler(req: Request, res: Response) {
       applicants: 0,
       feePercent: feeNum,
     };
-    notifyMatchingSubscribers(newJob).catch(err =>
-      console.error('[POST /api/jobs] alert notification failed:', err),
-    );
+    // Don't blast consultant-only/confidential roles out to general public
+    // job-alert subscribers — that would defeat the purpose of restricting them.
+    if (visibility === 'public') {
+      notifyMatchingSubscribers(newJob).catch(err =>
+        console.error('[POST /api/jobs] alert notification failed:', err),
+      );
+    }
 
     // Send job posted confirmation email to employer (SOP §24)
     try {

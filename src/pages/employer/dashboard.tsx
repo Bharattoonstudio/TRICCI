@@ -20,6 +20,7 @@ import ReportsDashboard from './components/ReportsDashboard.js';
 import EmailTemplateModal from './components/EmailTemplateModal.js';
 import AccountDetails from '@/components/shared/AccountDetails';
 import AgreementGate from '@/components/shared/AgreementGate';
+import RejectReasonModal from '@/components/shared/RejectReasonModal';
 import WalletPanel from '@/components/employer/WalletPanel';
 import { authClient } from '@/lib/auth/auth-client';
 import type { DashboardJob, JobStatus } from './components/types.js';
@@ -331,6 +332,7 @@ export default function EmployerDashboard() {
 
   // Agreement gate — nothing works until this is accepted (SOP cross-cutting rule)
   const [agreementSigned, setAgreementSigned] = useState<boolean | null>(null);
+  const [rejectModalAppId, setRejectModalAppId] = useState<number | null>(null);
   useEffect(() => {
     fetch('/api/employer/agreement')
       .then(r => r.json())
@@ -356,6 +358,8 @@ export default function EmployerDashboard() {
     // Unlocked contact (set client-side after shortlisting)
     _unlockedEmail?: string | null;
     _unlockedPhone?: string | null;
+    _unlockRequested?: boolean;
+    _rejectionReason?: string;
   }
   const [directApplications, setDirectApplications] = useState<DirectApplication[]>([]);
   const [directAppsLoading, setDirectAppsLoading] = useState(false);
@@ -460,31 +464,41 @@ export default function EmployerDashboard() {
     finally { setDirectAppsLoading(false); }
   }
 
-  async function handleDirectAppStatus(appId: number, status: 'shortlisted' | 'rejected') {
+  async function handleDirectAppStatus(appId: number, status: 'shortlisted' | 'rejected', rejectionReason?: string) {
     setDirectAppActioning(prev => new Set(prev).add(appId));
     try {
       const res = await fetch(`/api/employer/applications/${appId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(rejectionReason ? { rejectionReason } : {}) }),
       });
+      if (res.status === 400) {
+        const data = await res.json();
+        if (data.error === 'rejection_reason_required') {
+          setDirectAppActioning(prev => { const s = new Set(prev); s.delete(appId); return s; });
+          setRejectModalAppId(appId);
+          return;
+        }
+      }
       if (!res.ok) return;
-      const data = await res.json() as {
-        ok: boolean; status: string; contactUnlocked: boolean;
-        unlockedContact?: { email: string | null; phone: string | null; name: string; title: string | null };
-      };
+      const data = await res.json() as { ok: boolean; status: string };
       setDirectApplications(prev => prev.map(app =>
-        app.id === appId
-          ? {
-              ...app,
-              status: data.status,
-              ...(data.contactUnlocked && data.unlockedContact && {
-                _unlockedEmail: data.unlockedContact.email,
-                _unlockedPhone: data.unlockedContact.phone,
-              }),
-            }
-          : app
+        app.id === appId ? { ...app, status: data.status, ...(status === 'rejected' ? { _rejectionReason: rejectionReason } : {}) } : app
       ));
+      setRejectModalAppId(null);
+    } catch { /* silent */ }
+    finally {
+      setDirectAppActioning(prev => { const s = new Set(prev); s.delete(appId); return s; });
+    }
+  }
+
+  async function handleRequestContactUnlock(appId: number) {
+    setDirectAppActioning(prev => new Set(prev).add(appId));
+    try {
+      const res = await fetch(`/api/employer/applications/${appId}/request-unlock`, { method: 'POST' });
+      if (res.ok) {
+        setDirectApplications(prev => prev.map(app => app.id === appId ? { ...app, _unlockRequested: true } : app));
+      }
     } catch { /* silent */ }
     finally {
       setDirectAppActioning(prev => { const s = new Set(prev); s.delete(appId); return s; });
@@ -605,6 +619,13 @@ export default function EmployerDashboard() {
           endpoint="/api/employer/agreement"
           requireDesignation
           onAccepted={() => setAgreementSigned(true)}
+        />
+      )}
+
+      {rejectModalAppId !== null && (
+        <RejectReasonModal
+          onClose={() => setRejectModalAppId(null)}
+          onSubmit={(reason) => handleDirectAppStatus(rejectModalAppId, 'rejected', reason)}
         />
       )}
 
@@ -1435,7 +1456,7 @@ export default function EmployerDashboard() {
                                   <div className="flex items-center gap-2">
                                     <button
                                       disabled={isActioning}
-                                      onClick={() => handleDirectAppStatus(app.id, 'rejected')}
+                                      onClick={() => setRejectModalAppId(app.id)}
                                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-colors disabled:opacity-40"
                                     >
                                       {isActioning ? <Loader2 size={11} className="animate-spin" /> : <UserX size={11} />}
@@ -1447,16 +1468,25 @@ export default function EmployerDashboard() {
                                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8470A] text-white hover:bg-[#E8470A]/90 text-xs font-bold transition-colors disabled:opacity-40 shadow-sm"
                                     >
                                       {isActioning ? <Loader2 size={11} className="animate-spin" /> : <UserCheck size={11} />}
-                                      Shortlist &amp; Unlock Contact
+                                      Shortlist
                                     </button>
                                   </div>
                                 )}
 
-                                {/* Already shortlisted — show contact hint if not yet unlocked in this session */}
+                                {/* Already shortlisted — contact stays masked until Admin approves an unlock request (points 9-12) */}
                                 {isShortlisted && !contactUnlocked && (
-                                  <p className="text-xs text-muted-foreground italic">
-                                    Contact details were unlocked when you shortlisted this candidate. Refresh to see them.
-                                  </p>
+                                  app._unlockRequested ? (
+                                    <p className="text-xs text-muted-foreground italic">Unlock requested — Admin will release contact details after payment is confirmed.</p>
+                                  ) : (
+                                    <button
+                                      disabled={isActioning}
+                                      onClick={() => handleRequestContactUnlock(app.id)}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E8470A]/30 text-[#E8470A] hover:bg-[#E8470A]/10 text-xs font-semibold transition-colors disabled:opacity-40"
+                                    >
+                                      {isActioning ? <Loader2 size={11} className="animate-spin" /> : null}
+                                      Request Contact Unlock
+                                    </button>
+                                  )
                                 )}
                               </div>
                             </motion.div>

@@ -80,6 +80,12 @@ export const employerProfile = pgTable('employer_profile', {
   website: varchar('website', { length: 255 }),
   organizationId: varchar('organization_id', { length: 36 }),
   createdAt: timestamp('created_at').defaultNow(),
+  // Agreement / T&C fields (cross-cutting rule: all 3 roles must accept)
+  signatoryName: varchar('signatory_name', { length: 255 }),
+  designation: varchar('designation', { length: 255 }),
+  agreementSignedAt: timestamp('agreement_signed_at'),
+  agreementIp: varchar('agreement_ip', { length: 64 }),
+  agreementHash: varchar('agreement_hash', { length: 128 }),
 });
 
 export const consultantProfile = pgTable('consultant_profile', {
@@ -133,6 +139,11 @@ export const candidateProfile = pgTable('candidate_profile', {
   profileComplete: integer('profile_complete').notNull().default(0),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+  // Agreement / T&C fields (cross-cutting rule: all 3 roles must accept)
+  signatoryName: varchar('signatory_name', { length: 255 }),
+  agreementSignedAt: timestamp('agreement_signed_at'),
+  agreementIp: varchar('agreement_ip', { length: 64 }),
+  agreementHash: varchar('agreement_hash', { length: 128 }),
 });
 
 // ── OTP store for mobile 2FA ──────────────────────────────────────────────────

@@ -209,6 +209,7 @@ export const submission = pgTable('submission', {
   coverNote: text('cover_note'),
   // Status: pending | shortlisted | rejected | placed
   status: varchar('status', { length: 32 }).notNull().default('pending'),
+  rejectionReason: text('rejection_reason'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
@@ -223,6 +224,7 @@ export const candidateApplication = pgTable('candidate_application', {
   candidateUserId: varchar('candidate_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
   // Status: applied | shortlisted | rejected | placed
   status: varchar('status', { length: 32 }).notNull().default('applied'),
+  rejectionReason: text('rejection_reason'),
   coverNote: text('cover_note'),
   // Optional per-application CV: set when the candidate approves an
   // AI-enhanced, JD-tailored CV for this specific job. When null, the
@@ -373,6 +375,24 @@ export const placement = pgTable('placement', {
 });
 
 // ── Employer wallet (Razorpay credit top-ups) ─────────────────────────────────
+
+// ── Contact unlock requests (points 11-12) ──────────────────────────────────
+// When an employer shortlists a masked direct candidate application and
+// wants real contact details, they file a request here. Admin reviews and
+// releases the contact info only after payment is confirmed — contact
+// details are NEVER auto-unlocked on shortlist alone.
+export const contactUnlockRequest = pgTable('contact_unlock_request', {
+  id: serial('id').primaryKey(),
+  applicationId: integer('application_id').notNull().references(() => candidateApplication.id, { onDelete: 'cascade' }),
+  employerUserId: varchar('employer_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  candidateUserId: varchar('candidate_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // pending | approved | denied
+  status: varchar('status', { length: 16 }).notNull().default('pending'),
+  requestNote: text('request_note'),
+  resolvedByUserId: varchar('resolved_by_user_id', { length: 36 }),
+  resolvedAt: timestamp('resolved_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [index('idx_unlock_req_application').on(t.applicationId), index('idx_unlock_req_status').on(t.status)]);
 
 export const walletTransaction = pgTable('wallet_transaction', {
   id: serial('id').primaryKey(),

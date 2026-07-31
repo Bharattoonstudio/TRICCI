@@ -141,6 +141,10 @@ export default function JobDetailPage() {
       if (res.status === 409) {
         setApplyState('already');
         if (data.error === 'reapply_window') setApplyError(data.message);
+      } else if (data.error === 'profile_incomplete') {
+        setApplyState('error');
+        setApplyError(data.message);
+        setShowApplyDetails(false);
       } else if (res.ok) {
         setApplyState('success');
         setShowApplyDetails(false);
@@ -452,7 +456,12 @@ export default function JobDetailPage() {
                       </>
                     )}
                     {applyState === 'error' && (
-                      <p className="text-xs text-red-500 text-center mt-2">{applyError || 'Something went wrong. Please try again.'}</p>
+                      <p className="text-xs text-red-500 text-center mt-2">
+                        {applyError || 'Something went wrong. Please try again.'}
+                        {applyError.toLowerCase().includes('profile') && (
+                          <> <a href="/candidate/profile" className="underline">Complete your profile →</a></>
+                        )}
+                      </p>
                     )}
                     {applyState === 'already' && applyError && (
                       <p className="text-xs text-white/50 text-center mt-2">{applyError}</p>

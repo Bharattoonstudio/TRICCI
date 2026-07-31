@@ -8,6 +8,7 @@ import { logAudit } from '@/lib/audit.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
+import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 import type { Job } from './GET.js';
 
 const ORANGE = '#E8470A';
@@ -73,6 +74,9 @@ export default async function handler(req: Request, res: Response) {
     }
     if (role !== 'employer' && role !== 'admin') {
       return res.status(403).json({ error: 'Only employers may post jobs' });
+    }
+    if (role === 'employer' && !(await hasSignedAgreement(session.user.id, 'employer'))) {
+      return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement before posting jobs' });
     }
 
     const {

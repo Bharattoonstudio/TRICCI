@@ -14,6 +14,7 @@ import { submission, job } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 
 const CV_DIR = '/shared-storage/public/assets/cvs';
 
@@ -42,6 +43,9 @@ export default async function handler(req: Request, res: Response) {
     if (!session) return res.status(401).json({ error: 'Unauthorized' });
     if (role !== 'consultant' && role !== 'admin') {
       return res.status(403).json({ error: 'Only consultants may submit candidates' });
+    }
+    if (role === 'consultant' && !(await hasSignedAgreement(session.user.id, 'consultant'))) {
+      return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement before submitting candidates' });
     }
 
     const { jobId, candidateName, candidateEmail, candidatePhone, notes } =

@@ -89,6 +89,8 @@ import employer_applications_request_unlock_post_75 from "./api/employer/applica
 import admin_contact_unlock_requests_get_76 from "./api/admin/contact-unlock-requests/GET";
 import admin_contact_unlock_requests_approve_post_77 from "./api/admin/contact-unlock-requests/[id]/approve/POST";
 import admin_contact_unlock_requests_deny_post_78 from "./api/admin/contact-unlock-requests/[id]/deny/POST";
+import employer_applications_view_post_79 from "./api/employer/applications/[id]/view/POST";
+import employer_funnel_get_80 from "./api/employer/funnel/GET";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -220,6 +222,8 @@ app.post("/api/employer/applications/:id/request-unlock", employer_applications_
 app.get("/api/admin/contact-unlock-requests", admin_contact_unlock_requests_get_76);
 app.post("/api/admin/contact-unlock-requests/:id/approve", admin_contact_unlock_requests_approve_post_77);
 app.post("/api/admin/contact-unlock-requests/:id/deny", admin_contact_unlock_requests_deny_post_78);
+app.post("/api/employer/applications/:id/view", employer_applications_view_post_79);
+app.get("/api/employer/funnel", employer_funnel_get_80);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval
@@ -243,6 +247,7 @@ import("./db/migrations/wallet.js").then(m => m.migrateWallet()).catch(console.e
 import("./db/migrations/agreement_all_roles.js").then(m => m.migrateAgreementAllRoles()).catch(console.error);
 import("./db/migrations/application_ctc_notice.js").then(m => m.migrateApplicationCtcNotice()).catch(console.error);
 import("./db/migrations/rejection_and_unlock.js").then(m => m.migrateRejectionAndUnlock()).catch(console.error);
+import("./db/migrations/funnel_viewed_at.js").then(m => m.migrateFunnelViewedAt()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

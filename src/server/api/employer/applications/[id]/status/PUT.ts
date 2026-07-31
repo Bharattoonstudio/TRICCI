@@ -41,9 +41,13 @@ export default async function handler(req: Request, res: Response) {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid application ID' });
 
-    const { status } = req.body as { status: string };
+    const { status, rejectionReason } = req.body as { status: string; rejectionReason?: string };
     if (!VALID_STATUSES.includes(status as AppStatus)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    // Point 8: rejection reason is mandatory before it's recorded
+    if (status === 'rejected' && !rejectionReason?.trim()) {
+      return res.status(400).json({ error: 'rejection_reason_required', message: 'Please provide a reason for rejecting this candidate' });
     }
 
     // Fetch the application + job + candidate details
@@ -77,7 +81,7 @@ export default async function handler(req: Request, res: Response) {
     // Update status
     await db
       .update(candidateApplication)
-      .set({ status: status as AppStatus, updatedAt: new Date() })
+      .set({ status: status as AppStatus, updatedAt: new Date(), ...(status === 'rejected' ? { rejectionReason: rejectionReason!.trim() } : {}) })
       .where(eq(candidateApplication.id, id));
 
     logAudit({
@@ -143,23 +147,12 @@ export default async function handler(req: Request, res: Response) {
       }).catch(e => console.error('[employer.applications.status] email error:', e));
     }
 
-    // Return unmasked contact details only when shortlisting
-    const contactUnlocked = status === 'shortlisted';
-
-    res.json({
-      ok: true,
-      id,
-      status,
-      contactUnlocked,
-      ...(contactUnlocked && {
-        unlockedContact: {
-          email: row.candidateEmail,
-          phone: row.candidatePhone,
-          name: row.candidateName,
-          title: row.candidateTitle,
-        },
-      }),
-    });
+    // Point 9-12: contact details stay masked even on shortlist. Employer
+    // must file a separate unlock request; only Admin can release real
+    // contact info, and only after payment is confirmed. (Previously this
+    // endpoint returned unmasked contact details immediately on shortlist —
+    // that was a real gap against the masking requirement, fixed here.)
+    res.json({ ok: true, id, status });
   } catch (err) {
     console.error('[employer.applications.status] ERROR:', err);
     res.status(500).json({ error: 'Failed to update application status' });

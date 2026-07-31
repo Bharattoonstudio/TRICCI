@@ -210,6 +210,7 @@ export const submission = pgTable('submission', {
   // Status: pending | shortlisted | rejected | placed
   status: varchar('status', { length: 32 }).notNull().default('pending'),
   rejectionReason: text('rejection_reason'),
+  viewedAt: timestamp('viewed_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
@@ -225,6 +226,7 @@ export const candidateApplication = pgTable('candidate_application', {
   // Status: applied | shortlisted | rejected | placed
   status: varchar('status', { length: 32 }).notNull().default('applied'),
   rejectionReason: text('rejection_reason'),
+  viewedAt: timestamp('viewed_at'),
   coverNote: text('cover_note'),
   // Optional per-application CV: set when the candidate approves an
   // AI-enhanced, JD-tailored CV for this specific job. When null, the

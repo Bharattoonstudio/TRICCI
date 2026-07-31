@@ -232,6 +232,15 @@ export const candidateApplication = pgTable('candidate_application', {
   cvMatchScore: integer('cv_match_score'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+  // CTC breakdown at time of application (point 62) — stored as LPA × 100000,
+  // same convention as candidateProfile. All 4 required at apply time.
+  ctcFixed: integer('ctc_fixed'),
+  ctcVariable: integer('ctc_variable'),
+  ctcEsops: integer('ctc_esops'),
+  ctcOther: integer('ctc_other'),
+  // Notice period negotiability (point 61)
+  noticePeriodDays: integer('notice_period_days'),
+  noticePeriodNegotiable: boolean('notice_period_negotiable').default(true),
 }, (t) => [index('idx_candidate_app_job').on(t.jobId), index('idx_candidate_app_user').on(t.candidateUserId)]);
 
 // ── Communication log ──────────────────────────────────────────────────────

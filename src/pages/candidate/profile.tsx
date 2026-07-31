@@ -15,6 +15,7 @@ import {
 import { useSession, signOut } from '@/lib/auth/auth-client';
 import { useNavigate } from 'react-router-dom';
 import AccountDetails from '@/components/shared/AccountDetails';
+import AgreementGate from '@/components/shared/AgreementGate';
 
 // ─── TIC GPT ─────────────────────────────────────────────────────────────────
 const TIC_GPT_ID = 'g-6a1b310c327c8191a48366560e14fd6e-tic-1-0-talent-intelligence-copilot';
@@ -189,6 +190,15 @@ export default function CandidateProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
+
+  // Agreement gate — nothing works until this is accepted (SOP cross-cutting rule)
+  const [agreementSigned, setAgreementSigned] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch('/api/candidate/agreement')
+      .then(r => r.json())
+      .then((d: { signed?: boolean }) => setAgreementSigned(!!d.signed))
+      .catch(() => setAgreementSigned(false));
+  }, []);
 
   // CV state
   const [cvUploading, setCvUploading] = useState(false);
@@ -403,6 +413,15 @@ export default function CandidateProfilePage() {
         <link rel="canonical" href="https://tricci.in/candidate/profile" />
         <meta name="robots" content="noindex" />
       </Helmet>
+
+      {/* ── Agreement Gate (blocks everything until accepted) ── */}
+      {agreementSigned === false && (
+        <AgreementGate
+          role="candidate"
+          endpoint="/api/candidate/agreement"
+          onAccepted={() => setAgreementSigned(true)}
+        />
+      )}
 
       {/* ── OTP Modal ── */}
       {showOtpModal && (

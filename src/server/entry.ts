@@ -85,6 +85,10 @@ import candidate_agreement_get_71 from "./api/candidate/agreement/GET";
 import candidate_agreement_post_72 from "./api/candidate/agreement/POST";
 import employer_agreement_get_73 from "./api/employer/agreement/GET";
 import employer_agreement_post_74 from "./api/employer/agreement/POST";
+import employer_applications_request_unlock_post_75 from "./api/employer/applications/[id]/request-unlock/POST";
+import admin_contact_unlock_requests_get_76 from "./api/admin/contact-unlock-requests/GET";
+import admin_contact_unlock_requests_approve_post_77 from "./api/admin/contact-unlock-requests/[id]/approve/POST";
+import admin_contact_unlock_requests_deny_post_78 from "./api/admin/contact-unlock-requests/[id]/deny/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -212,6 +216,10 @@ app.get("/api/candidate/agreement", candidate_agreement_get_71);
 app.post("/api/candidate/agreement", candidate_agreement_post_72);
 app.get("/api/employer/agreement", employer_agreement_get_73);
 app.post("/api/employer/agreement", employer_agreement_post_74);
+app.post("/api/employer/applications/:id/request-unlock", employer_applications_request_unlock_post_75);
+app.get("/api/admin/contact-unlock-requests", admin_contact_unlock_requests_get_76);
+app.post("/api/admin/contact-unlock-requests/:id/approve", admin_contact_unlock_requests_approve_post_77);
+app.post("/api/admin/contact-unlock-requests/:id/deny", admin_contact_unlock_requests_deny_post_78);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval
@@ -234,6 +242,7 @@ import("./db/migrations/placements.js").then(m => m.migratePlacements()).catch(c
 import("./db/migrations/wallet.js").then(m => m.migrateWallet()).catch(console.error);
 import("./db/migrations/agreement_all_roles.js").then(m => m.migrateAgreementAllRoles()).catch(console.error);
 import("./db/migrations/application_ctc_notice.js").then(m => m.migrateApplicationCtcNotice()).catch(console.error);
+import("./db/migrations/rejection_and_unlock.js").then(m => m.migrateRejectionAndUnlock()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

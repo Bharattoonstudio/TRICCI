@@ -113,12 +113,33 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const jobId = String(req.params.id);
-    const { coverNote, cvUrl, cvFileName, cvMatchScore } = req.body as {
+    const { coverNote, cvUrl, cvFileName, cvMatchScore, ctcFixed, ctcVariable, ctcEsops, ctcOther, noticePeriodDays, noticePeriodNegotiable } = req.body as {
       coverNote?: string;
       cvUrl?: string;
       cvFileName?: string;
       cvMatchScore?: number;
+      ctcFixed?: number;
+      ctcVariable?: number;
+      ctcEsops?: number;
+      ctcOther?: number;
+      noticePeriodDays?: number;
+      noticePeriodNegotiable?: boolean;
     };
+
+    // Point 60-62: CTC breakdown is mandatory — cannot submit without it.
+    // Fixed is required; variable/esops/other default to 0 if not applicable.
+    if (ctcFixed === undefined || ctcFixed === null || Number.isNaN(Number(ctcFixed)) || Number(ctcFixed) <= 0) {
+      return res.status(400).json({ error: 'ctc_required', message: 'Fixed CTC is required to submit your application' });
+    }
+    if (noticePeriodDays === undefined || noticePeriodDays === null || Number.isNaN(Number(noticePeriodDays)) || Number(noticePeriodDays) < 0) {
+      return res.status(400).json({ error: 'notice_period_required', message: 'Notice period is required to submit your application' });
+    }
+    const safeCtcFixed = Math.max(0, Math.round(Number(ctcFixed)));
+    const safeCtcVariable = Math.max(0, Math.round(Number(ctcVariable) || 0));
+    const safeCtcEsops = Math.max(0, Math.round(Number(ctcEsops) || 0));
+    const safeCtcOther = Math.max(0, Math.round(Number(ctcOther) || 0));
+    const safeNoticePeriodDays = Math.max(0, Math.round(Number(noticePeriodDays)));
+    const safeNoticePeriodNegotiable = noticePeriodNegotiable !== false;
 
     // Only accept a per-application CV if it looks like a URL our own
     // upload/enhance endpoints would have produced — prevents arbitrary
@@ -143,24 +164,47 @@ export default async function handler(req: Request, res: Response) {
     if (!jobRow) return res.status(404).json({ error: 'Job not found' });
     if (jobRow.status !== 'active') return res.status(400).json({ error: 'This job is no longer accepting applications' });
 
-    // Insert — UNIQUE KEY (job_id, candidate_user_id) prevents duplicates
-    try {
-      await db.insert(candidateApplication).values({
-        jobId,
-        candidateUserId: session.user.id,
-        status: 'applied',
-        coverNote: coverNote?.trim() || null,
-        cvUrl: safeCvUrl,
-        cvFileName: safeCvFileName,
-        cvMatchScore: safeMatchScore,
-      });
-    } catch (insertErr: unknown) {
-      const mysqlErr = insertErr as { code?: string; errno?: number };
-      if (mysqlErr?.errno === 1062 || mysqlErr?.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ error: 'already_applied', message: 'You have already applied to this job' });
+    // Point 72: block reapplying to the SAME job within 90 days of a prior
+    // application — not permanently. Done at the application layer rather
+    // than relying on a DB unique constraint, because the previous
+    // constraint-based approach checked for a MySQL error code (errno 1062)
+    // that Postgres never produces (Postgres uses '23505'), so on this
+    // Supabase/Postgres database the duplicate check was silently not
+    // working as intended.
+    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+    const [priorApplication] = await db
+      .select({ id: candidateApplication.id, createdAt: candidateApplication.createdAt })
+      .from(candidateApplication)
+      .where(sql`${candidateApplication.jobId} = ${jobId} AND ${candidateApplication.candidateUserId} = ${session.user.id}`)
+      .orderBy(sql`${candidateApplication.createdAt} DESC`)
+      .limit(1);
+
+    if (priorApplication?.createdAt) {
+      const elapsedMs = Date.now() - new Date(priorApplication.createdAt).getTime();
+      if (elapsedMs < NINETY_DAYS_MS) {
+        const daysLeft = Math.ceil((NINETY_DAYS_MS - elapsedMs) / (24 * 60 * 60 * 1000));
+        return res.status(409).json({
+          error: 'reapply_window',
+          message: `You already applied to this job. You can reapply in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`,
+        });
       }
-      throw insertErr;
     }
+
+    await db.insert(candidateApplication).values({
+      jobId,
+      candidateUserId: session.user.id,
+      status: 'applied',
+      coverNote: coverNote?.trim() || null,
+      cvUrl: safeCvUrl,
+      cvFileName: safeCvFileName,
+      cvMatchScore: safeMatchScore,
+      ctcFixed: safeCtcFixed,
+      ctcVariable: safeCtcVariable,
+      ctcEsops: safeCtcEsops,
+      ctcOther: safeCtcOther,
+      noticePeriodDays: safeNoticePeriodDays,
+      noticePeriodNegotiable: safeNoticePeriodNegotiable,
+    });
 
     // Increment applicants counter on the job
     await db.update(job)

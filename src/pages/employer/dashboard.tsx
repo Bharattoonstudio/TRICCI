@@ -19,6 +19,7 @@ import type { ATSStage } from './components/ATSPipelineStepper.js';
 import ReportsDashboard from './components/ReportsDashboard.js';
 import EmailTemplateModal from './components/EmailTemplateModal.js';
 import AccountDetails from '@/components/shared/AccountDetails';
+import AgreementGate from '@/components/shared/AgreementGate';
 import WalletPanel from '@/components/employer/WalletPanel';
 import { authClient } from '@/lib/auth/auth-client';
 import type { DashboardJob, JobStatus } from './components/types.js';
@@ -328,6 +329,15 @@ export default function EmployerDashboard() {
   // Logged-in user's display name (real name/company, replaces hardcoded placeholder)
   const [companyName, setCompanyName] = useState('');
 
+  // Agreement gate — nothing works until this is accepted (SOP cross-cutting rule)
+  const [agreementSigned, setAgreementSigned] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch('/api/employer/agreement')
+      .then(r => r.json())
+      .then((d: { signed?: boolean }) => setAgreementSigned(!!d.signed))
+      .catch(() => setAgreementSigned(false));
+  }, []);
+
   // Submissions (real data from API)
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
@@ -587,6 +597,16 @@ export default function EmployerDashboard() {
         <meta name="robots" content="noindex" />
         <link rel="canonical" href="https://tricci.in/employer/dashboard" />
       </Helmet>
+
+      {/* ── Agreement Gate (blocks everything until accepted) ── */}
+      {agreementSigned === false && (
+        <AgreementGate
+          role="employer"
+          endpoint="/api/employer/agreement"
+          requireDesignation
+          onAccepted={() => setAgreementSigned(true)}
+        />
+      )}
 
       {/* ── CV Viewer Modal ── */}
       <AnimatePresence>

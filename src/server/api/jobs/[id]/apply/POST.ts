@@ -12,6 +12,7 @@ import { eq, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
+import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 
 const ORANGE = '#E8470A';
 const PURPLE = '#6B4FBB';
@@ -106,6 +107,9 @@ export default async function handler(req: Request, res: Response) {
     const role = (session.user as { role?: string }).role;
     if (role !== 'candidate') {
       return res.status(403).json({ error: 'Only candidates can apply to jobs' });
+    }
+    if (!(await hasSignedAgreement(session.user.id, 'candidate'))) {
+      return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement before applying' });
     }
 
     const jobId = String(req.params.id);

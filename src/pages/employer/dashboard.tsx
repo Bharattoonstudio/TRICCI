@@ -376,6 +376,14 @@ export default function EmployerDashboard() {
     cvsReceived: 0,
   });
 
+  // Funnel dashboard (point 13)
+  const [funnel, setFunnel] = useState<{ cvsReceived: number; seen: number; rejected: number; shortlisted: number; interview: number; selected: number } | null>(null);
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      fetch('/api/employer/funnel').then(r => r.ok ? r.json() : null).then(setFunnel).catch(() => {});
+    }
+  }, [activeTab]);
+
   // Notifications (bell dropdown)
   const [notifications, setNotifications] = useState<Array<{ id: number; message: string; link: string | null; read: boolean; createdAt: string }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -811,6 +819,29 @@ export default function EmployerDashboard() {
                   <StatCard icon={Users} label="Direct Applications" value={String(overviewStats.directApplications)} sub="Candidate self-apply" color="#35c9ff" />
                   <StatCard icon={FileText} label="CVs Received" value={String(overviewStats.cvsReceived + overviewStats.consultantSubmissions)} sub="Total across all channels" color="#FF6B35" />
                 </div>
+
+                {/* Funnel dashboard (point 13) */}
+                {funnel && (
+                  <div className="bg-card border border-border rounded-2xl p-6">
+                    <h3 className="font-black text-foreground mb-4" style={{ fontFamily: 'var(--font-heading)' }}>Hiring Funnel</h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                      {[
+                        { label: 'CVs Received', value: funnel.cvsReceived, color: '#35c9ff' },
+                        { label: 'Seen', value: funnel.seen, color: '#6B4FBB' },
+                        { label: 'Shortlisted', value: funnel.shortlisted, color: '#E8470A' },
+                        { label: 'Interview', value: funnel.interview, color: '#F5A623', note: 'coming soon' },
+                        { label: 'Rejected', value: funnel.rejected, color: '#EF4444' },
+                        { label: 'Selected', value: funnel.selected, color: '#22C55E' },
+                      ].map(stage => (
+                        <div key={stage.label} className="text-center">
+                          <p className="text-2xl font-black" style={{ color: stage.color, fontFamily: 'var(--font-heading)' }}>{stage.value}</p>
+                          <p className="text-[11px] text-muted-foreground font-medium mt-1">{stage.label}</p>
+                          {stage.note && <p className="text-[9px] text-muted-foreground/50 mt-0.5">{stage.note}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-card border border-border rounded-2xl overflow-hidden">
                   <div className="flex items-center justify-between p-6 border-b border-border">
@@ -1434,14 +1465,17 @@ export default function EmployerDashboard() {
                                   {/* View CV */}
                                   {app.candidateCvUrl ? (
                                     <button
-                                      onClick={() => setCvViewer({
-                                        name: app.candidateName,
-                                        title: app.candidateTitle,
-                                        jobTitle: app.jobTitle,
-                                        cvUrl: app.candidateCvUrl!,
-                                        skills: app.candidateSkills,
-                                        experience: app.candidateExperience,
-                                      })}
+                                      onClick={() => {
+                                        setCvViewer({
+                                          name: app.candidateName,
+                                          title: app.candidateTitle,
+                                          jobTitle: app.jobTitle,
+                                          cvUrl: app.candidateCvUrl!,
+                                          skills: app.candidateSkills,
+                                          experience: app.candidateExperience,
+                                        });
+                                        fetch(`/api/employer/applications/${app.id}/view`, { method: 'POST' }).catch(() => {});
+                                      }}
                                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold transition-colors"
                                     >
                                       <Eye size={12} /> View CV

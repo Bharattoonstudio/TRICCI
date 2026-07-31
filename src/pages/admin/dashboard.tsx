@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Users, Briefcase, IndianRupee, TrendingUp, Shield,
-  Search, CheckCircle, Clock,
+  Search, CheckCircle,
   MoreHorizontal, Eye, Settings, Bell,
   Building2, UserCheck, Sliders, BarChart3, ArrowUpRight, ArrowDownRight,
   Lock, Unlock,
@@ -1172,6 +1172,49 @@ export default function AdminDashboard() {
     if (activeTab === 'placements') fetchPlacements(1);
   }, [activeTab, fetchPlacements]);
 
+  // ── Contact Unlock Requests (points 11-12) ──────────────────────────────
+  interface UnlockRequest {
+    id: number; applicationId: number; status: string; createdAt: string;
+    jobTitle: string; company: string; employerName: string; employerEmail: string; candidateName: string;
+  }
+  const [unlockRequests, setUnlockRequests] = useState<UnlockRequest[]>([]);
+  const [loadingUnlockRequests, setLoadingUnlockRequests] = useState(false);
+  const [unlockActioning, setUnlockActioning] = useState<Set<number>>(new Set());
+  const [approvedContacts, setApprovedContacts] = useState<Record<number, { email: string | null; name: string; phone: string | null }>>({});
+
+  const fetchUnlockRequests = useCallback(async () => {
+    setLoadingUnlockRequests(true);
+    try {
+      const res = await fetch('/api/admin/contact-unlock-requests');
+      if (res.ok) {
+        const data = await res.json();
+        setUnlockRequests(data.requests ?? []);
+      }
+    } finally {
+      setLoadingUnlockRequests(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'approvals') fetchUnlockRequests();
+  }, [activeTab, fetchUnlockRequests]);
+
+  async function handleUnlockAction(id: number, action: 'approve' | 'deny') {
+    setUnlockActioning(prev => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/admin/contact-unlock-requests/${id}/${action}`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (action === 'approve' && data.candidate) {
+          setApprovedContacts(prev => ({ ...prev, [id]: data.candidate }));
+        }
+        setUnlockRequests(prev => prev.filter(r => r.id !== id));
+      }
+    } finally {
+      setUnlockActioning(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  }
+
   async function handleSaveJobFee(jobId: string, feePercent: number) {
     setSavingJobFee(true);
     try {
@@ -2085,14 +2128,60 @@ export default function AdminDashboard() {
             {activeTab === 'approvals' && (
               <motion.div key="approvals" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="space-y-4 max-w-2xl">
                 <div className="flex items-center gap-2 p-4 rounded-xl bg-secondary/10 border border-secondary/20">
-                  <Clock size={15} className="text-secondary shrink-0" />
-                  <p className="text-sm text-muted-foreground">Manual approval queue — coming soon. For now, all verified accounts are auto-approved.</p>
+                  <Unlock size={15} className="text-secondary shrink-0" />
+                  <p className="text-sm text-muted-foreground">Contact unlock requests — release a candidate's real contact details to an employer only after payment is confirmed.</p>
                 </div>
-                <div className="bg-card border border-border rounded-2xl p-8 text-center">
-                  <CheckCircle size={32} className="text-green-400 mx-auto mb-3 opacity-60" />
-                  <p className="text-sm font-semibold text-foreground mb-1">No pending approvals</p>
-                  <p className="text-xs text-muted-foreground">Accounts are activated automatically after email verification.</p>
-                </div>
+
+                {loadingUnlockRequests ? (
+                  <div className="flex justify-center py-10"><Loader2 size={22} className="animate-spin text-muted-foreground" /></div>
+                ) : unlockRequests.length === 0 ? (
+                  <div className="bg-card border border-border rounded-2xl p-8 text-center">
+                    <CheckCircle size={32} className="text-green-400 mx-auto mb-3 opacity-60" />
+                    <p className="text-sm font-semibold text-foreground mb-1">No pending unlock requests</p>
+                    <p className="text-xs text-muted-foreground">You're all caught up.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {unlockRequests.map(r => {
+                      const isActioning = unlockActioning.has(r.id);
+                      const approved = approvedContacts[r.id];
+                      return (
+                        <div key={r.id} className="bg-card border border-border rounded-xl p-4">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{r.candidateName} — {r.jobTitle}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{r.company} · requested by {r.employerName} ({r.employerEmail})</p>
+                            </div>
+                            <span className="text-[11px] text-muted-foreground shrink-0">{new Date(r.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {approved ? (
+                            <div className="text-xs text-green-500 mt-2">
+                              ✓ Approved — {approved.email}{approved.phone ? ` · ${approved.phone}` : ''}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-3">
+                              <button
+                                disabled={isActioning}
+                                onClick={() => handleUnlockAction(r.id, 'approve')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8470A] text-white text-xs font-bold hover:bg-[#E8470A]/90 transition-colors disabled:opacity-40"
+                              >
+                                {isActioning ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                                Approve &amp; Release Contact
+                              </button>
+                              <button
+                                disabled={isActioning}
+                                onClick={() => handleUnlockAction(r.id, 'deny')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-colors disabled:opacity-40"
+                              >
+                                <X size={11} /> Deny
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             )}
 

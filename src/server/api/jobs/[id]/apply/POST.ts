@@ -7,7 +7,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { candidateApplication, job, user, notification } from '@/server/db/schema.js';
+import { candidateApplication, job, user, notification, candidateProfile } from '@/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -110,6 +110,21 @@ export default async function handler(req: Request, res: Response) {
     }
     if (!(await hasSignedAgreement(session.user.id, 'candidate'))) {
       return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement before applying' });
+    }
+
+    // Point 57-58: profile + CV must be complete before applying. Browsing
+    // /jobs stays public (SEO), but the actual apply action is gated here.
+    const [candProfile] = await db
+      .select({ cvUrl: candidateProfile.cvUrl, profileComplete: candidateProfile.profileComplete })
+      .from(candidateProfile)
+      .where(eq(candidateProfile.userId, session.user.id))
+      .limit(1);
+
+    if (!candProfile?.cvUrl) {
+      return res.status(403).json({ error: 'profile_incomplete', message: 'Please upload your CV before applying to jobs', redirectTo: '/candidate/profile' });
+    }
+    if ((candProfile.profileComplete ?? 0) < 60) {
+      return res.status(403).json({ error: 'profile_incomplete', message: 'Please complete your profile before applying to jobs', redirectTo: '/candidate/profile' });
     }
 
     const jobId = String(req.params.id);

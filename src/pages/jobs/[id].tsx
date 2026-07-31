@@ -10,6 +10,7 @@ import type { Job } from '@/server/api/jobs/GET';
 import { trackJobView, trackJobApply } from '@/lib/analytics';
 import ShareButtons from '@/components/ShareButtons';
 import CvEnhanceModal, { type ApprovedCv } from '@/components/candidate/CvEnhanceModal';
+import ApplyDetailsModal from '@/components/shared/ApplyDetailsModal';
 import { useSession } from '@/lib/auth/auth-client';
 
 const BLOG_SIDEBAR = [
@@ -72,9 +73,11 @@ export default function JobDetailPage() {
   const [consultantFee, setConsultantFee] = useState(6);
   // Apply state
   const [applyState, setApplyState] = useState<'idle' | 'loading' | 'success' | 'already' | 'error'>('idle');
+  const [applyError, setApplyError] = useState('');
   // AI CV Enhancer state
   const [showEnhanceModal, setShowEnhanceModal] = useState(false);
   const [approvedCv, setApprovedCv] = useState<ApprovedCv | null>(null);
+  const [showApplyDetails, setShowApplyDetails] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -114,7 +117,14 @@ export default function JobDetailPage() {
       .catch(() => { /* non-fatal — button stays idle */ });
   }, [isCandidate, id]);
 
-  async function handleApply() {
+  async function handleApply(details: {
+    ctcFixed: number;
+    ctcVariable: number;
+    ctcEsops: number;
+    ctcOther: number;
+    noticePeriodDays: number;
+    noticePeriodNegotiable: boolean;
+  }) {
     if (!job || applyState === 'loading' || applyState === 'success' || applyState === 'already') return;
     setApplyState('loading');
     trackJobApply(job.id, job.title, job.company);
@@ -122,19 +132,21 @@ export default function JobDetailPage() {
       const res = await fetch(`/api/jobs/${job.id}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          approvedCv
-            ? { cvUrl: approvedCv.cvUrl, cvFileName: approvedCv.cvFileName, cvMatchScore: approvedCv.matchScore }
-            : {}
-        ),
+        body: JSON.stringify({
+          ...(approvedCv ? { cvUrl: approvedCv.cvUrl, cvFileName: approvedCv.cvFileName, cvMatchScore: approvedCv.matchScore } : {}),
+          ...details,
+        }),
       });
       const data = await res.json();
-      if (res.status === 409 || data.error === 'already_applied') {
+      if (res.status === 409) {
         setApplyState('already');
+        if (data.error === 'reapply_window') setApplyError(data.message);
       } else if (res.ok) {
         setApplyState('success');
+        setShowApplyDetails(false);
       } else {
         setApplyState('error');
+        setApplyError(data.message || 'Something went wrong. Please try again.');
       }
     } catch {
       setApplyState('error');
@@ -428,7 +440,7 @@ export default function JobDetailPage() {
                           <Sparkles size={14} /> {approvedCv ? 'Re-run AI CV Enhancer' : 'Enhance my CV for this JD (AI)'}
                         </button>
                         <button
-                          onClick={handleApply}
+                          onClick={() => setShowApplyDetails(true)}
                           disabled={applyState === 'loading'}
                           className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-60 disabled:cursor-not-allowed">
                           {applyState === 'loading' ? (
@@ -440,7 +452,18 @@ export default function JobDetailPage() {
                       </>
                     )}
                     {applyState === 'error' && (
-                      <p className="text-xs text-red-500 text-center mt-2">Something went wrong. Please try again.</p>
+                      <p className="text-xs text-red-500 text-center mt-2">{applyError || 'Something went wrong. Please try again.'}</p>
+                    )}
+                    {applyState === 'already' && applyError && (
+                      <p className="text-xs text-white/50 text-center mt-2">{applyError}</p>
+                    )}
+                    {showApplyDetails && job && (
+                      <ApplyDetailsModal
+                        jobTitle={job.title}
+                        submitting={applyState === 'loading'}
+                        onClose={() => setShowApplyDetails(false)}
+                        onSubmit={handleApply}
+                      />
                     )}
                     {job && (
                       <CvEnhanceModal

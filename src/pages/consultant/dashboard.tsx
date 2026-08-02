@@ -18,6 +18,7 @@ import AccountDetails from '@/components/shared/AccountDetails';
 import ConsultantIndustriesCard from '@/components/consultant/ConsultantIndustriesCard';
 import ProposeInterviewModal from '@/components/consultant/ProposeInterviewModal';
 import PipelineTrail from '@/components/consultant/PipelineTrail';
+import PlacementsFeeList from '@/components/consultant/PlacementsFeeList';
 import type { Job } from '@/server/api/jobs/GET';
 
 // ─── Static mock data removed — dashboard now shows real data only ────────────
@@ -915,6 +916,8 @@ export default function ConsultantDashboard() {
                     <p className="text-xs text-white/20 mt-1">Your payout history will appear here after your first placement closes</p>
                   </div>
                 </div>
+
+                <PlacementsFeeList />
 
                 <div className="rounded-2xl border p-6" style={{ background: '#0d0d0d', borderColor: '#ffffff0d' }}>
                   <h3 className="font-black text-white mb-4" style={{ fontFamily: 'var(--font-heading)' }}>How Your Payouts Work</h3>

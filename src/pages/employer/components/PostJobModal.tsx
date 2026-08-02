@@ -600,12 +600,12 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
                 <label className="text-sm font-semibold text-foreground mb-2 block">
                   Placement Fee: <span className="text-primary font-black">{form.fee}% of first-year CTC</span>
                 </label>
-                <input type="range" min="5" max="15" step="0.5" value={form.fee}
+                <input type="range" min="5" max="35" step="0.5" value={form.fee}
                   onChange={e => update('fee', e.target.value)} className="w-full accent-primary" />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>5%</span>
                   <span className="text-primary font-semibold">Payable only on successful placement</span>
-                  <span>15%</span>
+                  <span>35%</span>
                 </div>
               </div>
 

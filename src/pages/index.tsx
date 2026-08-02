@@ -2,6 +2,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { useRef, useState, useEffect } from 'react';
+import LiveStatsCounters from '@/components/marketing/LiveStatsCounters';
 import {
   Building2, Star, User, ArrowRight, CheckCircle,
   Briefcase, TrendingUp, Shield, IndianRupee, Zap,
@@ -638,6 +639,13 @@ export default function MarketingHomePage() {
               &mdash; We Make It Easy.
             </span>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Live Stats Counters (points 78-79) ── */}
+      <section className="py-16 bg-background border-b border-border">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <LiveStatsCounters />
         </div>
       </section>
 

@@ -93,9 +93,6 @@ import employer_applications_view_post_79 from "./api/employer/applications/[id]
 import employer_funnel_get_80 from "./api/employer/funnel/GET";
 import consultant_profile_get_81 from "./api/consultant/profile/GET";
 import consultant_profile_put_82 from "./api/consultant/profile/PUT";
-import consultant_submissions_interview_propose_post_83 from "./api/consultant/submissions/[id]/interview/propose/POST";
-import employer_submissions_interview_respond_post_84 from "./api/employer/submissions/[id]/interview/respond/POST";
-import submissions_interview_get_85 from "./api/submissions/[id]/interview/GET";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -231,9 +228,6 @@ app.post("/api/employer/applications/:id/view", employer_applications_view_post_
 app.get("/api/employer/funnel", employer_funnel_get_80);
 app.get("/api/consultant/profile", consultant_profile_get_81);
 app.put("/api/consultant/profile", consultant_profile_put_82);
-app.post("/api/consultant/submissions/:id/interview/propose", consultant_submissions_interview_propose_post_83);
-app.post("/api/employer/submissions/:id/interview/respond", employer_submissions_interview_respond_post_84);
-app.get("/api/submissions/:id/interview", submissions_interview_get_85);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval
@@ -259,7 +253,6 @@ import("./db/migrations/application_ctc_notice.js").then(m => m.migrateApplicati
 import("./db/migrations/rejection_and_unlock.js").then(m => m.migrateRejectionAndUnlock()).catch(console.error);
 import("./db/migrations/funnel_viewed_at.js").then(m => m.migrateFunnelViewedAt()).catch(console.error);
 import("./db/migrations/consultant_industries.js").then(m => m.migrateConsultantIndustries()).catch(console.error);
-import("./db/migrations/interview_schedule.js").then(m => m.migrateInterviewSchedule()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

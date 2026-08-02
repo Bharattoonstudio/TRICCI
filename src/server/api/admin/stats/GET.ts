@@ -23,12 +23,16 @@ export default async function handler(req: Request, res: Response) {
     const [alertSubs] = await db.select({ count: count() }).from(jobAlertSubscription).where(and(eq(jobAlertSubscription.active, true)));
 
     // Real placement stats from placement table
+    // FIX: was using mysql2's `[[row]]` double-array destructure against a
+    // `pg` pool, which returns `{ rows }` — this silently always fell
+    // through to the catch block and reported 0 placements/revenue.
     let totalPlacements = 0;
     let totalRevenue = 0;
     try {
-      const [[placementStats]] = await pool.query<any[]>(
+      const placementStatsResult = await pool.query(
         `SELECT COUNT(*) AS cnt, COALESCE(SUM(fee_amount_lpa), 0) AS rev FROM placement`
       );
+      const placementStats = placementStatsResult.rows[0];
       totalPlacements = Number(placementStats?.cnt ?? 0);
       totalRevenue = Number(placementStats?.rev ?? 0);
     } catch {

@@ -22,6 +22,7 @@ import AccountDetails from '@/components/shared/AccountDetails';
 import AgreementGate from '@/components/shared/AgreementGate';
 import RejectReasonModal from '@/components/shared/RejectReasonModal';
 import JobSubmissionsDrilldown from '@/components/shared/JobSubmissionsDrilldown';
+import PlacementsSettledList from '@/components/employer/PlacementsSettledList';
 import WalletPanel from '@/components/employer/WalletPanel';
 import { authClient } from '@/lib/auth/auth-client';
 import type { DashboardJob, JobStatus } from './components/types.js';
@@ -1672,6 +1673,8 @@ export default function EmployerDashboard() {
                     <p className="text-xs text-muted-foreground mt-1">Invoices will appear here after successful placements.</p>
                   </div>
                 </div>
+
+                <PlacementsSettledList />
 
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="font-black text-foreground mb-4" style={{ fontFamily: 'var(--font-heading)' }}>How Your Fees Are Split</h3>

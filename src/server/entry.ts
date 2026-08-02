@@ -97,6 +97,11 @@ import consultant_submissions_interview_propose_post_83 from "./api/consultant/s
 import employer_submissions_interview_respond_post_84 from "./api/employer/submissions/[id]/interview/respond/POST";
 import submissions_interview_get_85 from "./api/submissions/[id]/interview/GET";
 import employer_submissions_interview_outcome_post_86 from "./api/employer/submissions/[id]/interview/outcome/POST";
+import consultant_placements_get_87 from "./api/consultant/placements/GET";
+import consultant_placements_fee_respond_post_88 from "./api/consultant/placements/[id]/fee/respond/POST";
+import consultant_placements_acknowledge_post_89 from "./api/consultant/placements/[id]/acknowledge/POST";
+import employer_placements_get_90 from "./api/employer/placements/GET";
+import stats_live_get_91 from "./api/stats/live/GET";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -236,6 +241,11 @@ app.post("/api/consultant/submissions/:id/interview/propose", consultant_submiss
 app.post("/api/employer/submissions/:id/interview/respond", employer_submissions_interview_respond_post_84);
 app.get("/api/submissions/:id/interview", submissions_interview_get_85);
 app.post("/api/employer/submissions/:id/interview/outcome", employer_submissions_interview_outcome_post_86);
+app.get("/api/consultant/placements", consultant_placements_get_87);
+app.post("/api/consultant/placements/:id/fee/respond", consultant_placements_fee_respond_post_88);
+app.post("/api/consultant/placements/:id/acknowledge", consultant_placements_acknowledge_post_89);
+app.get("/api/employer/placements", employer_placements_get_90);
+app.get("/api/stats/live", stats_live_get_91);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval
@@ -262,6 +272,7 @@ import("./db/migrations/rejection_and_unlock.js").then(m => m.migrateRejectionAn
 import("./db/migrations/funnel_viewed_at.js").then(m => m.migrateFunnelViewedAt()).catch(console.error);
 import("./db/migrations/consultant_industries.js").then(m => m.migrateConsultantIndustries()).catch(console.error);
 import("./db/migrations/interview_schedule.js").then(m => m.migrateInterviewSchedule()).catch(console.error);
+import("./db/migrations/placement_fee_settlement.js").then(m => m.migratePlacementFeeSettlement()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

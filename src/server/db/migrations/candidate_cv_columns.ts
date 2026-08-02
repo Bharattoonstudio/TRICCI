@@ -17,13 +17,15 @@ export async function migrateCandidateCvColumns() {
       await db.execute(sql.raw(`ALTER TABLE candidate_profile ${col.ddl}`));
       console.log(`[migration] candidate_cv_columns: added ${col.name}`);
     } catch (err: unknown) {
-      // Drizzle wraps MySQL errors — check both the top-level code and the cause
-      const e = err as { code?: string; errno?: number; cause?: { code?: string; errno?: number } };
-      const isDup =
-        e?.code === 'ER_DUP_FIELDNAME' ||
-        e?.errno === 1060 ||
-        e?.cause?.code === 'ER_DUP_FIELDNAME' ||
-        e?.cause?.errno === 1060;
+      // FIX: this used to check MySQL's ER_DUP_FIELDNAME / errno 1060 to
+      // detect "column already exists" — but Postgres uses a completely
+      // different error code (42701, duplicate_column). On this Postgres
+      // database, that check was never true, so this migration logged a
+      // false "FAILED" error on every single server restart even when the
+      // column already existed and nothing was actually wrong. Matches the
+      // same class of bug already fixed elsewhere (errno 1062 vs 23505).
+      const e = err as { code?: string; cause?: { code?: string } };
+      const isDup = e?.code === '42701' || e?.cause?.code === '42701';
       if (isDup) {
         console.log(`[migration] candidate_cv_columns: ${col.name} already exists — skipped`);
       } else {

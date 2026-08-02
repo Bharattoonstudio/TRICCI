@@ -6,8 +6,13 @@ import { db } from '../client.js';
 import { sql } from 'drizzle-orm';
 
 function isDupColumn(err: unknown): boolean {
+  // FIX: was matching MySQL's "Duplicate column"/ER_DUP_FIELDNAME wording,
+  // which Postgres never produces. Postgres's actual message looks like
+  // `column "x" of relation "y" already exists` with code 42701.
+  const e = err as { code?: string; cause?: { code?: string } };
+  if (e?.code === '42701' || e?.cause?.code === '42701') return true;
   const msg = String(err instanceof Error ? (err.message + ' ' + (err.cause ?? '')) : err);
-  return msg.includes('Duplicate column') || msg.includes('ER_DUP_FIELDNAME');
+  return msg.includes('already exists') || msg.includes('Duplicate column') || msg.includes('ER_DUP_FIELDNAME');
 }
 
 export async function migrateInterviewRounds() {

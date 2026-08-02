@@ -1,6 +1,11 @@
 /**
  * GET /api/payments/wallet
  * Returns the employer's wallet balance and last 20 transactions.
+ *
+ * FIX: was using MySQL-style `?` placeholders and mysql2 array-destructure
+ * result format against a `pg` (Postgres) pool — pg uses `$1, $2...` and
+ * returns `{ rows }`, so this endpoint's queries didn't match Postgres
+ * syntax and were very likely failing on every call. Fixed to use pg's API.
  */
 import type { Request, Response } from 'express';
 import { pool } from '@/server/db/pool.js';
@@ -21,23 +26,19 @@ export default async function handler(req: Request, res: Response) {
       ? String(req.query.userId)
       : session.user.id;
 
-    const [balRows] = await pool.query(
-      `SELECT COALESCE(SUM(amount_paise), 0) AS total FROM wallet_transaction WHERE employer_user_id = ? AND status = 'paid'`,
+    const balResult = await pool.query(
+      `SELECT COALESCE(SUM(amount_paise), 0) AS total FROM wallet_transaction WHERE employer_user_id = $1 AND status = 'paid'`,
       [userId],
-    ) as [Array<{ total: number }>, unknown];
+    );
+    const balance_paise = Number(balResult.rows[0]?.total ?? 0);
 
-    const balance_paise = Number(balRows[0]?.total ?? 0);
-
-    const [txRows] = await pool.query(
+    const txResult = await pool.query(
       `SELECT id, razorpay_order_id, razorpay_payment_id, amount_paise, currency, status, receipt, created_at
-       FROM wallet_transaction WHERE employer_user_id = ? ORDER BY created_at DESC LIMIT 20`,
+       FROM wallet_transaction WHERE employer_user_id = $1 ORDER BY created_at DESC LIMIT 20`,
       [userId],
-    ) as [Array<{
-      id: number; razorpay_order_id: string; razorpay_payment_id: string | null;
-      amount_paise: number; currency: string; status: string; receipt: string | null; created_at: string;
-    }>, unknown];
+    );
 
-    res.json({ balance_paise, balance_rupees: balance_paise / 100, transactions: txRows });
+    res.json({ balance_paise, balance_rupees: balance_paise / 100, transactions: txResult.rows });
   } catch (err) {
     console.error('[payments.wallet] ERROR:', err);
     res.status(500).json({ error: 'Failed to fetch wallet' });

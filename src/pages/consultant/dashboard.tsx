@@ -17,6 +17,7 @@ import ConsultantAnalytics from '@/components/consultant/ConsultantAnalytics';
 import AccountDetails from '@/components/shared/AccountDetails';
 import ConsultantIndustriesCard from '@/components/consultant/ConsultantIndustriesCard';
 import ProposeInterviewModal from '@/components/consultant/ProposeInterviewModal';
+import PipelineTrail from '@/components/consultant/PipelineTrail';
 import type { Job } from '@/server/api/jobs/GET';
 
 // ─── Static mock data removed — dashboard now shows real data only ────────────
@@ -845,6 +846,7 @@ export default function ConsultantDashboard() {
                             </button>
                           )
                         )}
+                        <PipelineTrail status={s.status ?? ''} />
                         <SubmissionBadge status={s.status ?? ''} />
                       </div>
                     ))}

@@ -16,7 +16,6 @@ import ConsultantCVBank from '@/components/consultant/ConsultantCVBank';
 import ConsultantAnalytics from '@/components/consultant/ConsultantAnalytics';
 import AccountDetails from '@/components/shared/AccountDetails';
 import ConsultantIndustriesCard from '@/components/consultant/ConsultantIndustriesCard';
-import ProposeInterviewModal from '@/components/consultant/ProposeInterviewModal';
 import type { Job } from '@/server/api/jobs/GET';
 
 // ─── Static mock data removed — dashboard now shows real data only ────────────
@@ -208,35 +207,9 @@ export default function ConsultantDashboard() {
     createdAt: string;
     jobTitle: string | null;
     jobCompany: string | null;
-    _interviewProposed?: boolean;
   }
   const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
   const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
-  const [proposeInterviewFor, setProposeInterviewFor] = useState<MySubmission | null>(null);
-  const [proposingInterview, setProposingInterview] = useState(false);
-  const [proposeError, setProposeError] = useState('');
-
-  async function handleProposeInterview(proposedDate: string, note: string) {
-    if (!proposeInterviewFor) return;
-    setProposingInterview(true);
-    setProposeError('');
-    try {
-      const res = await fetch(`/api/consultant/submissions/${proposeInterviewFor.id}/interview/propose`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposedDate, note }),
-      });
-      if (res.ok) {
-        setMySubmissions(prev => prev.map(s => s.id === proposeInterviewFor.id ? { ...s, _interviewProposed: true } : s));
-        setProposeInterviewFor(null);
-      } else {
-        const data = await res.json();
-        setProposeError(data.error || 'Failed to propose interview time.');
-      }
-    } finally {
-      setProposingInterview(false);
-    }
-  }
 
   useEffect(() => {
     fetch('/api/consultant/submissions')
@@ -833,18 +806,6 @@ export default function ConsultantDashboard() {
                         <div className="hidden sm:block text-right">
                           <p className="text-xs text-white/25">{new Date(s.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
                         </div>
-                        {s.status === 'shortlisted' && (
-                          s._interviewProposed ? (
-                            <span className="text-[10px] text-white/30 italic shrink-0">Interview proposed</span>
-                          ) : (
-                            <button
-                              onClick={() => setProposeInterviewFor(s)}
-                              className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors shrink-0"
-                            >
-                              Propose Interview
-                            </button>
-                          )
-                        )}
                         <SubmissionBadge status={s.status ?? ''} />
                       </div>
                     ))}
@@ -862,16 +823,6 @@ export default function ConsultantDashboard() {
                   </div>
                 </div>
               </motion.div>
-            )}
-
-            {proposeInterviewFor && (
-              <ProposeInterviewModal
-                candidateName={proposeInterviewFor.candidateName}
-                submitting={proposingInterview}
-                error={proposeError}
-                onClose={() => { setProposeInterviewFor(null); setProposeError(''); }}
-                onSubmit={handleProposeInterview}
-              />
             )}
 
             {/* ── ANALYTICS TAB ── */}

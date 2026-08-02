@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { X, ChevronDown, ChevronRight, Loader2, FileText, UserCheck, UserX, Users, ExternalLink } from 'lucide-react';
 import RejectReasonModal from './RejectReasonModal';
+import InterviewResponseModal from './InterviewResponseModal';
 
 interface ConsultantSubmission {
   id: number;
@@ -57,6 +58,7 @@ export default function JobSubmissionsDrilldown({ jobId, jobTitle, onClose }: Jo
   const [expandedConsultants, setExpandedConsultants] = useState<Set<string>>(new Set());
   const [actioning, setActioning] = useState<Set<number>>(new Set());
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'submission' | 'application'; id: number } | null>(null);
+  const [interviewTarget, setInterviewTarget] = useState<{ id: number; candidateName: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -201,6 +203,12 @@ export default function JobSubmissionsDrilldown({ jobId, jobTitle, onClose }: Jo
                                           <FileText size={12} />
                                         </a>
                                       )}
+                                      {item.status === 'interview' && (
+                                        <button onClick={() => setInterviewTarget({ id: item.id, candidateName: item.candidateName })}
+                                          className="text-[10px] font-semibold px-2 py-1 rounded-lg border border-purple-400/30 text-purple-300 hover:bg-purple-400/10" title="Interview">
+                                          Interview
+                                        </button>
+                                      )}
                                       {canAct && (
                                         <>
                                           <button disabled={isActioning} onClick={() => setRejectTarget({ kind: 'submission', id: item.id })}
@@ -285,6 +293,15 @@ export default function JobSubmissionsDrilldown({ jobId, jobTitle, onClose }: Jo
           onClose={() => setRejectTarget(null)}
           onSubmit={(reason) => rejectTarget.kind === 'submission' ? actOnSubmission(rejectTarget.id, 'rejected', reason) : actOnApplication(rejectTarget.id, 'rejected', reason)}
           submitting={actioning.has(rejectTarget.id)}
+        />
+      )}
+
+      {interviewTarget && (
+        <InterviewResponseModal
+          submissionId={interviewTarget.id}
+          candidateName={interviewTarget.candidateName}
+          onClose={() => setInterviewTarget(null)}
+          onResolved={() => { setInterviewTarget(null); load(); }}
         />
       )}
     </div>

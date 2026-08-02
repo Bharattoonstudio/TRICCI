@@ -109,7 +109,9 @@ export default async function handler(req: Request, res: Response) {
 
     const ctcMinNum = Number(ctcMin) || 0;
     const ctcMaxNum = Number(ctcMax) || 0;
-    const feeNum = Number(feePercent) || 8.5;
+    // Point 85: commission range is 5-35%. Clamp server-side too, since the
+    // frontend slider is a UI convenience, not a security boundary.
+    const feeNum = Math.min(35, Math.max(5, Number(feePercent) || 8.5));
     const expYears = Number(experienceYears) || 0;
 
     const skillsArr: string[] = Array.isArray(skills)

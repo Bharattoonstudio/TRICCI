@@ -15,7 +15,7 @@ import { sendEmail } from '@/server/email.js';
 import { logAudit } from '@/lib/audit.js';
 
 const VALID_STATUSES = [
-  'pending', 'review', 'shortlisted', 'interview',
+  'pending', 'review', 'shortlisted', 'interview', 'hold',
   'selected', 'offered', 'rejected',
   'payment_processed', 'payment_done',
 ] as const;
@@ -94,6 +94,18 @@ const STATUS_META: Record<SubmissionStatus, {
     employerSubject: 'Candidate in Interview stage',
     employerHeadline: 'Interview stage updated in ATS',
     employerBody: 'The candidate\'s status has been updated to Interview. Use the Interview Panel tab to schedule and track rounds.',
+  },
+  hold: {
+    label: 'On Hold', emoji: '⏸️', color: '#94a3b8',
+    candidateSubject: 'Update on your application',
+    candidateHeadline: 'Your application is on hold',
+    candidateBody: 'The employer has placed a hold on this role for now. This isn\'t a rejection — we\'ll update you as soon as there\'s movement.',
+    consultantSubject: 'Candidate placed on hold',
+    consultantHeadline: 'Interview outcome: On Hold',
+    consultantBody: 'The employer has placed this candidate on hold after the interview. No action needed right now — we\'ll notify you of any updates.',
+    employerSubject: 'Candidate marked as On Hold',
+    employerHeadline: 'Hold status recorded in ATS',
+    employerBody: 'The candidate has been marked as On Hold following the interview.',
   },
   selected: {
     label: 'Selected', emoji: '✅', color: '#22c55e',

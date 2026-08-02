@@ -46,31 +46,34 @@ export default async function handler(req: Request, res: Response) {
     }
 
     // ── Fetch pending transaction ─────────────────────────────────────────────
-    const [txRows] = await pool.query(
+    // FIX: was using MySQL `?` placeholders + mysql2 array-destructure against
+    // a `pg` (Postgres) pool, which uses `$1,$2...` and returns `{ rows }` —
+    // this query almost certainly never matched Postgres syntax correctly.
+    const txResult = await pool.query(
       `SELECT id, employer_user_id, amount_paise, status
        FROM wallet_transaction
-       WHERE razorpay_order_id = ? AND employer_user_id = ?
+       WHERE razorpay_order_id = $1 AND employer_user_id = $2
        LIMIT 1`,
       [razorpay_order_id, session.user.id],
-    ) as [Array<{ id: number; employer_user_id: string; amount_paise: number; status: string }>, unknown];
+    );
 
-    const txn = txRows[0];
+    const txn = txResult.rows[0];
     if (!txn) return res.status(404).json({ error: 'Transaction not found' });
     if (txn.status === 'paid') return res.json({ success: true, already_processed: true });
 
     // ── Mark paid ─────────────────────────────────────────────────────────────
     await pool.query(
-      `UPDATE wallet_transaction SET status = 'paid', razorpay_payment_id = ?, updated_at = NOW() WHERE id = ?`,
+      `UPDATE wallet_transaction SET status = 'paid', razorpay_payment_id = $1, updated_at = NOW() WHERE id = $2`,
       [razorpay_payment_id, txn.id],
     );
 
     // ── New balance ───────────────────────────────────────────────────────────
-    const [balRows] = await pool.query(
-      `SELECT COALESCE(SUM(amount_paise), 0) AS total FROM wallet_transaction WHERE employer_user_id = ? AND status = 'paid'`,
+    const balResult = await pool.query(
+      `SELECT COALESCE(SUM(amount_paise), 0) AS total FROM wallet_transaction WHERE employer_user_id = $1 AND status = 'paid'`,
       [session.user.id],
-    ) as [Array<{ total: number }>, unknown];
+    );
 
-    const newBalance = Number(balRows[0]?.total ?? 0);
+    const newBalance = Number(balResult.rows[0]?.total ?? 0);
     const amountRupees = (txn.amount_paise / 100).toLocaleString('en-IN');
     const balanceRupees = (newBalance / 100).toLocaleString('en-IN');
 

@@ -358,31 +358,6 @@ export const scorecard = pgTable('scorecard', {
 // Auto-created when a submission reaches `payment_done` status.
 // Captures a point-in-time snapshot of the placement for reporting.
 
-// ── Interview Scheduling (points 39-43) ─────────────────────────────────────
-// Consultant proposes a date/time → employer confirms with interviewer
-// details (or requests an alternate) → both consultant and candidate get
-// notified. One row per submission; re-proposing overwrites the pending slot.
-export const interviewSchedule = pgTable('interview_schedule', {
-  id: serial('id').primaryKey(),
-  submissionId: integer('submission_id').notNull().unique().references(() => submission.id, { onDelete: 'cascade' }),
-  // proposed | confirmed | alternate_requested | completed
-  status: varchar('status', { length: 24 }).notNull().default('proposed'),
-  proposedDate: timestamp('proposed_date').notNull(),
-  proposedByRole: varchar('proposed_by_role', { length: 16 }).notNull().default('consultant'),
-  proposalNote: text('proposal_note'),
-  // Filled in by employer on confirm
-  interviewerName: varchar('interviewer_name', { length: 255 }),
-  interviewerDesignation: varchar('interviewer_designation', { length: 255 }),
-  interviewerContact: varchar('interviewer_contact', { length: 255 }),
-  confirmedAt: timestamp('confirmed_at'),
-  // Outcome (point 44-47) — filled in after the interview happens
-  outcome: varchar('outcome', { length: 16 }), // selected | rejected | hold
-  outcomeReason: text('outcome_reason'),
-  outcomeSetAt: timestamp('outcome_set_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
-});
-
 export const placement = pgTable('placement', {
   id: serial('id').primaryKey(),
   // Source submission

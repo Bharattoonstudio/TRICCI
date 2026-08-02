@@ -215,9 +215,12 @@ export default async function handler(req: Request, res: Response) {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid submission ID' });
 
-    const { status } = req.body as { status: string };
+    const { status, rejectionReason } = req.body as { status: string; rejectionReason?: string };
     if (!VALID_STATUSES.includes(status as SubmissionStatus)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    if (status === 'rejected' && !rejectionReason?.trim()) {
+      return res.status(400).json({ error: 'rejection_reason_required', message: 'Please provide a reason for rejecting this candidate' });
     }
 
     // ── Fetch submission + job + consultant + employer details ────────────────
@@ -246,7 +249,7 @@ export default async function handler(req: Request, res: Response) {
     // ── Update status ─────────────────────────────────────────────────────────
     await db
       .update(submission)
-      .set({ status: status as SubmissionStatus, updatedAt: new Date() })
+      .set({ status: status as SubmissionStatus, updatedAt: new Date(), ...(status === 'rejected' ? { rejectionReason: rejectionReason!.trim() } : {}) })
       .where(eq(submission.id, id));
 
     logAudit({

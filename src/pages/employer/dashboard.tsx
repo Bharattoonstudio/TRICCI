@@ -21,6 +21,7 @@ import EmailTemplateModal from './components/EmailTemplateModal.js';
 import AccountDetails from '@/components/shared/AccountDetails';
 import AgreementGate from '@/components/shared/AgreementGate';
 import RejectReasonModal from '@/components/shared/RejectReasonModal';
+import JobSubmissionsDrilldown from '@/components/shared/JobSubmissionsDrilldown';
 import WalletPanel from '@/components/employer/WalletPanel';
 import { authClient } from '@/lib/auth/auth-client';
 import type { DashboardJob, JobStatus } from './components/types.js';
@@ -333,6 +334,7 @@ export default function EmployerDashboard() {
   // Agreement gate — nothing works until this is accepted (SOP cross-cutting rule)
   const [agreementSigned, setAgreementSigned] = useState<boolean | null>(null);
   const [rejectModalAppId, setRejectModalAppId] = useState<number | null>(null);
+  const [drilldownJob, setDrilldownJob] = useState<{ id: string; title: string } | null>(null);
   useEffect(() => {
     fetch('/api/employer/agreement')
       .then(r => r.json())
@@ -634,6 +636,14 @@ export default function EmployerDashboard() {
         <RejectReasonModal
           onClose={() => setRejectModalAppId(null)}
           onSubmit={(reason) => handleDirectAppStatus(rejectModalAppId, 'rejected', reason)}
+        />
+      )}
+
+      {drilldownJob && (
+        <JobSubmissionsDrilldown
+          jobId={drilldownJob.id}
+          jobTitle={drilldownJob.title}
+          onClose={() => setDrilldownJob(null)}
         />
       )}
 
@@ -979,7 +989,7 @@ export default function EmployerDashboard() {
                                   <span className="text-sm font-bold text-primary">{job.fee}%</span>
                                 </td>
                                 <td className="px-4 py-4">
-                                  <div className="flex items-center gap-3">
+                                  <button onClick={() => setDrilldownJob({ id: String(job.id), title: job.title })} className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left">
                                     <div>
                                       <span className="text-sm font-bold text-foreground">{job.applicants}</span>
                                       <span className="text-xs text-muted-foreground ml-1">total</span>
@@ -988,7 +998,7 @@ export default function EmployerDashboard() {
                                       <span className="text-sm font-bold text-primary">{job.shortlisted}</span>
                                       <span className="text-xs text-muted-foreground ml-1">shortlisted</span>
                                     </div>
-                                  </div>
+                                  </button>
                                 </td>
                                 <td className="px-4 py-4 hidden md:table-cell">
                                   <PriorityFlames priority={job.priority ?? 1} editable onChange={(p) => handleJobPriorityChange(job.id, p)} />
@@ -1001,6 +1011,10 @@ export default function EmployerDashboard() {
                                     <button onClick={() => setPreviewJob(job)}
                                       className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors" title="Preview job">
                                       <Eye size={14} />
+                                    </button>
+                                    <button onClick={() => setDrilldownJob({ id: String(job.id), title: job.title })}
+                                      className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors" title="View submissions">
+                                      <Users size={14} />
                                     </button>
                                     <button onClick={() => setEmailTemplateJob(job)}
                                       className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors" title="Email admin">

@@ -188,6 +188,9 @@ export const job = pgTable('job', {
   priority: integer('priority').notNull().default(1),
   applicants: integer('applicants').notNull().default(0),
   feePercent: doublePrecision('fee_percent').notNull().default(8.5),
+  // Point 52: employer-defined payment term (days from candidate joining
+  // until placement fee is due). Common values: 45 or 90.
+  paymentTermDays: integer('payment_term_days').notNull().default(45),
   interviewRounds: jsonb('interview_rounds').$type<{ label: string; description: string }[]>(),
   // Job visibility: 'public' (default, shown to everyone) | 'consultant_only'
   // (hidden from the public candidate job board, visible to consultants/admin)
@@ -398,8 +401,19 @@ export const placement = pgTable('placement', {
   employerUserId: varchar('employer_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
   // Fee details (snapshot at time of placement)
   ctcLpa: doublePrecision('ctc_lpa'),           // candidate CTC in LPA
-  feePercent: doublePrecision('fee_percent'),   // % charged to employer
-  feeAmountLpa: doublePrecision('fee_amount_lpa'), // feePercent × ctcLpa
+  feePercent: doublePrecision('fee_percent'),   // % charged to employer (total)
+  feeAmountLpa: doublePrecision('fee_amount_lpa'), // feePercent × ctcLpa (total)
+  // Fee split (points 28, 49): platform keeps a flat cut, consultant gets the rest
+  platformFeePercent: doublePrecision('platform_fee_percent').default(2),
+  consultantFeePercent: doublePrecision('consultant_fee_percent'),
+  consultantFeeAmountLpa: doublePrecision('consultant_fee_amount_lpa'),
+  // Consultant fee acceptance (points 50-51): pending | accepted | rejected
+  feeAcceptanceStatus: varchar('fee_acceptance_status', { length: 16 }).notNull().default('pending'),
+  feeRespondedAt: timestamp('fee_responded_at'),
+  // Payment term (point 52): days from placedAt until payment is due
+  paymentTermDays: integer('payment_term_days').notNull().default(45),
+  // Consultant acknowledgment of payment received (point 55)
+  consultantAcknowledgedAt: timestamp('consultant_acknowledged_at'),
   // Payment status: pending | paid
   paymentStatus: varchar('payment_status', { length: 16 }).notNull().default('pending'),
   placedAt: timestamp('placed_at').notNull().defaultNow(),

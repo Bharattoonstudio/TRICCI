@@ -105,6 +105,7 @@ import stats_live_get_91 from "./api/stats/live/GET";
 import employer_jobs_id_detail_get_92 from "./api/employer/jobs/[id]/detail/GET";
 import employer_export_candidates_get_93 from "./api/employer/export/candidates/GET";
 import consultant_jobs_id_detail_get_94 from "./api/consultant/jobs/[id]/detail/GET";
+import employer_consultants_performance_get_95 from "./api/employer/consultants/performance/GET";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -252,6 +253,7 @@ app.get("/api/stats/live", stats_live_get_91);
 app.get("/api/employer/jobs/:id/detail", employer_jobs_id_detail_get_92);
 app.get("/api/employer/export/candidates", employer_export_candidates_get_93);
 app.get("/api/consultant/jobs/:id/detail", consultant_jobs_id_detail_get_94);
+app.get("/api/employer/consultants/performance", employer_consultants_performance_get_95);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval

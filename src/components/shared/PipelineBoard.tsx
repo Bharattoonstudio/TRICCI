@@ -29,6 +29,7 @@ interface PipelineBoardProps {
   cards: PipelineCard[];
   onAdvance: (card: PipelineCard, nextStatus: string) => void;
   onReject: (card: PipelineCard) => void;
+  onManageOffer?: (card: PipelineCard) => void;
   actioningIds: Set<number>;
 }
 
@@ -52,7 +53,7 @@ function nextStageFor(card: PipelineCard): { key: string; label: string } | null
   return null;
 }
 
-export default function PipelineBoard({ cards, onAdvance, onReject, actioningIds }: PipelineBoardProps) {
+export default function PipelineBoard({ cards, onAdvance, onReject, onManageOffer, actioningIds }: PipelineBoardProps) {
   const [sourceFilter, setSourceFilter] = useState<'all' | 'direct' | 'consultant'>('all');
 
   const filtered = sourceFilter === 'all' ? cards : cards.filter(c => c.source === sourceFilter);
@@ -121,6 +122,14 @@ export default function PipelineBoard({ cards, onAdvance, onReject, actioningIds
                               Reject
                             </button>
                           </>
+                        )}
+                        {stage.key === 'selected' && card.source === 'consultant' && onManageOffer && (
+                          <button
+                            onClick={() => onManageOffer(card)}
+                            className="flex-1 text-[10px] font-semibold px-2 py-1 rounded border border-primary/30 text-primary hover:bg-primary/10"
+                          >
+                            Manage Offer
+                          </button>
                         )}
                       </div>
                     </div>

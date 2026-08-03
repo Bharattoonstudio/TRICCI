@@ -77,8 +77,11 @@ export default function ReportsDashboard() {
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted border border-border text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
-            <Download size={13} /> Export
+          <button
+            onClick={() => { window.location.href = '/api/employer/export/candidates'; }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted border border-border text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Download size={13} /> Export to Excel
           </button>
         </div>
       </div>

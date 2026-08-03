@@ -418,6 +418,15 @@ export const placement = pgTable('placement', {
   paymentStatus: varchar('payment_status', { length: 16 }).notNull().default('pending'),
   placedAt: timestamp('placed_at').notNull().defaultNow(),
   createdAt: timestamp('created_at').defaultNow(),
+  // ── Offer Management ──────────────────────────────────────────────────
+  // not_sent | sent | accepted | declined | expired
+  offerStatus: varchar('offer_status', { length: 16 }).notNull().default('not_sent'),
+  offerCtcLpa: doublePrecision('offer_ctc_lpa'),
+  offerSentAt: timestamp('offer_sent_at'),
+  offerExpiryDate: timestamp('offer_expiry_date'),
+  offerRespondedAt: timestamp('offer_responded_at'),
+  offerNote: text('offer_note'),
+  joiningDate: timestamp('joining_date'),
 });
 
 // ── Employer wallet (Razorpay credit top-ups) ─────────────────────────────────

@@ -24,6 +24,7 @@ import AgreementGate from '@/components/shared/AgreementGate';
 import RejectReasonModal from '@/components/shared/RejectReasonModal';
 import JobSubmissionsDrilldown from '@/components/shared/JobSubmissionsDrilldown';
 import PlacementsSettledList from '@/components/employer/PlacementsSettledList';
+import ConsultantPerformance from '@/components/employer/ConsultantPerformance';
 import WalletPanel from '@/components/employer/WalletPanel';
 import { authClient } from '@/lib/auth/auth-client';
 import type { DashboardJob, JobStatus } from './components/types.js';
@@ -298,7 +299,7 @@ function DropdownNav<T extends string>({
 }
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
-type MainTab = 'overview' | 'jobs' | 'candidates' | 'ats' | 'reports' | 'billing' | 'wallet' | 'account';
+type MainTab = 'overview' | 'jobs' | 'candidates' | 'ats' | 'consultants' | 'reports' | 'billing' | 'wallet' | 'account';
 type ATSSubTab = ATSStage;
 
 interface Submission {
@@ -607,6 +608,7 @@ export default function EmployerDashboard() {
     { id: 'jobs', label: 'Jobs', icon: Briefcase },
     { id: 'candidates', label: 'Candidates', icon: Users },
     { id: 'ats', label: 'ATS', icon: ClipboardList },
+    { id: 'consultants', label: 'Consultants', icon: Award },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'billing', label: 'Billing', icon: IndianRupee },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
@@ -1639,6 +1641,17 @@ export default function EmployerDashboard() {
                     </AnimatePresence>
                   );
                 })()}
+              </motion.div>
+            )}
+
+            {/* ── CONSULTANTS TAB ── */}
+            {activeTab === 'consultants' && (
+              <motion.div key="consultants" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>Consultant Performance</h2>
+                  <p className="text-sm text-muted-foreground">See which recruitment partners are delivering the best results for your jobs.</p>
+                </div>
+                <ConsultantPerformance />
               </motion.div>
             )}
 

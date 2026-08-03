@@ -11,7 +11,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { db } from '@/server/db/client.js';
 import { submission, job } from '@/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
@@ -26,13 +26,14 @@ const upload = multer({
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/png', 'image/jpeg', 'image/webp',
     ];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Only PDF, DOC, or DOCX files are accepted.'));
+    else cb(new Error('Only PDF, DOC, DOCX, or image files are accepted.'));
   },
 });
 
-export const multerMiddleware = upload.single('cv');
+export const multerMiddleware = upload.fields([{ name: 'cv', maxCount: 1 }, { name: 'proof', maxCount: 1 }]);
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -48,26 +49,68 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement before submitting candidates' });
     }
 
-    const { jobId, candidateName, candidateEmail, candidatePhone, notes } =
+    const { jobId, candidateName, candidateEmail, candidatePhone, notes, currentCTC, expectedCTC, experience, location, consentConfirmed } =
       req.body as Record<string, string>;
 
     if (!jobId || !candidateName || !candidateEmail) {
       return res.status(400).json({ error: 'jobId, candidateName, and candidateEmail are required' });
+    }
+    if (!location?.trim()) {
+      return res.status(400).json({ error: 'Candidate location is required' });
+    }
+    if (!expectedCTC || Number(expectedCTC) <= 0) {
+      return res.status(400).json({ error: 'Candidate expected CTC is required' });
+    }
+    if (consentConfirmed !== 'true') {
+      return res.status(400).json({ error: 'You must confirm the candidate has consented to this submission' });
     }
 
     // Verify job exists
     const [jobRow] = await db.select({ id: job.id }).from(job).where(eq(job.id, jobId)).limit(1);
     if (!jobRow) return res.status(404).json({ error: 'Job not found' });
 
-    // Save CV file if provided
+    // Duplicate candidate detection (spec STEP 7): block re-submitting the
+    // same candidate (by email) to the same job — whether by this
+    // consultant or a different one. Prevents double-submission and
+    // resume-farming disputes between consultants working the same role.
+    const normalizedEmail = candidateEmail.trim().toLowerCase();
+    const [existing] = await db
+      .select({ id: submission.id, status: submission.status, consultantUserId: submission.consultantUserId })
+      .from(submission)
+      .where(and(eq(submission.jobId, jobId), eq(submission.candidateEmail, normalizedEmail)))
+      .limit(1);
+
+    if (existing) {
+      const isOwnSubmission = existing.consultantUserId === session.user.id;
+      return res.status(409).json({
+        error: 'duplicate_candidate',
+        message: isOwnSubmission
+          ? `You've already submitted this candidate for this job (status: ${existing.status}).`
+          : `This candidate has already been submitted for this job by another consultant (status: ${existing.status}). Duplicate submissions aren't allowed.`,
+        status: existing.status,
+      });
+    }
+
+    // Save CV + optional proof files if provided
     let cvUrl: string | null = null;
-    const file = (req as Request & { file?: Express.Multer.File }).file;
-    if (file) {
+    let proofUrl: string | null = null;
+    const files = (req as Request & { files?: Record<string, Express.Multer.File[]> }).files;
+    const cvFile = files?.cv?.[0];
+    const proofFile = files?.proof?.[0];
+
+    if (cvFile) {
       await fs.mkdir(CV_DIR, { recursive: true });
-      const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safeName = cvFile.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
       const filename = `${Date.now()}-${safeName}`;
-      await fs.writeFile(path.join(CV_DIR, filename), file.buffer);
+      await fs.writeFile(path.join(CV_DIR, filename), cvFile.buffer);
       cvUrl = `/airo-assets/uploads/cvs/${filename}`;
+    }
+    if (proofFile) {
+      await fs.mkdir(CV_DIR, { recursive: true });
+      const safeName = proofFile.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filename = `${Date.now()}-proof-${safeName}`;
+      await fs.writeFile(path.join(CV_DIR, filename), proofFile.buffer);
+      proofUrl = `/airo-assets/uploads/cvs/${filename}`;
     }
 
     // Insert submission row
@@ -75,11 +118,17 @@ export default async function handler(req: Request, res: Response) {
       jobId,
       consultantUserId: session.user.id,
       candidateName: candidateName.trim(),
-      candidateEmail: candidateEmail.trim().toLowerCase(),
+      candidateEmail: normalizedEmail,
       candidatePhone: candidatePhone?.trim() || null,
       cvUrl,
       coverNote: notes?.trim() || null,
       status: 'pending',
+      candidateCurrentCtcLpa: currentCTC ? Number(currentCTC) : null,
+      candidateExpectedCtcLpa: Number(expectedCTC),
+      candidateExperienceYears: experience ? Number(experience) : null,
+      candidateLocation: location.trim(),
+      consentConfirmed: true,
+      consentProofUrl: proofUrl,
     }).returning();
 
     const insertId = result?.id ?? 0;

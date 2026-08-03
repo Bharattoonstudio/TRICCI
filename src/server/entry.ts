@@ -106,6 +106,9 @@ import employer_jobs_id_detail_get_92 from "./api/employer/jobs/[id]/detail/GET"
 import employer_export_candidates_get_93 from "./api/employer/export/candidates/GET";
 import consultant_jobs_id_detail_get_94 from "./api/consultant/jobs/[id]/detail/GET";
 import employer_consultants_performance_get_95 from "./api/employer/consultants/performance/GET";
+import employer_placements_by_submission_get_96 from "./api/employer/placements/by-submission/[submissionId]/GET";
+import employer_placements_offer_send_post_97 from "./api/employer/placements/[id]/offer/send/POST";
+import employer_placements_offer_respond_post_98 from "./api/employer/placements/[id]/offer/respond/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -254,6 +257,9 @@ app.get("/api/employer/jobs/:id/detail", employer_jobs_id_detail_get_92);
 app.get("/api/employer/export/candidates", employer_export_candidates_get_93);
 app.get("/api/consultant/jobs/:id/detail", consultant_jobs_id_detail_get_94);
 app.get("/api/employer/consultants/performance", employer_consultants_performance_get_95);
+app.get("/api/employer/placements/by-submission/:submissionId", employer_placements_by_submission_get_96);
+app.post("/api/employer/placements/:id/offer/send", employer_placements_offer_send_post_97);
+app.post("/api/employer/placements/:id/offer/respond", employer_placements_offer_respond_post_98);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval
@@ -281,6 +287,7 @@ import("./db/migrations/funnel_viewed_at.js").then(m => m.migrateFunnelViewedAt(
 import("./db/migrations/consultant_industries.js").then(m => m.migrateConsultantIndustries()).catch(console.error);
 import("./db/migrations/interview_schedule.js").then(m => m.migrateInterviewSchedule()).catch(console.error);
 import("./db/migrations/placement_fee_settlement.js").then(m => m.migratePlacementFeeSettlement()).catch(console.error);
+import("./db/migrations/placement_offer.js").then(m => m.migratePlacementOffer()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

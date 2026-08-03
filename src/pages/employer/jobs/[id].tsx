@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import RejectReasonModal from '@/components/shared/RejectReasonModal';
 import InterviewResponseModal from '@/components/shared/InterviewResponseModal';
+import PipelineBoard, { type PipelineCard } from '@/components/shared/PipelineBoard';
 
 interface JobDetail {
   id: string; title: string; department: string; location: string;
@@ -55,6 +56,7 @@ export default function EmployerJobDetailPage() {
   const [actioning, setActioning] = useState<Set<number>>(new Set());
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'submission' | 'application'; id: number } | null>(null);
   const [interviewTarget, setInterviewTarget] = useState<{ id: number; candidateName: string } | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('pipeline');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -202,6 +204,39 @@ export default function EmployerJobDetailPage() {
             </div>
           )}
 
+          {/* ── View toggle ── */}
+          <div className="flex items-center gap-2 mb-5">
+            <button
+              onClick={() => setViewMode('pipeline')}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${viewMode === 'pipeline' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'}`}
+            >
+              Pipeline View
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'}`}
+            >
+              List View
+            </button>
+          </div>
+
+          {/* ── Pipeline (Kanban) view ── */}
+          {viewMode === 'pipeline' && (
+            <div className="bg-card border border-border rounded-2xl p-6 mb-5">
+              <PipelineBoard
+                cards={[
+                  ...consultantSubs.map((s): PipelineCard => ({ id: s.id, source: 'consultant', candidateName: s.candidateName, status: s.status, cvUrl: s.cvUrl, consultantName: s.consultantName })),
+                  ...directApps.map((a): PipelineCard => ({ id: a.id, source: 'direct', candidateName: a.candidateName, status: a.status, cvUrl: a.candidateCvUrl })),
+                ]}
+                actioningIds={actioning}
+                onAdvance={(card, nextStatus) => card.source === 'consultant' ? actOnSubmission(card.id, nextStatus as 'shortlisted' | 'rejected') : actOnApplication(card.id, nextStatus as 'shortlisted' | 'rejected')}
+                onReject={(card) => setRejectTarget({ kind: card.source === 'consultant' ? 'submission' : 'application', id: card.id })}
+              />
+            </div>
+          )}
+
+          {viewMode === 'list' && (
+          <>
           {/* ── Consultant submissions grouped ── */}
           <div className="bg-card border border-border rounded-2xl p-6 mb-5">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-1.5"><Users size={14} /> Consultant Submissions ({consultantSubs.length})</h2>
@@ -298,6 +333,8 @@ export default function EmployerJobDetailPage() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
 

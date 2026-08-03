@@ -54,6 +54,8 @@ function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
   });
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvError, setCvError] = useState('');
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -86,6 +88,9 @@ function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
     setSubmitError('');
     if (!form.name.trim()) { setSubmitError('Candidate name is required.'); return; }
     if (!form.email.trim()) { setSubmitError('Candidate email is required.'); return; }
+    if (!form.city.trim()) { setSubmitError('Candidate location (city) is required.'); return; }
+    if (!form.expectedCTC.trim()) { setSubmitError('Expected CTC is required.'); return; }
+    if (!consentConfirmed) { setSubmitError('Please confirm the candidate has consented to this submission.'); return; }
     if (!cvFile) { setCvError('Please attach the candidate\u2019s CV before submitting.'); return; }
 
     setSubmitting(true);
@@ -98,12 +103,15 @@ function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
       fd.append('currentCTC', form.currentCTC);
       fd.append('expectedCTC', form.expectedCTC);
       fd.append('experience', form.experience);
+      fd.append('location', [form.city, form.state].filter(Boolean).join(', ') || form.city.trim());
       fd.append('notes', form.notes.trim());
+      fd.append('consentConfirmed', consentConfirmed ? 'true' : 'false');
       fd.append('cv', cvFile);
+      if (proofFile) fd.append('proof', proofFile);
 
       const res = await fetch('/api/submissions', { method: 'POST', body: fd });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok) throw new Error(data.error ?? 'Submission failed');
+      const data = await res.json() as { ok?: boolean; error?: string; message?: string };
+      if (!res.ok) throw new Error(data.message ?? data.error ?? 'Submission failed');
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -297,6 +305,30 @@ function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
                     <XCircle size={12} /> {cvError}
                   </p>
                 )}
+              </div>
+
+              {/* Candidate consent (mandatory) */}
+              <div>
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentConfirmed}
+                    onChange={e => setConsentConfirmed(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-border"
+                  />
+                  <span className="text-sm text-foreground">
+                    I confirm the candidate has agreed to be submitted for this role and consents to their profile being shared with the employer. <span className="text-destructive">*</span>
+                  </span>
+                </label>
+                <div className="mt-2">
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Consent proof (optional) — screenshot or email of candidate's agreement</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
+                    onChange={e => setProofFile(e.target.files?.[0] ?? null)}
+                    className="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border file:bg-muted file:text-xs file:font-semibold file:text-foreground"
+                  />
+                </div>
               </div>
 
               {/* Notes */}

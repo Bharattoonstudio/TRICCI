@@ -250,6 +250,33 @@ export default function ConsultantDashboard() {
       .catch(() => setSubmissionsLoaded(true));
   }, []);
 
+  // Real placement data for Overview + Earnings cards (was hardcoded to 0)
+  interface ConsultantPlacement {
+    id: number; paymentStatus: string; feeAcceptanceStatus: string;
+    consultantFeeAmountLpa: number | null; consultantFeePercent: number | null;
+    candidateName: string; jobTitle: string; companyName: string;
+    dueDate: string; consultantAcknowledgedAt: string | null;
+  }
+  const [myPlacements, setMyPlacements] = useState<ConsultantPlacement[]>([]);
+  useEffect(() => {
+    fetch('/api/consultant/placements')
+      .then(r => r.json())
+      .then((d: { placements?: ConsultantPlacement[] }) => setMyPlacements(d.placements ?? []))
+      .catch(() => {});
+  }, []);
+
+  const totalEarnedLpa = myPlacements.filter(p => p.paymentStatus === 'paid').reduce((sum, p) => sum + (p.consultantFeeAmountLpa ?? 0), 0);
+  const pendingPayoutLpa = myPlacements.filter(p => p.paymentStatus !== 'paid' && p.feeAcceptanceStatus === 'accepted').reduce((sum, p) => sum + (p.consultantFeeAmountLpa ?? 0), 0);
+  const placementsClosed = myPlacements.length;
+  const submittedCount = mySubmissions.length;
+  const shortlistedCount = mySubmissions.filter(s => ['shortlisted', 'interview', 'selected', 'placed', 'offered'].includes(s.status)).length;
+  const interviewCount = mySubmissions.filter(s => ['interview', 'selected', 'placed', 'offered'].includes(s.status)).length;
+  const offerCount = mySubmissions.filter(s => ['offered', 'placed'].includes(s.status)).length;
+  const shortlistRate = submittedCount > 0 ? Math.round((shortlistedCount / submittedCount) * 100) : 0;
+  const interviewRate = submittedCount > 0 ? Math.round((interviewCount / submittedCount) * 100) : 0;
+  const offerRate = submittedCount > 0 ? Math.round((offerCount / submittedCount) * 100) : 0;
+  const performanceScore = submittedCount > 0 ? Math.round((shortlistRate + interviewRate + offerRate) / 3) : null;
+
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Dashboard', icon: Activity },
     { id: 'jobs', label: 'Browse Jobs', icon: Briefcase },
@@ -511,8 +538,8 @@ export default function ConsultantDashboard() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <GlowCard icon={Briefcase} label="Open Mandates" value={liveJobs.length} sub="Available now" color="#E8470A" delay={0} />
                   <GlowCard icon={Send} label="Active Submissions" value={mySubmissions.length} trend="up" color="#ffd035" delay={0.08} />
-                  <GlowCard icon={Trophy} label="Placements Closed" value={0} sub="This year" color="#22c55e" delay={0.16} />
-                  <GlowCard icon={IndianRupee} label="Total Earned (L)" value={0} sub="All time" color="#6B4FBB" delay={0.24} decimals={2} />
+                  <GlowCard icon={Trophy} label="Placements Closed" value={placementsClosed} sub="All time" color="#22c55e" delay={0.16} />
+                  <GlowCard icon={IndianRupee} label="Total Earned (L)" value={totalEarnedLpa} sub="All time" color="#6B4FBB" delay={0.24} decimals={2} />
                 </div>
 
                 {/* ── Performance meter + quick actions ── */}
@@ -533,30 +560,37 @@ export default function ConsultantDashboard() {
                         <div className="relative w-20 h-20 shrink-0">
                           <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
                             <circle cx="40" cy="40" r="32" fill="none" stroke="#ffffff08" strokeWidth="6" />
-                            <circle cx="40" cy="40" r="32" fill="none" stroke="#6B4FBB30" strokeWidth="6" strokeDasharray={`${2 * Math.PI * 32}`} strokeDashoffset={2 * Math.PI * 32} />
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="#6B4FBB" strokeWidth="6"
+                              strokeDasharray={`${2 * Math.PI * 32}`}
+                              strokeDashoffset={2 * Math.PI * 32 * (1 - (performanceScore ?? 0) / 100)}
+                              strokeLinecap="round" />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-black text-white/30" style={{ fontFamily: 'var(--font-heading)' }}>—</span>
+                            <span className={`text-sm font-black ${performanceScore != null ? 'text-white' : 'text-white/30'}`} style={{ fontFamily: 'var(--font-heading)' }}>
+                              {performanceScore != null ? performanceScore : '—'}
+                            </span>
                           </div>
                         </div>
                         <div>
-                          <p className="text-xl font-black text-white/50 mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>New</p>
-                          <p className="text-xs text-white/25">Score builds as you submit candidates</p>
+                          <p className="text-xl font-black text-white mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>
+                            {performanceScore == null ? 'New' : performanceScore >= 60 ? 'Excellent' : performanceScore >= 30 ? 'Good' : 'Building'}
+                          </p>
+                          <p className="text-xs text-white/25">{performanceScore == null ? 'Score builds as you submit candidates' : 'Based on your last submissions'}</p>
                         </div>
                       </div>
                       <div className="space-y-2">
                         {[
-                          { label: 'Shortlist Rate', value: 0, color: '#E8470A' },
-                          { label: 'Interview Rate', value: 0, color: '#6B4FBB' },
-                          { label: 'Offer Rate', value: 0, color: '#22c55e' },
+                          { label: 'Shortlist Rate', value: shortlistRate, color: '#E8470A' },
+                          { label: 'Interview Rate', value: interviewRate, color: '#6B4FBB' },
+                          { label: 'Offer Rate', value: offerRate, color: '#22c55e' },
                         ].map(m => (
                           <div key={m.label}>
                             <div className="flex justify-between text-xs mb-1">
                               <span className="text-white/40">{m.label}</span>
-                              <span className="text-white/30 font-bold">—</span>
+                              <span className="text-white/50 font-bold">{submittedCount > 0 ? `${m.value}%` : '—'}</span>
                             </div>
                             <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                              <div className="h-full rounded-full w-0" style={{ background: m.color }} />
+                              <div className="h-full rounded-full transition-all" style={{ width: `${m.value}%`, background: m.color }} />
                             </div>
                           </div>
                         ))}
@@ -570,7 +604,7 @@ export default function ConsultantDashboard() {
                       { id: 'jobs' as TabId, icon: Briefcase, label: 'Browse Jobs', desc: 'New, Accepted, Mapped', color: '#E8470A', badge: `${liveJobs.length} live` },
                       { id: 'cvbank' as TabId, icon: Database, label: 'CV Bank', desc: 'Your talent pool', color: '#6B4FBB', badge: '0 saved' },
                       { id: 'analytics' as TabId, icon: BarChart3, label: 'Analytics', desc: 'Performance insights', color: '#35c9ff', badge: 'Live' },
-                      { id: 'earnings' as TabId, icon: Wallet, label: 'Earnings', desc: 'Payouts & history', color: '#22c55e', badge: '₹0' },
+                      { id: 'earnings' as TabId, icon: Wallet, label: 'Earnings', desc: 'Payouts & history', color: '#22c55e', badge: `₹${totalEarnedLpa.toFixed(1)}L` },
                     ].map((card, i) => (
                       <motion.button key={card.id}
                         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -891,9 +925,9 @@ export default function ConsultantDashboard() {
                 exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
-                    { label: 'Total Earned', value: '₹0.00L', sub: 'Placements will appear here', color: '#22c55e' },
-                    { label: 'Pending Payouts', value: '₹0', sub: 'Nothing pending', color: '#ffd035' },
-                    { label: 'Projected Pipeline', value: '—', sub: 'Submit candidates to build pipeline', color: '#E8470A' },
+                    { label: 'Total Earned', value: `₹${totalEarnedLpa.toFixed(2)}L`, sub: placementsClosed > 0 ? `From ${placementsClosed} placement${placementsClosed === 1 ? '' : 's'}` : 'Placements will appear here', color: '#22c55e' },
+                    { label: 'Pending Payouts', value: `₹${pendingPayoutLpa.toFixed(2)}L`, sub: pendingPayoutLpa > 0 ? 'Fee accepted, awaiting payment' : 'Nothing pending', color: '#ffd035' },
+                    { label: 'Active Pipeline', value: String(shortlistedCount), sub: shortlistedCount > 0 ? 'Candidates in progress' : 'Submit candidates to build pipeline', color: '#E8470A' },
                   ].map(e => (
                     <div key={e.label} className="rounded-2xl border p-6 relative overflow-hidden"
                       style={{ background: `linear-gradient(135deg, ${e.color}08 0%, #0d0d0d 100%)`, borderColor: `${e.color}20` }}>

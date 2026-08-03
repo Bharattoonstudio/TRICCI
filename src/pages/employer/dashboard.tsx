@@ -1,5 +1,6 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Briefcase, Plus, Users, CheckCircle, ChevronRight, TrendingUp,
@@ -108,12 +109,16 @@ function JobActionButtons({ job, onStatusChange }: { job: DashboardJob; onStatus
 }
 
 
-function StatCard({ icon: Icon, label, value, sub, trend, color }: {
-  icon: React.ElementType; label: string; value: string; sub?: string; trend?: 'up' | 'down'; color: string;
+function StatCard({ icon: Icon, label, value, sub, trend, color, onClick }: {
+  icon: React.ElementType; label: string; value: string; sub?: string; trend?: 'up' | 'down'; color: string; onClick?: () => void;
 }) {
+  const Wrapper = onClick ? motion.button : motion.div;
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="bg-card border border-border rounded-2xl p-6">
+    <Wrapper
+      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}
+      onClick={onClick}
+      className={`bg-card border border-border rounded-2xl p-6 text-left w-full ${onClick ? 'hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer' : ''}`}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + '20', border: `1.5px solid ${color}40` }}>
           <Icon size={20} style={{ color }} />
@@ -128,7 +133,7 @@ function StatCard({ icon: Icon, label, value, sub, trend, color }: {
       <div className="text-2xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>{value}</div>
       <div className="text-sm text-muted-foreground mt-1">{label}</div>
       {sub && <div className="text-xs text-muted-foreground mt-1 opacity-70">{sub}</div>}
-    </motion.div>
+    </Wrapper>
   );
 }
 
@@ -317,6 +322,7 @@ interface Submission {
 }
 
 export default function EmployerDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [showPostJob, setShowPostJob] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -825,10 +831,10 @@ export default function EmployerDashboard() {
             {activeTab === 'overview' && (
               <motion.div key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="space-y-8">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard icon={Briefcase} label="Active Jobs" value={String(liveJobs.filter(j => j.status === 'active').length)} trend="up" color="#FF6B35" />
-                  <StatCard icon={Send} label="Consultant Submissions" value={String(overviewStats.consultantSubmissions)} sub="CVs from recruiters" color="#6B4FBB" />
-                  <StatCard icon={Users} label="Direct Applications" value={String(overviewStats.directApplications)} sub="Candidate self-apply" color="#35c9ff" />
-                  <StatCard icon={FileText} label="CVs Received" value={String(overviewStats.cvsReceived + overviewStats.consultantSubmissions)} sub="Total across all channels" color="#FF6B35" />
+                  <StatCard icon={Briefcase} label="Active Jobs" value={String(liveJobs.filter(j => j.status === 'active').length)} trend="up" color="#FF6B35" onClick={() => setActiveTab('jobs')} />
+                  <StatCard icon={Send} label="Consultant Submissions" value={String(overviewStats.consultantSubmissions)} sub="CVs from recruiters" color="#6B4FBB" onClick={() => setActiveTab('candidates')} />
+                  <StatCard icon={Users} label="Direct Applications" value={String(overviewStats.directApplications)} sub="Candidate self-apply" color="#35c9ff" onClick={() => setActiveTab('candidates')} />
+                  <StatCard icon={FileText} label="CVs Received" value={String(overviewStats.cvsReceived + overviewStats.consultantSubmissions)} sub="Total across all channels" color="#FF6B35" onClick={() => setActiveTab('ats')} />
                 </div>
 
                 {/* Funnel dashboard (point 13) */}
@@ -863,8 +869,7 @@ export default function EmployerDashboard() {
                   </div>
                   <div className="divide-y divide-border">
                     {liveJobs.filter(j => j.status === 'active').map(job => (
-                      <div key={String(job.id)} className="flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors">
-                        <div>
+                      <button key={String(job.id)} onClick={() => navigate(`/employer/jobs/${job.id}`)} className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors text-left">                        <div>
                           <p className="font-semibold text-foreground text-sm">{job.title}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             {job.jobCode && <span className="text-xs font-mono text-muted-foreground">{job.jobCode}</span>}
@@ -882,7 +887,7 @@ export default function EmployerDashboard() {
                           </div>
                           <StatusBadge status={job.status} />
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -973,7 +978,9 @@ export default function EmployerDashboard() {
                             {filteredJobs.map(job => (
                               <tr key={String(job.id)} className="hover:bg-muted/20 transition-colors group">
                                 <td className="px-6 py-4">
-                                  <p className="font-semibold text-foreground text-sm">{job.title}</p>
+                                  <button onClick={() => navigate(`/employer/jobs/${job.id}`)} className="text-left hover:underline decoration-primary">
+                                    <p className="font-semibold text-foreground text-sm">{job.title}</p>
+                                  </button>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-xs text-muted-foreground">{job.department}</span>
                                     <span className="text-muted-foreground">·</span>
@@ -990,7 +997,7 @@ export default function EmployerDashboard() {
                                   <span className="text-sm font-bold text-primary">{job.fee}%</span>
                                 </td>
                                 <td className="px-4 py-4">
-                                  <button onClick={() => setDrilldownJob({ id: String(job.id), title: job.title })} className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left">
+                                  <button onClick={() => navigate(`/employer/jobs/${job.id}`)} className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left">
                                     <div>
                                       <span className="text-sm font-bold text-foreground">{job.applicants}</span>
                                       <span className="text-xs text-muted-foreground ml-1">total</span>
@@ -1013,7 +1020,7 @@ export default function EmployerDashboard() {
                                       className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors" title="Preview job">
                                       <Eye size={14} />
                                     </button>
-                                    <button onClick={() => setDrilldownJob({ id: String(job.id), title: job.title })}
+                                    <button onClick={() => navigate(`/employer/jobs/${job.id}`)}
                                       className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors" title="View submissions">
                                       <Users size={14} />
                                     </button>

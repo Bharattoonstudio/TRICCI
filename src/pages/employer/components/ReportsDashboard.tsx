@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { Helmet } from '@dr.pogodin/react-helmet';
+import VisualAnalytics from '@/components/employer/VisualAnalytics';
 
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   return (
@@ -88,6 +89,9 @@ export default function ReportsDashboard() {
 
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
+          {/* Visual / pictographic analytics — points requested for recruitment team review */}
+          <VisualAnalytics />
+
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[

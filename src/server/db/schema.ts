@@ -219,6 +219,17 @@ export const submission = pgTable('submission', {
   status: varchar('status', { length: 32 }).notNull().default('pending'),
   rejectionReason: text('rejection_reason'),
   viewedAt: timestamp('viewed_at'),
+  // Candidate details captured at submission time (spec STEP 7) — these
+  // were being sent by the frontend form already but silently discarded
+  // by the backend, which never read or stored them.
+  candidateCurrentCtcLpa: doublePrecision('candidate_current_ctc_lpa'),
+  candidateExpectedCtcLpa: doublePrecision('candidate_expected_ctc_lpa'),
+  candidateExperienceYears: doublePrecision('candidate_experience_years'),
+  candidateLocation: varchar('candidate_location', { length: 255 }),
+  // Point 33-34: consultant confirms candidate has consented to apply,
+  // plus an optional proof attachment (screenshot/email of consent)
+  consentConfirmed: boolean('consent_confirmed').notNull().default(false),
+  consentProofUrl: varchar('consent_proof_url', { length: 512 }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });

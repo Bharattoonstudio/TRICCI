@@ -10,7 +10,9 @@ const CompanyPage = lazy(() => import('./pages/company'));
 const ConsultantInfoPage = lazy(() => import('./pages/consultant'));
 const CandidateInfoPage = lazy(() => import('./pages/candidate'));
 const EmployerDashboard = lazy(() => import('./pages/employer/dashboard'));
+const EmployerJobDetailPage = lazy(() => import('./pages/employer/jobs/[id]'));
 const ConsultantDashboard = lazy(() => import('./pages/consultant/dashboard'));
+const ConsultantJobDetailPage = lazy(() => import('./pages/consultant/jobs/[id]'));
 const CandidateProfile = lazy(() => import('./pages/candidate/profile'));
 const BillingPage = lazy(() => import('./pages/billing/index'));
 const AdminDashboard = lazy(() => import('./pages/admin/dashboard'));
@@ -87,6 +89,14 @@ export const routes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/employer/jobs/:id',
+    element: (
+      <ProtectedRoute allowedRoles={['employer', 'admin']}>
+        <EmployerJobDetailPage />
+      </ProtectedRoute>
+    ),
+  },
 
   // Protected: Consultant
   {
@@ -94,6 +104,14 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['consultant', 'admin']}>
         <ConsultantDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/consultant/jobs/:id',
+    element: (
+      <ProtectedRoute allowedRoles={['consultant', 'admin']}>
+        <ConsultantJobDetailPage />
       </ProtectedRoute>
     ),
   },

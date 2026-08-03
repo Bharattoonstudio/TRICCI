@@ -102,6 +102,9 @@ import consultant_placements_fee_respond_post_88 from "./api/consultant/placemen
 import consultant_placements_acknowledge_post_89 from "./api/consultant/placements/[id]/acknowledge/POST";
 import employer_placements_get_90 from "./api/employer/placements/GET";
 import stats_live_get_91 from "./api/stats/live/GET";
+import employer_jobs_id_detail_get_92 from "./api/employer/jobs/[id]/detail/GET";
+import employer_export_candidates_get_93 from "./api/employer/export/candidates/GET";
+import consultant_jobs_id_detail_get_94 from "./api/consultant/jobs/[id]/detail/GET";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -246,6 +249,9 @@ app.post("/api/consultant/placements/:id/fee/respond", consultant_placements_fee
 app.post("/api/consultant/placements/:id/acknowledge", consultant_placements_acknowledge_post_89);
 app.get("/api/employer/placements", employer_placements_get_90);
 app.get("/api/stats/live", stats_live_get_91);
+app.get("/api/employer/jobs/:id/detail", employer_jobs_id_detail_get_92);
+app.get("/api/employer/export/candidates", employer_export_candidates_get_93);
+app.get("/api/consultant/jobs/:id/detail", consultant_jobs_id_detail_get_94);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval

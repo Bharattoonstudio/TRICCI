@@ -14,6 +14,7 @@ import {
 import RejectReasonModal from '@/components/shared/RejectReasonModal';
 import InterviewResponseModal from '@/components/shared/InterviewResponseModal';
 import PipelineBoard, { type PipelineCard } from '@/components/shared/PipelineBoard';
+import OfferModal from '@/components/employer/OfferModal';
 
 interface JobDetail {
   id: string; title: string; department: string; location: string;
@@ -57,6 +58,7 @@ export default function EmployerJobDetailPage() {
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'submission' | 'application'; id: number } | null>(null);
   const [interviewTarget, setInterviewTarget] = useState<{ id: number; candidateName: string } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('pipeline');
+  const [offerTarget, setOfferTarget] = useState<PipelineCard | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -231,6 +233,7 @@ export default function EmployerJobDetailPage() {
                 actioningIds={actioning}
                 onAdvance={(card, nextStatus) => card.source === 'consultant' ? actOnSubmission(card.id, nextStatus as 'shortlisted' | 'rejected') : actOnApplication(card.id, nextStatus as 'shortlisted' | 'rejected')}
                 onReject={(card) => setRejectTarget({ kind: card.source === 'consultant' ? 'submission' : 'application', id: card.id })}
+                onManageOffer={(card) => setOfferTarget(card)}
               />
             </div>
           )}
@@ -351,6 +354,14 @@ export default function EmployerJobDetailPage() {
           candidateName={interviewTarget.candidateName}
           onClose={() => setInterviewTarget(null)}
           onResolved={() => { setInterviewTarget(null); load(); }}
+        />
+      )}
+      {offerTarget && (
+        <OfferModal
+          submissionId={offerTarget.id}
+          candidateName={offerTarget.candidateName}
+          onClose={() => setOfferTarget(null)}
+          onUpdated={load}
         />
       )}
     </>

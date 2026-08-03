@@ -362,7 +362,7 @@ function JobCard({
           <div className="flex-1 min-w-0">
             {/* Title + badges */}
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              <h3 className="font-black text-foreground text-base" style={{ fontFamily: 'var(--font-heading)' }}>{job.title}</h3>
+              <a href={`/consultant/jobs/${job.id}`} className="font-black text-foreground text-base hover:underline decoration-primary" style={{ fontFamily: 'var(--font-heading)' }}>{job.title}</a>
               <UrgencyBadge urgency={job.urgency} />
               {tab === 'accepted' && (
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-green-500/15 text-green-400 border-green-500/30 flex items-center gap-1">

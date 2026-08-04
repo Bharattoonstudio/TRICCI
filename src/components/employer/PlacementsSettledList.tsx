@@ -4,7 +4,7 @@
  * consultant's fee acceptance status, and payment/settlement status.
  */
 import { useState, useEffect } from 'react';
-import { Loader2, IndianRupee, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, IndianRupee, CheckCircle2, Clock, FileDown } from 'lucide-react';
 
 interface Placement {
   id: number;
@@ -71,7 +71,12 @@ export default function PlacementsSettledList() {
                   </p>
                 </div>
                 {p.paymentStatus === 'paid' ? (
-                  <span className="flex items-center gap-1 text-xs font-semibold text-green-500 shrink-0"><CheckCircle2 size={13} /> Settled</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="flex items-center gap-1 text-xs font-semibold text-green-500"><CheckCircle2 size={13} /> Settled</span>
+                    <a href={`/api/employer/placements/${p.id}/invoice`} className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                      <FileDown size={12} /> Invoice
+                    </a>
+                  </div>
                 ) : (
                   <span className="flex items-center gap-1 text-xs font-semibold text-yellow-500 shrink-0"><Clock size={13} /> Due {new Date(p.dueDate).toLocaleDateString('en-IN')}</span>
                 )}

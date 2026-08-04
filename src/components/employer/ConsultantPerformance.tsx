@@ -6,6 +6,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Loader2, Award, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import { TierBadge } from '@/components/shared/ConsultantTier';
 
 interface ConsultantStat {
   consultantUserId: string;
@@ -58,7 +59,10 @@ export default function ConsultantPerformance() {
             <div className="flex items-center gap-2">
               {i < 3 && <span className="text-lg">{MEDAL[i]}</span>}
               <div>
-                <p className="text-sm font-bold text-foreground">{c.consultantName}</p>
+                <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                  {c.consultantName}
+                  <TierBadge totalSubmissions={c.totalSubmissions} selectionRatePct={c.selectionRate} size="sm" />
+                </p>
                 <p className="text-xs text-muted-foreground">{c.consultantEmail}</p>
               </div>
             </div>

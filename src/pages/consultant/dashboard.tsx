@@ -1,5 +1,6 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Briefcase, IndianRupee, Send,
@@ -19,6 +20,10 @@ import ConsultantIndustriesCard from '@/components/consultant/ConsultantIndustri
 import ProposeInterviewModal from '@/components/consultant/ProposeInterviewModal';
 import PipelineTrail from '@/components/consultant/PipelineTrail';
 import PlacementsFeeList from '@/components/consultant/PlacementsFeeList';
+import LegalDocumentsCard from '@/components/shared/LegalDocumentsCard';
+import GamificationCard from '@/components/consultant/GamificationCard';
+import AccountDocumentsCard from '@/components/shared/AccountDocumentsCard';
+import { TierBadge } from '@/components/shared/ConsultantTier';
 import type { Job } from '@/server/api/jobs/GET';
 
 // ─── Static mock data removed — dashboard now shows real data only ────────────
@@ -151,6 +156,7 @@ function SubmissionBadge({ status }: { status: string }) {
 type TabId = 'overview' | 'jobs' | 'cvbank' | 'submissions' | 'analytics' | 'earnings' | 'resources' | 'refresh' | 'account';
 
 export default function ConsultantDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [liveJobs, setLiveJobs] = useState<Job[]>([]);
   const [agreementSigned, setAgreementSigned] = useState<boolean | null>(null);
@@ -208,6 +214,7 @@ export default function ConsultantDashboard() {
     candidateEmail: string;
     status: string;
     createdAt: string;
+    jobId: string | null;
     jobTitle: string | null;
     jobCompany: string | null;
     _interviewProposed?: boolean;
@@ -534,6 +541,23 @@ export default function ConsultantDashboard() {
               <motion.div key="overview" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.3 }} className="space-y-8">
 
+                {/* ── Pending fee acceptance nudge ── */}
+                {myPlacements.some(p => p.feeAcceptanceStatus === 'pending') && (
+                  <button
+                    onClick={() => setActiveTab('earnings')}
+                    className="w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 border text-left transition-colors hover:border-primary/40"
+                    style={{ background: 'linear-gradient(90deg, #ffd03514, transparent)', borderColor: '#ffd03530' }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg leading-none">💰</span>
+                      <p className="text-sm text-white">
+                        <span className="font-bold">{myPlacements.filter(p => p.feeAcceptanceStatus === 'pending').length}</span> placement fee{myPlacements.filter(p => p.feeAcceptanceStatus === 'pending').length === 1 ? '' : 's'} awaiting your acceptance
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-primary shrink-0">Review →</span>
+                  </button>
+                )}
+
                 {/* ── KPI stat cards ── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <GlowCard icon={Briefcase} label="Open Mandates" value={liveJobs.length} sub="Available now" color="#E8470A" delay={0} />
@@ -552,9 +576,12 @@ export default function ConsultantDashboard() {
                     <div className="absolute top-0 right-0 w-40 h-40 rounded-full pointer-events-none opacity-15"
                       style={{ background: 'radial-gradient(circle, #6B4FBB 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
                     <div className="relative z-10">
-                      <div className="flex items-center gap-2 mb-5">
-                        <Star size={14} className="text-yellow-400" />
-                        <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Performance Score</span>
+                      <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-2">
+                          <Star size={14} className="text-yellow-400" />
+                          <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Performance Score</span>
+                        </div>
+                        <TierBadge totalSubmissions={submittedCount} selectionRatePct={offerRate} size="sm" />
                       </div>
                       <div className="flex items-center gap-5 mb-5">
                         <div className="relative w-20 h-20 shrink-0">
@@ -637,6 +664,8 @@ export default function ConsultantDashboard() {
                     ))}
                   </div>
                 </div>
+
+                <GamificationCard />
 
                 {/* ── Live mandates ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
@@ -864,7 +893,13 @@ export default function ConsultantDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-white text-sm">{s.candidateName}</p>
-                          <p className="text-xs text-white/30 mt-0.5">{s.jobTitle ?? 'Job'}{s.jobCompany ? ` · ${s.jobCompany}` : ''}</p>
+                          {s.jobId ? (
+                            <button onClick={() => navigate(`/consultant/jobs/${s.jobId}`)} className="text-xs text-white/30 mt-0.5 hover:text-primary hover:underline text-left">
+                              {s.jobTitle ?? 'Job'}{s.jobCompany ? ` · ${s.jobCompany}` : ''}
+                            </button>
+                          ) : (
+                            <p className="text-xs text-white/30 mt-0.5">{s.jobTitle ?? 'Job'}{s.jobCompany ? ` · ${s.jobCompany}` : ''}</p>
+                          )}
                         </div>
                         <div className="hidden sm:block text-right">
                           <p className="text-xs text-white/25">{new Date(s.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
@@ -988,6 +1023,8 @@ export default function ConsultantDashboard() {
                 </div>
                 <ConsultantIndustriesCard />
                 <AccountDetails theme="dark" />
+                <LegalDocumentsCard role="consultant" theme="dark" />
+                <AccountDocumentsCard theme="dark" />
               </motion.div>
             )}
 

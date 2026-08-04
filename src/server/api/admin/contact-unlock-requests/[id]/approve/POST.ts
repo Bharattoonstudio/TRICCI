@@ -6,7 +6,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { contactUnlockRequest, candidateProfile, user } from '@/server/db/schema.js';
+import { contactUnlockRequest, candidateProfile, user, notification } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -30,6 +30,13 @@ export default async function handler(req: Request, res: Response) {
       .update(contactUnlockRequest)
       .set({ status: 'approved', resolvedByUserId: session.user.id, resolvedAt: new Date() })
       .where(eq(contactUnlockRequest.id, id));
+
+    await db.insert(notification).values({
+      userId: reqRow.employerUserId,
+      type: 'contact_unlock_approved',
+      message: 'A candidate contact unlock request was approved',
+      link: '/employer/dashboard',
+    }).catch(() => {});
 
     const [candidateInfo] = await db
       .select({ email: user.email, name: user.name, phone: candidateProfile.phone })

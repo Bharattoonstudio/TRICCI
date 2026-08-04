@@ -16,6 +16,7 @@ import { useSession, signOut } from '@/lib/auth/auth-client';
 import { useNavigate } from 'react-router-dom';
 import AccountDetails from '@/components/shared/AccountDetails';
 import AgreementGate from '@/components/shared/AgreementGate';
+import ConsultantSubmissionsCard from '@/components/candidate/ConsultantSubmissionsCard';
 
 // ─── TIC GPT ─────────────────────────────────────────────────────────────────
 const TIC_GPT_ID = 'g-6a1b310c327c8191a48366560e14fd6e-tic-1-0-talent-intelligence-copilot';
@@ -952,7 +953,7 @@ export default function CandidateProfilePage() {
           {/* ════ APPLICATIONS TAB ════ */}
           {activeTab === 'applications' && (
             <motion.div key="applications" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
+              exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-6">
               <div className="bg-card border border-border rounded-2xl p-6">
                 <h2 className="font-black text-foreground mb-1 flex items-center gap-2"
                   style={{ fontFamily: 'var(--font-heading)' }}>
@@ -1019,6 +1020,9 @@ export default function CandidateProfilePage() {
                   </div>
                 )}
               </div>
+
+              {/* Consultant Submissions — includes interview details, view-only */}
+              <ConsultantSubmissionsCard />
             </motion.div>
           )}
 

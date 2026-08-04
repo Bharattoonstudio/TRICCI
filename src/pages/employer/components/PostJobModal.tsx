@@ -43,6 +43,7 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
     title: '', department: '', location: '', locationType: 'hybrid',
     ctcMin: '', ctcMax: '', fee: '8', description: '', skills: '',
     experience: '', responsibilities: '', requirements: '', visibility: 'public',
+    paymentTermDays: '45',
   });
   const [rounds, setRounds] = useState<{ label: string; description: string }[]>([
     { label: 'HR Screening', description: 'Initial call to assess fitment and expectations' },
@@ -116,6 +117,7 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
           description: form.description || jdRawText,
           skills: form.skills,
           feePercent: Number(form.fee),
+          paymentTermDays: Number(form.paymentTermDays),
           experience: form.experience,
           responsibilities: form.responsibilities,
           requirements: form.requirements,
@@ -606,6 +608,26 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
                   <span>5%</span>
                   <span className="text-primary font-semibold">Payable only on successful placement</span>
                   <span>35%</span>
+                </div>
+              </div>
+
+              {/* Payment Term */}
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-2 block">Payment Term</label>
+                <p className="text-xs text-muted-foreground mb-2">Days from candidate's joining date until the placement fee is due</p>
+                <div className="flex items-center gap-2">
+                  {['45', '90'].map(days => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => update('paymentTermDays', days)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${
+                        form.paymentTermDays === days ? 'bg-primary/15 border-primary/40 text-primary' : 'bg-muted border-border text-muted-foreground'
+                      }`}
+                    >
+                      {days} Days
+                    </button>
+                  ))}
                 </div>
               </div>
 

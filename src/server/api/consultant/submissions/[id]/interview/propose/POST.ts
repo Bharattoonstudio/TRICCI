@@ -7,7 +7,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { submission, interviewSchedule, job, user } from '@/server/db/schema.js';
+import { submission, interviewSchedule, job, user, notification } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -87,6 +87,12 @@ export default async function handler(req: Request, res: Response) {
           html: `<p>Hi ${employer.name?.split(' ')[0] || ''},</p><p>A consultant has proposed <strong>${new Date(proposedDate).toLocaleString('en-IN')}</strong> for an interview slot for <strong>${row.jobTitle}</strong> at ${row.company}. Log in to your ATS dashboard to confirm or request an alternate time.</p>`,
         }).catch(e => console.error('interview.propose.email.error', e));
       }
+      await db.insert(notification).values({
+        userId: row.postedByUserId,
+        type: 'interview_proposed',
+        message: `Interview date proposed for ${row.jobTitle}`,
+        link: '/employer/dashboard',
+      }).catch(() => {});
     }
 
     res.json({ ok: true, status: 'proposed' });

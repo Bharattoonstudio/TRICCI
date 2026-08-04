@@ -10,7 +10,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import { db } from '@/server/db/client.js';
-import { submission, job } from '@/server/db/schema.js';
+import { submission, job, jobAcceptance } from '@/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -68,6 +68,19 @@ export default async function handler(req: Request, res: Response) {
     // Verify job exists
     const [jobRow] = await db.select({ id: job.id }).from(job).where(eq(job.id, jobId)).limit(1);
     if (!jobRow) return res.status(404).json({ error: 'Job not found' });
+
+    // Spec STEP 5: consultant must have explicitly accepted this job's
+    // terms before submitting a candidate to it.
+    if (role === 'consultant') {
+      const [accepted] = await db
+        .select({ id: jobAcceptance.id })
+        .from(jobAcceptance)
+        .where(and(eq(jobAcceptance.jobId, jobId), eq(jobAcceptance.consultantUserId, session.user.id)))
+        .limit(1);
+      if (!accepted) {
+        return res.status(403).json({ error: 'job_not_accepted', message: 'Please accept this job\'s terms before submitting a candidate.' });
+      }
+    }
 
     // Duplicate candidate detection (spec STEP 7): block re-submitting the
     // same candidate (by email) to the same job — whether by this

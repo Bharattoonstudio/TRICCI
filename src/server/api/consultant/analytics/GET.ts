@@ -4,7 +4,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { submission, job } from '@/server/db/schema.js';
+import { submission, job, placement } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -32,11 +32,16 @@ export default async function handler(req: Request, res: Response) {
       .where(eq(submission.consultantUserId, userId));
 
     const total = submissions.length;
-    const shortlisted = submissions.filter(s => s.status === 'shortlisted' || s.status === 'interview' || s.status === 'selected' || s.status === 'closed').length;
+    // FIX: was checking status === 'closed' and 'submitted', which are not
+    // valid values in the actual status enum (pending, review, shortlisted,
+    // interview, hold, selected, offered, rejected, payment_processed,
+    // payment_done) — those checks never matched anything, silently
+    // zeroing out selected/joined/closed counts.
+    const shortlisted = submissions.filter(s => ['shortlisted', 'interview', 'selected', 'offered', 'payment_processed', 'payment_done'].includes(s.status)).length;
     const rejected = submissions.filter(s => s.status === 'rejected').length;
-    const selected = submissions.filter(s => s.status === 'selected' || s.status === 'closed').length;
-    const joined = submissions.filter(s => s.status === 'closed').length;
-    const inReview = submissions.filter(s => s.status === 'pending' || s.status === 'submitted' || s.status === 'review').length;
+    const selected = submissions.filter(s => ['selected', 'offered', 'payment_processed', 'payment_done'].includes(s.status)).length;
+    const joined = submissions.filter(s => ['payment_processed', 'payment_done'].includes(s.status)).length;
+    const inReview = submissions.filter(s => ['pending', 'review'].includes(s.status)).length;
 
     // Unique jobs accepted (jobs this consultant has submitted for)
     const uniqueJobIds = new Set(submissions.map(s => s.jobId).filter(Boolean));
@@ -56,6 +61,17 @@ export default async function handler(req: Request, res: Response) {
     const selectionRatio = total > 0 ? Math.round((selected / total) * 100) : 0;
     const rejectionRatio = total > 0 ? Math.round((rejected / total) * 100) : 0;
     const prescreeningRatio = total > 0 ? Math.round((inReview / total) * 100) : 0;
+
+    // FIX: totalEarned/pendingEarnings were hardcoded to 0 regardless of
+    // actual placement data. Now pulled from the real placement table
+    // (built in a later phase than this endpoint originally was).
+    const placements = await db
+      .select({ consultantFeeAmountLpa: placement.consultantFeeAmountLpa, paymentStatus: placement.paymentStatus, feeAcceptanceStatus: placement.feeAcceptanceStatus })
+      .from(placement)
+      .where(eq(placement.consultantUserId, userId));
+    const totalEarned = placements.filter(p => p.paymentStatus === 'paid').reduce((sum, p) => sum + (p.consultantFeeAmountLpa ?? 0), 0);
+    const pendingEarnings = placements.filter(p => p.paymentStatus !== 'paid' && p.feeAcceptanceStatus === 'accepted').reduce((sum, p) => sum + (p.consultantFeeAmountLpa ?? 0), 0);
+
 
     // Performance rating: simple formula based on shortlist + selection ratios
     const rawRating = total === 0 ? 0 : Math.min(5, (resumeSelectionRatio / 100) * 3 + (selectionRatio / 100) * 2);
@@ -79,8 +95,8 @@ export default async function handler(req: Request, res: Response) {
       rejectionRatio,
       prescreeningRatio,
       resumeSelectionRatio,
-      totalEarned: 0,
-      pendingEarnings: 0,
+      totalEarned,
+      pendingEarnings,
       performanceRating,
       rankPercentile,
     });

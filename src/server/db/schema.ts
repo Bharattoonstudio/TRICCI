@@ -111,6 +111,12 @@ export const consultantProfile = pgTable('consultant_profile', {
   agreementHash: varchar('agreement_hash', { length: 128 }),
   reminderSentAt: timestamp('reminder_sent_at'),
   organizationId: varchar('organization_id', { length: 36 }),
+  // Gamification (points, badges, leaderboard rank are all computed live
+  // from real submission/placement data — see /api/consultant/gamification
+  // — but login streak genuinely can't be derived from anything else, so
+  // it's the only piece that needs real storage.
+  loginStreak: integer('login_streak').notNull().default(0),
+  lastLoginDate: varchar('last_login_date', { length: 10 }), // 'YYYY-MM-DD'
 });
 
 export const candidateProfile = pgTable('candidate_profile', {
@@ -203,6 +209,52 @@ export const job = pgTable('job', {
 
 // ── Consultant submissions ────────────────────────────────────────────────────
 // A consultant submits a candidate (by candidateUserId) for a job posting.
+
+// ── Job Acceptance (spec STEP 5) ────────────────────────────────────────────
+// A consultant must explicitly accept a job's terms (replacement period,
+// no duplicate submission, no fake profiles, no resume farming, no consent
+// violation) before they can submit candidates to it.
+// ── CV Bank (spec: consultant's own talent pool / CRM) ─────────────────────
+// ── Account Documents ────────────────────────────────────────────────────
+// Generic document upload/management for employer and consultant accounts
+// (GST certificates, incorporation docs, agency registration, etc.) —
+// separate from the platform agreement, which has its own dedicated flow.
+export const accountDocument = pgTable('account_document', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  role: varchar('role', { length: 16 }).notNull(), // 'employer' | 'consultant'
+  label: varchar('label', { length: 255 }).notNull(),
+  fileUrl: varchar('file_url', { length: 512 }).notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  fileSize: integer('file_size'),
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+}, (t) => [index('idx_account_document_user').on(t.userId)]);
+
+export const cvBankEntry = pgTable('cv_bank_entry', {
+  id: serial('id').primaryKey(),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 32 }),
+  currentRole: varchar('current_role', { length: 255 }),
+  currentCTC: varchar('current_ctc', { length: 64 }),
+  expectedCTC: varchar('expected_ctc', { length: 64 }),
+  experience: varchar('experience', { length: 64 }),
+  location: varchar('location', { length: 255 }),
+  skills: jsonb('skills').$type<string[]>().default([]),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  notes: text('notes'),
+  starred: boolean('starred').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => [index('idx_cv_bank_consultant').on(t.consultantUserId)]);
+
+export const jobAcceptance = pgTable('job_acceptance', {
+  id: serial('id').primaryKey(),
+  jobId: varchar('job_id', { length: 128 }).notNull().references(() => job.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  acceptedAt: timestamp('accepted_at').notNull().defaultNow(),
+}, (t) => [index('idx_job_acceptance_job').on(t.jobId), index('idx_job_acceptance_consultant').on(t.consultantUserId)]);
 
 export const submission = pgTable('submission', {
   id: serial('id').primaryKey(),
@@ -393,6 +445,10 @@ export const interviewSchedule = pgTable('interview_schedule', {
   outcome: varchar('outcome', { length: 16 }), // selected | rejected | hold
   outcomeReason: text('outcome_reason'),
   outcomeSetAt: timestamp('outcome_set_at'),
+  // Candidate confirms they've seen and will attend (points 42, 75) —
+  // lightweight, doesn't participate in the propose/reschedule negotiation,
+  // which stays consultant-mediated per the spec.
+  candidateAcknowledgedAt: timestamp('candidate_acknowledged_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
@@ -438,6 +494,20 @@ export const placement = pgTable('placement', {
   offerRespondedAt: timestamp('offer_responded_at'),
   offerNote: text('offer_note'),
   joiningDate: timestamp('joining_date'),
+  // ── Joining Tracker ──────────────────────────────────────────────────
+  // pending | in_progress | cleared | flagged
+  bgvStatus: varchar('bgv_status', { length: 16 }).default('pending'),
+  bgvNote: text('bgv_note'),
+  documentsChecklist: jsonb('documents_checklist').$type<{ label: string; received: boolean }[]>().default([
+    { label: 'Offer Letter (Signed)', received: false },
+    { label: 'Previous Employment Proof', received: false },
+    { label: 'Educational Certificates', received: false },
+    { label: 'ID Proof', received: false },
+    { label: 'Address Proof', received: false },
+  ]),
+  inductionCompleted: boolean('induction_completed').notNull().default(false),
+  actualJoiningConfirmed: boolean('actual_joining_confirmed').notNull().default(false),
+  joiningNote: text('joining_note'),
 });
 
 // ── Employer wallet (Razorpay credit top-ups) ─────────────────────────────────

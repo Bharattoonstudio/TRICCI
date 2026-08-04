@@ -9,6 +9,7 @@ import { organization, organizationMember } from '@/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { canManageTeam, type OrgRole } from '@/server/lib/orgPermissions.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -34,15 +35,26 @@ export default async function handler(req: Request, res: Response) {
       return res.status(404).json({ error: 'Member not found' });
     }
 
-    // Only the organization owner (admin) can remove members
+    // Owner OR Team Lead of this specific organization can remove members
     const [org] = await db
       .select()
       .from(organization)
-      .where(and(eq(organization.id, member.organizationId), eq(organization.ownerId, session.user.id)))
+      .where(eq(organization.id, member.organizationId))
       .limit(1);
 
-    if (!org) {
-      return res.status(403).json({ error: 'Only the organization owner (admin) can remove members' });
+    const isOwner = org?.ownerId === session.user.id;
+    let isTeamLeadHere = false;
+    if (!isOwner) {
+      const [requesterMembership] = await db
+        .select({ role: organizationMember.role, status: organizationMember.status })
+        .from(organizationMember)
+        .where(and(eq(organizationMember.userId, session.user.id), eq(organizationMember.organizationId, member.organizationId)))
+        .limit(1);
+      isTeamLeadHere = !!requesterMembership && requesterMembership.status === 'active' && canManageTeam(requesterMembership.role as OrgRole);
+    }
+
+    if (!org || (!isOwner && !isTeamLeadHere)) {
+      return res.status(403).json({ error: 'Only the organization owner or a Team Lead can remove members' });
     }
 
     if (member.role === 'owner') {

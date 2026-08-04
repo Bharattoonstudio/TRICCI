@@ -16,6 +16,7 @@ import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
 import { logAudit } from '@/lib/audit.js';
+import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 
 const VALID_STATUSES = ['shortlisted', 'rejected', 'placed'] as const;
 type AppStatus = typeof VALID_STATUSES[number];
@@ -36,6 +37,9 @@ export default async function handler(req: Request, res: Response) {
     if (!session) return res.status(401).json({ error: 'Unauthorized' });
     if (role !== 'employer' && role !== 'admin') {
       return res.status(403).json({ error: 'Employer access required' });
+    }
+    if (role === 'employer' && await isReadOnlyOrgViewer(session.user.id)) {
+      return res.status(403).json({ error: 'read_only', message: 'Viewer accounts have read-only access' });
     }
 
     const id = parseInt(String(req.params.id), 10);

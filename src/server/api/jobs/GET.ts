@@ -4,6 +4,7 @@ import { job as jobTable } from '../../db/schema.js';
 import { eq, and, gte } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 
 export interface InterviewRound {
   label: string;
@@ -50,6 +51,17 @@ export default async function handler(req: Request, res: Response) {
     const session = await auth.api.getSession({ headers: toWebRequest(req).headers }).catch(() => null);
     const viewerRole = (session?.user as { role?: string } | null)?.role ?? null;
     const viewerId = session?.user?.id ?? null;
+
+    // Point 25: a logged-in consultant cannot see job listings until they've
+    // signed the agreement. Guests and candidates are unaffected — this
+    // shared endpoint stays public for SEO/browsing; the gate only applies
+    // to authenticated consultants specifically.
+    if (viewerRole === 'consultant' && viewerId) {
+      const signed = await hasSignedAgreement(viewerId, 'consultant');
+      if (!signed) {
+        return res.json({ jobs: [], total: 0, agreementRequired: true });
+      }
+    }
 
     // Build WHERE conditions
     const conditions = [eq(jobTable.status, 'active')];

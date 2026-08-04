@@ -9,6 +9,7 @@ import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
+import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 import type { Job } from './GET.js';
 
 const ORANGE = '#E8470A';
@@ -78,6 +79,9 @@ export default async function handler(req: Request, res: Response) {
     if (role === 'employer' && !(await hasSignedAgreement(session.user.id, 'employer'))) {
       return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement before posting jobs' });
     }
+    if (role === 'employer' && await isReadOnlyOrgViewer(session.user.id)) {
+      return res.status(403).json({ error: 'read_only', message: 'Viewer accounts have read-only access and cannot post jobs' });
+    }
 
     const {
       title,
@@ -97,6 +101,7 @@ export default async function handler(req: Request, res: Response) {
       interviewRounds,
       jobCode: providedJobCode,
       visibility: rawVisibility,
+      paymentTermDays: rawPaymentTermDays,
     } = req.body as Record<string, unknown>;
 
     // Validate required fields
@@ -109,6 +114,9 @@ export default async function handler(req: Request, res: Response) {
 
     const ctcMinNum = Number(ctcMin) || 0;
     const ctcMaxNum = Number(ctcMax) || 0;
+    // Point 52: payment term is either 45 or 90 days — anything else falls
+    // back to the safe default rather than trusting an arbitrary number.
+    const paymentTermDaysNum = [45, 90].includes(Number(rawPaymentTermDays)) ? Number(rawPaymentTermDays) : 45;
     // Point 85: commission range is 5-35%. Clamp server-side too, since the
     // frontend slider is a UI convenience, not a security boundary.
     const feeNum = Math.min(35, Math.max(5, Number(feePercent) || 8.5));
@@ -191,6 +199,7 @@ export default async function handler(req: Request, res: Response) {
       status: 'active',
       applicants: 0,
       feePercent: feeNum,
+      paymentTermDays: paymentTermDaysNum,
       visibility,
     });
 

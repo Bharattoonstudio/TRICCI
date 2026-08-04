@@ -12,6 +12,7 @@ import { placement } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -20,6 +21,9 @@ export default async function handler(req: Request, res: Response) {
     const role = (session?.user as { role?: string } | null)?.role;
     if (!session) return res.status(401).json({ error: 'Unauthorized' });
     if (role !== 'employer' && role !== 'admin') return res.status(403).json({ error: 'Employer access required' });
+    if (role === 'employer' && await isReadOnlyOrgViewer(session.user.id)) {
+      return res.status(403).json({ error: 'read_only', message: 'Viewer accounts have read-only access' });
+    }
 
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid placement ID' });

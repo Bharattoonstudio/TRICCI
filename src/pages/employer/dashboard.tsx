@@ -24,7 +24,10 @@ import AgreementGate from '@/components/shared/AgreementGate';
 import RejectReasonModal from '@/components/shared/RejectReasonModal';
 import JobSubmissionsDrilldown from '@/components/shared/JobSubmissionsDrilldown';
 import PlacementsSettledList from '@/components/employer/PlacementsSettledList';
+import LegalDocumentsCard from '@/components/shared/LegalDocumentsCard';
+import AccountDocumentsCard from '@/components/shared/AccountDocumentsCard';
 import ConsultantPerformance from '@/components/employer/ConsultantPerformance';
+import JoiningTracker from '@/components/employer/JoiningTracker';
 import WalletPanel from '@/components/employer/WalletPanel';
 import { authClient } from '@/lib/auth/auth-client';
 import type { DashboardJob, JobStatus } from './components/types.js';
@@ -299,7 +302,7 @@ function DropdownNav<T extends string>({
 }
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
-type MainTab = 'overview' | 'jobs' | 'candidates' | 'ats' | 'consultants' | 'reports' | 'billing' | 'wallet' | 'account';
+type MainTab = 'overview' | 'jobs' | 'candidates' | 'ats' | 'consultants' | 'joining' | 'reports' | 'billing' | 'wallet' | 'account';
 type ATSSubTab = ATSStage;
 
 interface Submission {
@@ -609,6 +612,7 @@ export default function EmployerDashboard() {
     { id: 'candidates', label: 'Candidates', icon: Users },
     { id: 'ats', label: 'ATS', icon: ClipboardList },
     { id: 'consultants', label: 'Consultants', icon: Award },
+    { id: 'joining', label: 'Joining', icon: UserCheck },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'billing', label: 'Billing', icon: IndianRupee },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
@@ -1655,6 +1659,17 @@ export default function EmployerDashboard() {
               </motion.div>
             )}
 
+            {/* ── JOINING TAB ── */}
+            {activeTab === 'joining' && (
+              <motion.div key="joining" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }} className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>Joining Tracker</h2>
+                  <p className="text-sm text-muted-foreground">Background verification, documents, and induction for candidates who've accepted an offer.</p>
+                </div>
+                <JoiningTracker />
+              </motion.div>
+            )}
+
             {/* ── REPORTS TAB ── */}
             {activeTab === 'reports' && (
               <motion.div key="reports" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
@@ -1738,6 +1753,8 @@ export default function EmployerDashboard() {
                   <p className="text-muted-foreground text-sm">Manage your profile, password, and notification settings.</p>
                 </div>
                 <AccountDetails theme="light" />
+                <LegalDocumentsCard role="employer" theme="light" />
+                <AccountDocumentsCard theme="light" />
               </motion.div>
             )}
 

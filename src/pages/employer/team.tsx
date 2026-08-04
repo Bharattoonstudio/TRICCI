@@ -13,7 +13,7 @@ import { Users, Plus, Trash2, KeyRound, Mail, Loader2, X, Shield, Eye, UserCog }
 interface Member {
   id: number;
   email: string;
-  role: 'owner' | 'recruiter' | 'viewer';
+  role: 'owner' | 'team_lead' | 'recruiter' | 'finance' | 'viewer';
   status: 'pending' | 'active' | 'removed';
   invitedAt: string;
   joinedAt: string | null;
@@ -22,7 +22,9 @@ interface Member {
 function RoleBadge({ role }: { role: string }) {
   const map: Record<string, { label: string; className: string; icon: React.ElementType }> = {
     owner: { label: 'Admin', className: 'bg-primary/15 text-primary border-primary/30', icon: Shield },
+    team_lead: { label: 'Team Lead', className: 'bg-purple-500/15 text-purple-400 border-purple-500/30', icon: Shield },
     recruiter: { label: 'Recruiter', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30', icon: UserCog },
+    finance: { label: 'Finance', className: 'bg-green-500/15 text-green-400 border-green-500/30', icon: KeyRound },
     viewer: { label: 'Viewer', className: 'bg-muted text-muted-foreground border-border', icon: Eye },
   };
   const r = map[role] ?? map.viewer;
@@ -46,7 +48,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'recruiter' | 'viewer'>('recruiter');
+  const [inviteRole, setInviteRole] = useState<'recruiter' | 'team_lead' | 'finance' | 'viewer'>('recruiter');
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState('');
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
@@ -243,10 +245,12 @@ export default function TeamPage() {
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Role</label>
                 <select
-                  value={inviteRole} onChange={(e) => setInviteRole(e.target.value as 'recruiter' | 'viewer')}
+                  value={inviteRole} onChange={(e) => setInviteRole(e.target.value as 'recruiter' | 'team_lead' | 'finance' | 'viewer')}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   <option value="recruiter">Recruiter — can post jobs & manage applications</option>
+                  <option value="team_lead">Team Lead — everything except billing</option>
+                  <option value="finance">Finance — billing & invoices only</option>
                   <option value="viewer">Viewer — read-only access</option>
                 </select>
               </div>

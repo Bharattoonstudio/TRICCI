@@ -21,19 +21,31 @@ export default async function handler(req: Request, res: Response) {
 
     const { email, role } = req.body as { email?: string; role?: string };
 
-    if (!email || !role || !['recruiter', 'viewer'].includes(role)) {
-      return res.status(400).json({ error: 'Valid email and role (recruiter|viewer) required' });
+    if (!email || !role || !['recruiter', 'team_lead', 'finance', 'viewer'].includes(role)) {
+      return res.status(400).json({ error: 'Valid email and role (recruiter|team_lead|finance|viewer) required' });
     }
 
-    // Find the org this user owns (only the owner/admin can invite)
-    const [org] = await db
-      .select()
-      .from(organization)
-      .where(eq(organization.ownerId, session.user.id))
-      .limit(1);
+    // Find the org this user has access to invite into — either they
+    // literally own it, or they're a Team Lead member of it. Previously
+    // this ONLY checked organization.ownerId, meaning a Team Lead
+    // invited as a team member (their own separate account, not owning
+    // any organization) could never actually invite anyone — a real gap
+    // against "Team Lead: everything except billing" from the PRD.
+    let org = (await db.select().from(organization).where(eq(organization.ownerId, session.user.id)).limit(1))[0];
 
     if (!org) {
-      return res.status(403).json({ error: 'Only the organization owner (admin) can invite members' });
+      const [membership] = await db
+        .select({ organizationId: organizationMember.organizationId, role: organizationMember.role, status: organizationMember.status })
+        .from(organizationMember)
+        .where(eq(organizationMember.userId, session.user.id))
+        .limit(1);
+      if (membership && membership.status === 'active' && membership.role === 'team_lead') {
+        org = (await db.select().from(organization).where(eq(organization.id, membership.organizationId)).limit(1))[0];
+      }
+    }
+
+    if (!org) {
+      return res.status(403).json({ error: 'Only the organization owner or a Team Lead can invite members' });
     }
 
     // Check not already invited

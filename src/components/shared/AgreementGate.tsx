@@ -6,7 +6,7 @@
  * the cross-cutting rule: nothing works for any role until their
  * agreement is accepted.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { FileText, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -31,6 +31,27 @@ export default function AgreementGate({ role, endpoint, onAccepted, requireDesig
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [fullText, setFullText] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (role === 'employer') {
+      fetch('/api/legal/employer-agreement')
+        .then(r => r.json())
+        .then(d => setFullText(d.text))
+        .catch(() => {});
+    }
+  }, [role]);
+
+  function downloadAgreement() {
+    if (!fullText) return;
+    const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'TRICCI-Employer-Agreement.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   async function handleSubmit() {
     setError('');
@@ -86,9 +107,20 @@ export default function AgreementGate({ role, endpoint, onAccepted, requireDesig
           </div>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-5 max-h-40 overflow-y-auto text-sm text-white/60 leading-relaxed">
-          {TERMS_TEXT[role]}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-2 max-h-64 overflow-y-auto text-sm text-white/60 leading-relaxed whitespace-pre-wrap">
+          {role === 'employer' ? (fullText ?? 'Loading agreement…') : TERMS_TEXT[role]}
         </div>
+        {role === 'employer' && (
+          <button
+            type="button"
+            onClick={downloadAgreement}
+            disabled={!fullText}
+            className="text-xs text-primary hover:underline mb-5 disabled:opacity-40 disabled:no-underline"
+          >
+            Download full agreement (.txt)
+          </button>
+        )}
+        {role !== 'employer' && <div className="mb-5" />}
 
         <div className="space-y-3 mb-4">
           <div>

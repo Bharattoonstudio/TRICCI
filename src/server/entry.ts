@@ -109,6 +109,29 @@ import employer_consultants_performance_get_95 from "./api/employer/consultants/
 import employer_placements_by_submission_get_96 from "./api/employer/placements/by-submission/[submissionId]/GET";
 import employer_placements_offer_send_post_97 from "./api/employer/placements/[id]/offer/send/POST";
 import employer_placements_offer_respond_post_98 from "./api/employer/placements/[id]/offer/respond/POST";
+import legal_employer_agreement_get_99 from "./api/legal/employer-agreement/GET";
+import legal_consultant_agreement_get_100 from "./api/legal/consultant-agreement/GET";
+import consultant_jobs_id_accept_post_101 from "./api/consultant/jobs/[id]/accept/POST";
+import consultant_jobs_accepted_get_102 from "./api/consultant/jobs/accepted/GET";
+import consultant_cv_bank_get_103 from "./api/consultant/cv-bank/GET";
+import consultant_cv_bank_post_104 from "./api/consultant/cv-bank/POST";
+import consultant_cv_bank_id_put_105 from "./api/consultant/cv-bank/[id]/PUT";
+import consultant_cv_bank_id_delete_106 from "./api/consultant/cv-bank/[id]/DELETE";
+import account_documents_get_107 from "./api/account/documents/GET";
+import account_documents_post_108, { multerMiddleware as account_documents_post_108_upload } from "./api/account/documents/POST";
+import account_documents_id_delete_109 from "./api/account/documents/[id]/DELETE";
+import consultant_cv_bank_bulk_post_110 from "./api/consultant/cv-bank/bulk/POST";
+import consultant_cv_bank_parse_post_115, { multerMiddleware as consultant_cv_bank_parse_post_115_upload } from "./api/consultant/cv-bank/parse/POST";
+import consultant_cv_bank_submit_to_job_post_116 from "./api/consultant/cv-bank/submit-to-job/POST";
+import consultant_gamification_get_117 from "./api/consultant/gamification/GET";
+import consultant_leaderboard_get_118 from "./api/consultant/leaderboard/GET";
+import employer_placements_id_joining_get_119 from "./api/employer/placements/[id]/joining/GET";
+import employer_placements_id_joining_put_120 from "./api/employer/placements/[id]/joining/PUT";
+import employer_placements_joining_pipeline_get_121 from "./api/employer/placements/joining-pipeline/GET";
+import consultant_placements_invoice_get_111 from "./api/consultant/placements/[id]/invoice/GET";
+import employer_placements_invoice_get_112 from "./api/employer/placements/[id]/invoice/GET";
+import candidate_consultant_submissions_get_113 from "./api/candidate/consultant-submissions/GET";
+import candidate_submissions_interview_acknowledge_post_114 from "./api/candidate/submissions/[id]/interview/acknowledge/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -260,6 +283,29 @@ app.get("/api/employer/consultants/performance", employer_consultants_performanc
 app.get("/api/employer/placements/by-submission/:submissionId", employer_placements_by_submission_get_96);
 app.post("/api/employer/placements/:id/offer/send", employer_placements_offer_send_post_97);
 app.post("/api/employer/placements/:id/offer/respond", employer_placements_offer_respond_post_98);
+app.get("/api/legal/employer-agreement", legal_employer_agreement_get_99);
+app.get("/api/legal/consultant-agreement", legal_consultant_agreement_get_100);
+app.post("/api/consultant/jobs/:id/accept", consultant_jobs_id_accept_post_101);
+app.get("/api/consultant/jobs/accepted", consultant_jobs_accepted_get_102);
+app.get("/api/consultant/cv-bank", consultant_cv_bank_get_103);
+app.post("/api/consultant/cv-bank", consultant_cv_bank_post_104);
+app.put("/api/consultant/cv-bank/:id", consultant_cv_bank_id_put_105);
+app.delete("/api/consultant/cv-bank/:id", consultant_cv_bank_id_delete_106);
+app.get("/api/account/documents", account_documents_get_107);
+app.post("/api/account/documents", account_documents_post_108_upload, account_documents_post_108);
+app.delete("/api/account/documents/:id", account_documents_id_delete_109);
+app.post("/api/consultant/cv-bank/bulk", consultant_cv_bank_bulk_post_110);
+app.post("/api/consultant/cv-bank/parse", consultant_cv_bank_parse_post_115_upload, consultant_cv_bank_parse_post_115);
+app.post("/api/consultant/cv-bank/submit-to-job", consultant_cv_bank_submit_to_job_post_116);
+app.get("/api/consultant/gamification", consultant_gamification_get_117);
+app.get("/api/consultant/leaderboard", consultant_leaderboard_get_118);
+app.get("/api/employer/placements/:id/joining", employer_placements_id_joining_get_119);
+app.put("/api/employer/placements/:id/joining", employer_placements_id_joining_put_120);
+app.get("/api/employer/placements/joining-pipeline", employer_placements_joining_pipeline_get_121);
+app.get("/api/consultant/placements/:id/invoice", consultant_placements_invoice_get_111);
+app.get("/api/employer/placements/:id/invoice", employer_placements_invoice_get_112);
+app.get("/api/candidate/consultant-submissions", candidate_consultant_submissions_get_113);
+app.post("/api/candidate/submissions/:id/interview/acknowledge", candidate_submissions_interview_acknowledge_post_114);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval
@@ -289,6 +335,12 @@ import("./db/migrations/interview_schedule.js").then(m => m.migrateInterviewSche
 import("./db/migrations/placement_fee_settlement.js").then(m => m.migratePlacementFeeSettlement()).catch(console.error);
 import("./db/migrations/placement_offer.js").then(m => m.migratePlacementOffer()).catch(console.error);
 import("./db/migrations/submission_candidate_details.js").then(m => m.migrateSubmissionCandidateDetails()).catch(console.error);
+import("./db/migrations/job_acceptance.js").then(m => m.migrateJobAcceptance()).catch(console.error);
+import("./db/migrations/cv_bank_entry.js").then(m => m.migrateCvBankEntry()).catch(console.error);
+import("./db/migrations/account_document.js").then(m => m.migrateAccountDocument()).catch(console.error);
+import("./db/migrations/interview_candidate_ack.js").then(m => m.migrateInterviewCandidateAck()).catch(console.error);
+import("./db/migrations/consultant_login_streak.js").then(m => m.migrateConsultantLoginStreak()).catch(console.error);
+import("./db/migrations/placement_joining_tracker.js").then(m => m.migratePlacementJoiningTracker()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

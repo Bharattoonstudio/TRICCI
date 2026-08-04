@@ -2,7 +2,7 @@
  * POST /api/payments/create-order
  * Creates a Razorpay order for employer wallet top-up.
  * Body: { amount_paise: number }
- * Returns: { order_id, amount, currency, key_id }  */ import type { Request, Response } from 'express'; import Razorpay from 'razorpay'; import { pool } from '@/server/db/pool.js'; import { toWebRequest } from '@/lib/auth/express-adapter.js'; import { getAuth } from '@/lib/auth/auth.js';
+ * Returns: { order_id, amount, currency, key_id }  */ import type { Request, Response } from 'express'; import Razorpay from 'razorpay'; import { pool } from '@/server/db/pool.js'; import { toWebRequest } from '@/lib/auth/express-adapter.js'; import { getAuth } from '@/lib/auth/auth.js'; import { getOrgRole, canManageBilling } from '@/server/lib/orgPermissions.js';
 
 function getRazorpay() {
   const key_id = process.env.RAZORPAY_KEY_ID;
@@ -20,6 +20,9 @@ export default async function handler(req: Request, res: Response) {
     if (!session) return res.status(401).json({ error: 'Unauthorized' });
     if (role !== 'employer' && role !== 'admin') {
       return res.status(403).json({ error: 'Employer access required' });
+    }
+    if (role === 'employer' && !canManageBilling(await getOrgRole(session.user.id))) {
+      return res.status(403).json({ error: 'read_only', message: 'Only the organization owner or Finance role can manage billing' });
     }
 
     const { amount_paise } = req.body as { amount_paise?: number };

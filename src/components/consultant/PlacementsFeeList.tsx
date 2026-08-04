@@ -4,7 +4,7 @@
  * once paid, sees a "Remuneration Paid" state with an Acknowledge button.
  */
 import { useState, useEffect } from 'react';
-import { Loader2, IndianRupee, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, IndianRupee, CheckCircle2, XCircle, FileDown } from 'lucide-react';
 
 interface Placement {
   id: number;
@@ -117,14 +117,22 @@ export default function PlacementsFeeList() {
               )}
 
               {p.paymentStatus === 'paid' && (
-                p.consultantAcknowledgedAt ? (
-                  <p className="text-[11px] text-green-400 flex items-center gap-1"><CheckCircle2 size={11} /> Remuneration Paid — acknowledged</p>
-                ) : (
-                  <button disabled={isActioning} onClick={() => acknowledgePayment(p.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-bold hover:bg-green-500 disabled:opacity-40">
-                    {isActioning ? <Loader2 size={11} className="animate-spin" /> : null} Acknowledge Payment Received
-                  </button>
-                )
+                <div className="flex items-center gap-2 flex-wrap">
+                  {p.consultantAcknowledgedAt ? (
+                    <p className="text-[11px] text-green-400 flex items-center gap-1"><CheckCircle2 size={11} /> Remuneration Paid — acknowledged</p>
+                  ) : (
+                    <button disabled={isActioning} onClick={() => acknowledgePayment(p.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-bold hover:bg-green-500 disabled:opacity-40">
+                      {isActioning ? <Loader2 size={11} className="animate-spin" /> : null} Acknowledge Payment Received
+                    </button>
+                  )}
+                  <a
+                    href={`/api/consultant/placements/${p.id}/invoice`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/5"
+                  >
+                    <FileDown size={11} /> Download Invoice
+                  </a>
+                </div>
               )}
             </div>
           );

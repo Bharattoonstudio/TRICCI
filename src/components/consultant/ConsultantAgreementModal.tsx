@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   FileText, CheckCircle, XCircle, Shield, AlertCircle,
@@ -145,6 +145,25 @@ TRICCI is a technology-enabled recruitment aggregator platform that connects ver
 export default function ConsultantAgreementModal({ onAccepted }: Props) {
   const [step, setStep] = useState<'read' | 'kyc' | 'confirm' | 'done'>('read');
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const [formalAgreementText, setFormalAgreementText] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/legal/consultant-agreement')
+      .then(r => r.json())
+      .then(d => setFormalAgreementText(d.text))
+      .catch(() => {});
+  }, []);
+
+  function downloadFormalAgreement() {
+    if (!formalAgreementText) return;
+    const blob = new Blob([formalAgreementText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'TRICCI-Consultant-Agreement.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   const [form, setForm] = useState({ agencyName: '', signatoryName: '', designation: '' });
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -250,6 +269,13 @@ export default function ConsultantAgreementModal({ onAccepted }: Props) {
                   RECRUITMENT CONSULTANT AGREEMENT
                 </h3>
                 <p className="text-xs text-muted-foreground">Version 1.0 &bull; Effective June 2025 &bull; Governed by Indian Law</p>
+                <button
+                  type="button"
+                  onClick={downloadFormalAgreement}
+                  className="mt-3 text-xs text-primary hover:underline"
+                >
+                  Download formal Master Service Agreement (.txt)
+                </button>
               </div>
 
               {AGREEMENT_SECTIONS.map((section) => (

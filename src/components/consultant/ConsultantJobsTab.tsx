@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, Filter, Briefcase, MapPin, Building2, Clock,
@@ -7,6 +8,7 @@ import {
   IndianRupee, Paperclip, Lock, Info, Navigation
 } from 'lucide-react';
 import type { Job } from '@/server/api/jobs/GET';
+import AcceptJobModal from './AcceptJobModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type UrgencyLevel = 'high' | 'medium' | 'low';
@@ -381,6 +383,7 @@ function JobCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const canSubmit = tab !== 'new' || job.accepted;
+  const navigate = useNavigate();
 
   return (
     <motion.div
@@ -394,7 +397,7 @@ function JobCard({
           <div className="flex-1 min-w-0">
             {/* Title + badges */}
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              <a href={`/consultant/jobs/${job.id}`} className="font-black text-foreground text-base hover:underline decoration-primary" style={{ fontFamily: 'var(--font-heading)' }}>{job.title}</a>
+              <button onClick={() => navigate(`/consultant/jobs/${job.id}`)} className="font-black text-foreground text-base hover:underline decoration-primary text-left" style={{ fontFamily: 'var(--font-heading)' }}>{job.title}</button>
               <UrgencyBadge urgency={job.urgency} />
               {tab === 'accepted' && (
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-green-500/15 text-green-400 border-green-500/30 flex items-center gap-1">
@@ -638,10 +641,13 @@ export default function ConsultantJobsTab() {
   const [jobsLoading, setJobsLoading] = useState(false);
   const [jobsError, setJobsError] = useState<string | null>(null);
 
-  // Local state for accepted/favourite toggles (in real app these would be persisted)
+  // Accepted job IDs are now loaded from the server (job_acceptance table)
+  // — previously this was local-only state, lost on every page refresh.
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
+  const [acceptedDates, setAcceptedDates] = useState<Record<string, string>>({});
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
   const [mappedIds] = useState<Set<string>>(new Set());
+  const [acceptModalJob, setAcceptModalJob] = useState<EnrichedJob | null>(null);
 
   useEffect(() => {
     setJobsLoading(true);
@@ -656,7 +662,20 @@ export default function ConsultantJobsTab() {
       .then(r => r.json())
       .then(data => { if (typeof data.consultantFeePct === 'number') setConsultantFeePct(data.consultantFeePct); })
       .catch(() => { /* keep default 6% */ });
+
+    fetch('/api/consultant/jobs/accepted')
+      .then(r => r.json())
+      .then((d: { jobIds?: string[] }) => setAcceptedIds(new Set(d.jobIds ?? [])))
+      .catch(() => {});
   }, []);
+
+  async function confirmAcceptJob(j: EnrichedJob) {
+    const res = await fetch(`/api/consultant/jobs/${j.id}/accept`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to accept job');
+    setAcceptedIds(prev => new Set(prev).add(j.id));
+    setAcceptedDates(prev => ({ ...prev, [j.id]: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) }));
+    setAcceptModalJob(null);
+  }
 
   const enrichedJobs: EnrichedJob[] = useMemo(() =>
     liveJobs.map(j => ({
@@ -666,8 +685,8 @@ export default function ConsultantJobsTab() {
       mapped: mappedIds.has(j.id),
       favourite: favouriteIds.has(j.id),
       mappedCandidates: mappedIds.has(j.id) ? Math.floor(Math.random() * 5) + 1 : 0,
-      acceptedDate: acceptedIds.has(j.id) ? '10 Jun 2026' : undefined,
-    })), [liveJobs, acceptedIds, favouriteIds, mappedIds]);
+      acceptedDate: acceptedDates[j.id],
+    })), [liveJobs, acceptedIds, acceptedDates, favouriteIds, mappedIds]);
 
   const allStates = useMemo(() => {
     const states = new Set<string>();
@@ -886,7 +905,7 @@ export default function ConsultantJobsTab() {
             job={job}
             tab={activeJobTab}
             onSubmit={setSelectedJob}
-            onAccept={id => setAcceptedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+            onAccept={id => { const j = enrichedJobs.find(ej => ej.id === id); if (j && !j.accepted) setAcceptModalJob(j); }}
             onFavourite={id => setFavouriteIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
           />
         ))}
@@ -903,6 +922,14 @@ export default function ConsultantJobsTab() {
       {/* Submit modal */}
       <AnimatePresence>
         {selectedJob && <SubmitCandidateModal job={selectedJob} consultantFeePct={consultantFeePct} onClose={() => setSelectedJob(null)} />}
+        {acceptModalJob && (
+          <AcceptJobModal
+            jobTitle={acceptModalJob.title}
+            feePercent={consultantFeePct}
+            onClose={() => setAcceptModalJob(null)}
+            onConfirm={() => confirmAcceptJob(acceptModalJob)}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

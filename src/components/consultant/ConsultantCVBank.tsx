@@ -1,10 +1,11 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, Search, Download, Trash2, User, FileText,
   Phone, Mail, Briefcase, MapPin, Star, Plus, X,
-  CheckCircle, Clock, Eye
+  CheckCircle, Clock, Eye, Sparkles, Loader2
 } from 'lucide-react';
+import SubmitToJobModal from './SubmitToJobModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CVEntry {
@@ -177,12 +178,37 @@ function CVDetailDrawer({ cv, onClose, onUpdate }: { cv: CVEntry; onClose: () =>
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ConsultantCVBank() {
   const [cvs, setCVs] = useState<CVEntry[]>(SEED_CVS);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const [selectedCV, setSelectedCV] = useState<CVEntry | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  interface BackendCvEntry {
+    id: number; name: string; email: string; phone: string | null; currentRole: string | null;
+    currentCTC: string | null; expectedCTC: string | null; experience: string | null; location: string | null;
+    skills: string[] | null; tags: string[] | null; notes: string | null; starred: boolean; createdAt: string;
+  }
+  function fromBackend(e: BackendCvEntry): CVEntry {
+    return {
+      id: String(e.id), name: e.name, email: e.email, phone: e.phone ?? '',
+      currentRole: e.currentRole ?? '', currentCTC: e.currentCTC ?? '', expectedCTC: e.expectedCTC ?? '',
+      experience: e.experience ?? '', location: e.location ?? '', skills: e.skills ?? [], tags: e.tags ?? [],
+      uploadedAt: new Date(e.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      fileName: `${e.name.toLowerCase().replace(/\s+/g, '_')}_cv.pdf`, fileSize: '—',
+      starred: e.starred, notes: e.notes ?? '',
+    };
+  }
+
+  useEffect(() => {
+    fetch('/api/consultant/cv-bank')
+      .then(r => r.json())
+      .then((d: { entries?: BackendCvEntry[] }) => setCVs((d.entries ?? []).map(fromBackend)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   // New CV form
   const [newCV, setNewCV] = useState({
@@ -221,37 +247,40 @@ export default function ConsultantCVBank() {
     setShowUpload(true);
   }
 
-  function handleAddCV() {
+  async function handleAddCV() {
     if (!newCV.name || !newCV.email) return;
-    const entry: CVEntry = {
-      id: Date.now().toString(),
-      name: newCV.name,
-      email: newCV.email,
-      phone: newCV.phone,
-      currentRole: newCV.currentRole,
-      currentCTC: newCV.currentCTC,
-      expectedCTC: newCV.expectedCTC,
-      experience: newCV.experience,
-      location: newCV.location,
-      skills: newCV.skills.split(',').map(s => s.trim()).filter(Boolean),
-      tags: [],
-      uploadedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      fileName: `${newCV.name.toLowerCase().replace(/\s+/g, '_')}_cv.pdf`,
-      fileSize: '—',
-      starred: false,
-      notes: newCV.notes,
-    };
-    setCVs(prev => [entry, ...prev]);
-    setNewCV({ name: '', email: '', phone: '', currentRole: '', currentCTC: '', expectedCTC: '', experience: '', location: '', skills: '', notes: '' });
-    setShowUpload(false);
+    try {
+      const res = await fetch('/api/consultant/cv-bank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newCV,
+          skills: newCV.skills.split(',').map(s => s.trim()).filter(Boolean),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCVs(prev => [fromBackend(data.entry), ...prev]);
+        setNewCV({ name: '', email: '', phone: '', currentRole: '', currentCTC: '', expectedCTC: '', experience: '', location: '', skills: '', notes: '' });
+        setShowUpload(false);
+      }
+    } catch { /* silent */ }
   }
 
-  function toggleStar(id: string) {
-    setCVs(prev => prev.map(cv => cv.id === id ? { ...cv, starred: !cv.starred } : cv));
+  async function toggleStar(id: string) {
+    const cv = cvs.find(c => c.id === id);
+    if (!cv) return;
+    setCVs(prev => prev.map(c => c.id === id ? { ...c, starred: !c.starred } : c));
+    fetch(`/api/consultant/cv-bank/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ starred: !cv.starred }),
+    }).catch(() => {});
   }
 
-  function deleteCV(id: string) {
+  async function deleteCV(id: string) {
     setCVs(prev => prev.filter(cv => cv.id !== id));
+    fetch(`/api/consultant/cv-bank/${id}`, { method: 'DELETE' }).catch(() => {});
   }
 
   function exportCVBank() {
@@ -270,6 +299,138 @@ export default function ConsultantCVBank() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadBulkTemplate() {
+    const headers = ['Name', 'Email', 'Phone', 'Current Role', 'Current CTC', 'Expected CTC', 'Experience', 'Location', 'Skills'];
+    const sample = ['Jane Doe', 'jane@example.com', '9876543210', 'Software Engineer', '12', '18', '5', 'Bangalore', 'React; Node.js; TypeScript'];
+    const csv = [headers, sample].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tricci-bulk-upload-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Minimal, safe CSV parser (handles quoted fields containing commas) —
+  // deliberately hand-rolled rather than adding a new npm dependency
+  // (papaparse etc.) this late for a simple, well-defined format.
+  function parseCsv(text: string): string[][] {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let field = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { field += c; }
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n' || c === '\r') {
+          if (c === '\r' && text[i + 1] === '\n') i++;
+          row.push(field); field = '';
+          if (row.some(f => f.trim() !== '')) rows.push(row);
+          row = [];
+        } else { field += c; }
+      }
+    }
+    if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ added: number; skippedInvalid: number; skippedDuplicate: number } | null>(null);
+  const bulkFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const parseFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showSubmitToJob, setShowSubmitToJob] = useState(false);
+
+  async function handleParseResume(file: File) {
+    setParsing(true);
+    setParseError('');
+    try {
+      const fd = new FormData();
+      fd.append('cv', file);
+      const res = await fetch('/api/consultant/cv-bank/parse', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setParseError('Could not parse this resume. Please fill the fields manually.');
+        return;
+      }
+      if (!data.parsed) {
+        setParseError(
+          data.reason === 'no_text' ? 'Could not extract text from this file — try a different format.' :
+          'Could not parse this resume automatically. Please fill the fields manually.'
+        );
+        return;
+      }
+      const p = data.parsed as Record<string, unknown>;
+      setNewCV(f => ({
+        ...f,
+        name: typeof p.name === 'string' ? p.name : f.name,
+        email: typeof p.email === 'string' ? p.email : f.email,
+        phone: typeof p.phone === 'string' ? p.phone : f.phone,
+        currentRole: typeof p.currentRole === 'string' ? p.currentRole : f.currentRole,
+        currentCTC: typeof p.currentCTC === 'string' ? p.currentCTC : f.currentCTC,
+        expectedCTC: typeof p.expectedCTC === 'string' ? p.expectedCTC : f.expectedCTC,
+        experience: typeof p.experience === 'string' ? p.experience : f.experience,
+        location: typeof p.location === 'string' ? p.location : f.location,
+        skills: Array.isArray(p.skills) ? p.skills.join(', ') : f.skills,
+      }));
+    } catch {
+      setParseError('Something went wrong parsing the resume. Please fill the fields manually.');
+    } finally {
+      setParsing(false);
+      if (parseFileInputRef.current) parseFileInputRef.current.value = '';
+    }
+  }
+
+  async function handleBulkFile(file: File) {
+    setBulkUploading(true);
+    setBulkResult(null);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (rows.length < 2) { setBulkUploading(false); return; }
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const idx = (name: string) => headers.indexOf(name);
+      const entries = rows.slice(1).map(r => ({
+        name: r[idx('name')]?.trim(),
+        email: r[idx('email')]?.trim(),
+        phone: r[idx('phone')]?.trim(),
+        currentRole: r[idx('current role')]?.trim(),
+        currentCTC: r[idx('current ctc')]?.trim(),
+        expectedCTC: r[idx('expected ctc')]?.trim(),
+        experience: r[idx('experience')]?.trim(),
+        location: r[idx('location')]?.trim(),
+        skills: r[idx('skills')]?.split(';').map(s => s.trim()).filter(Boolean) ?? [],
+      }));
+
+      const res = await fetch('/api/consultant/cv-bank/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBulkResult(data);
+        // Reload CV bank
+        fetch('/api/consultant/cv-bank').then(r => r.json()).then((d: { entries?: BackendCvEntry[] }) => setCVs((d.entries ?? []).map(fromBackend)));
+      }
+    } catch { /* silent */ }
+    finally {
+      setBulkUploading(false);
+      if (bulkFileInputRef.current) bulkFileInputRef.current.value = '';
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -283,12 +444,44 @@ export default function ConsultantCVBank() {
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
             <Download size={14} /> Export
           </button>
+          <input
+            ref={bulkFileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleBulkFile(f); }}
+          />
+          <button onClick={() => bulkFileInputRef.current?.click()}
+            disabled={bulkUploading}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+            <Upload size={14} /> {bulkUploading ? 'Uploading…' : 'Bulk Upload (CSV)'}
+          </button>
           <button onClick={() => setShowUpload(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-opacity">
             <Plus size={14} /> Add Candidate
           </button>
+          {selectedIds.size > 0 && (
+            <button onClick={() => setShowSubmitToJob(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-500 transition-colors">
+              <Briefcase size={14} /> Submit {selectedIds.size} to Job
+            </button>
+          )}
         </div>
       </div>
+
+      {bulkResult && (
+        <div className="flex items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+          <p className="text-sm text-foreground">
+            <span className="font-bold">{bulkResult.added}</span> candidates added
+            {bulkResult.skippedDuplicate > 0 && <span className="text-muted-foreground">, {bulkResult.skippedDuplicate} duplicate{bulkResult.skippedDuplicate === 1 ? '' : 's'} skipped</span>}
+            {bulkResult.skippedInvalid > 0 && <span className="text-muted-foreground">, {bulkResult.skippedInvalid} invalid row{bulkResult.skippedInvalid === 1 ? '' : 's'} skipped</span>}
+          </p>
+          <button onClick={() => setBulkResult(null)} className="text-xs text-muted-foreground hover:text-foreground">Dismiss</button>
+        </div>
+      )}
+      <button onClick={downloadBulkTemplate} className="text-xs text-primary hover:underline -mt-2">
+        Download CSV template for bulk upload
+      </button>
 
       {/* Search + Tag filter */}
       <div className="flex gap-3 flex-wrap">
@@ -329,7 +522,12 @@ export default function ConsultantCVBank() {
 
       {/* CV Cards */}
       <div className="grid gap-3">
-        {filteredCVs.length === 0 && (
+        {loading && (
+          <div className="col-span-full flex justify-center py-16">
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        )}
+        {!loading && filteredCVs.length === 0 && (
           <div className="py-16 text-center bg-card border border-border rounded-2xl">
             <User size={32} className="text-muted-foreground mx-auto mb-3 opacity-40" />
             <p className="text-muted-foreground text-sm">No candidates found.</p>
@@ -343,6 +541,13 @@ export default function ConsultantCVBank() {
             className="bg-card border border-border rounded-2xl p-5 hover:border-primary/30 transition-colors group"
           >
             <div className="flex items-start gap-4">
+              {/* Selection checkbox */}
+              <input
+                type="checkbox"
+                checked={selectedIds.has(cv.id)}
+                onChange={() => setSelectedIds(prev => { const s = new Set(prev); s.has(cv.id) ? s.delete(cv.id) : s.add(cv.id); return s; })}
+                className="mt-1 w-4 h-4 rounded border-border shrink-0"
+              />
               {/* Avatar */}
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center border border-border shrink-0">
                 <span className="text-sm font-black text-foreground">{cv.name.split(' ').map(n => n[0]).join('')}</span>
@@ -433,6 +638,31 @@ export default function ConsultantCVBank() {
                 </button>
               </div>
               <div className="p-6 space-y-4">
+                {/* Parse from Resume — pre-fills the fields below, still requires review before saving */}
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles size={14} className="text-primary" />
+                    <p className="text-sm font-semibold text-foreground">Parse from Resume</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">Upload a CV and we'll pre-fill the fields below — review before saving, nothing is fabricated.</p>
+                  <input
+                    ref={parseFileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleParseResume(f); }}
+                  />
+                  <button
+                    onClick={() => parseFileInputRef.current?.click()}
+                    disabled={parsing}
+                    className="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
+                  >
+                    {parsing ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                    {parsing ? 'Parsing…' : 'Upload CV to Parse'}
+                  </button>
+                  {parseError && <p className="text-xs text-red-500 mt-2">{parseError}</p>}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   {[
                     { key: 'name', label: 'Full Name *', placeholder: 'Candidate name' },
@@ -498,10 +728,23 @@ export default function ConsultantCVBank() {
             onUpdate={updated => {
               setCVs(prev => prev.map(cv => cv.id === updated.id ? updated : cv));
               setSelectedCV(updated);
+              fetch(`/api/consultant/cv-bank/${updated.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tags: updated.tags, notes: updated.notes }),
+              }).catch(() => {});
             }}
           />
         )}
       </AnimatePresence>
+
+      {showSubmitToJob && (
+        <SubmitToJobModal
+          entryIds={Array.from(selectedIds)}
+          onClose={() => setShowSubmitToJob(false)}
+          onDone={() => { setShowSubmitToJob(false); setSelectedIds(new Set()); }}
+        />
+      )}
     </div>
   );
 }

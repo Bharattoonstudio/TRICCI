@@ -7,6 +7,7 @@ import { job as jobTable } from '@/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 
 const VALID_STATUSES = ['active', 'paused', 'closed'];
 
@@ -19,6 +20,9 @@ export default async function handler(req: Request, res: Response) {
     const role = (session.user as { role?: string })?.role;
     if (role !== 'employer' && role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden' });
+    }
+    if (role === 'employer' && await isReadOnlyOrgViewer(session.user.id)) {
+      return res.status(403).json({ error: 'read_only', message: 'Viewer accounts have read-only access' });
     }
 
     const jobId = req.params.id;

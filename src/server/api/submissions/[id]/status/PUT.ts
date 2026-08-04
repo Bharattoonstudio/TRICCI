@@ -10,6 +10,7 @@ import { db } from '@/server/db/client.js';
 import { submission, job, user, placement, candidateProfile } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
+import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
 import { logAudit } from '@/lib/audit.js';
@@ -223,6 +224,9 @@ export default async function handler(req: Request, res: Response) {
     if (role !== 'employer' && role !== 'admin') {
       return res.status(403).json({ error: 'Employer access required' });
     }
+    if (role === 'employer' && await isReadOnlyOrgViewer(session.user.id)) {
+      return res.status(403).json({ error: 'read_only', message: 'Viewer accounts have read-only access' });
+    }
 
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid submission ID' });
@@ -357,12 +361,15 @@ export default async function handler(req: Request, res: Response) {
 
     await Promise.allSettled(emailPromises);
 
-    // ── Auto-record placement when payment_done ───────────────────────────────
-    if (status === 'payment_done') {
+    // ── Auto-record placement on selection, mark paid separately ──────────────
+    // Point 52: payment term counts from joining/selection, not from when
+    // payment eventually happens — so the placement record (with fee split
+    // and due-date basis) is created at 'selected', and 'payment_done' just
+    // flips paymentStatus on the existing row rather than creating it late.
+    if (status === 'selected' || status === 'payment_done') {
       try {
-        // Check if placement already recorded for this submission
         const existing = await db
-          .select({ id: placement.id })
+          .select({ id: placement.id, paymentStatus: placement.paymentStatus })
           .from(placement)
           .where(eq(placement.submissionId, id))
           .limit(1);
@@ -380,15 +387,19 @@ export default async function handler(req: Request, res: Response) {
             if (cp?.currentCTC) ctcLpa = cp.currentCTC / 100000; // stored as paise-equivalent
           }
 
-          // Fetch job fee percent
+          // Fetch job fee percent + payment term
           const [jobRow] = await db
-            .select({ feePercent: job.feePercent })
+            .select({ feePercent: job.feePercent, paymentTermDays: job.paymentTermDays })
             .from(job)
             .where(eq(job.id, row.jobId))
             .limit(1);
 
           const feePercent = jobRow?.feePercent ?? null;
           const feeAmountLpa = ctcLpa && feePercent ? (ctcLpa * feePercent) / 100 : null;
+          // Point 28/49: platform keeps a flat 2%, consultant gets the rest
+          const PLATFORM_CUT = 2;
+          const consultantFeePercent = feePercent != null ? Math.max(feePercent - PLATFORM_CUT, 0) : null;
+          const consultantFeeAmountLpa = ctcLpa && consultantFeePercent != null ? (ctcLpa * consultantFeePercent) / 100 : null;
 
           await db.insert(placement).values({
             submissionId: id,
@@ -403,10 +414,17 @@ export default async function handler(req: Request, res: Response) {
             ctcLpa,
             feePercent,
             feeAmountLpa,
-            paymentStatus: 'paid',
+            platformFeePercent: PLATFORM_CUT,
+            consultantFeePercent,
+            consultantFeeAmountLpa,
+            paymentTermDays: jobRow?.paymentTermDays ?? 45,
+            paymentStatus: status === 'payment_done' ? 'paid' : 'pending',
             placedAt: new Date(),
           });
           console.log(`[placement] recorded for submission ${id} — ${row.candidateName} at ${row.company}`);
+        } else if (status === 'payment_done' && existing[0].paymentStatus !== 'paid') {
+          await db.update(placement).set({ paymentStatus: 'paid' }).where(eq(placement.submissionId, id));
+          console.log(`[placement] marked paid for submission ${id}`);
         }
       } catch (placementErr) {
         // Non-fatal — don't fail the status update if placement recording fails

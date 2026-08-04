@@ -1,6 +1,6 @@
 /**
- * DELETE /api/consultant/cv-bank/:id
- * Removes a candidate from the consultant's talent pool.
+ * PUT /api/consultant/cv-bank/:id
+ * Updates a CV bank entry — tags, notes, or starred status.
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
@@ -20,14 +20,21 @@ export default async function handler(req: Request, res: Response) {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid entry ID' });
 
+    const { tags, notes, starred } = req.body as { tags?: string[]; notes?: string; starred?: boolean };
+
     const [existing] = await db.select({ id: cvBankEntry.id }).from(cvBankEntry)
       .where(and(eq(cvBankEntry.id, id), eq(cvBankEntry.consultantUserId, session.user.id))).limit(1);
     if (!existing) return res.status(404).json({ error: 'Entry not found' });
 
-    await db.delete(cvBankEntry).where(eq(cvBankEntry.id, id));
+    await db.update(cvBankEntry).set({
+      ...(tags !== undefined ? { tags } : {}),
+      ...(notes !== undefined ? { notes: notes.trim() || null } : {}),
+      ...(starred !== undefined ? { starred } : {}),
+    }).where(eq(cvBankEntry.id, id));
+
     res.json({ ok: true });
   } catch (err) {
-    console.error('[consultant.cv-bank.delete] ERROR:', err);
-    res.status(500).json({ error: 'Failed to delete entry' });
+    console.error('[consultant.cv-bank.put] ERROR:', err);
+    res.status(500).json({ error: 'Failed to update entry' });
   }
 }

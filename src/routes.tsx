@@ -31,6 +31,8 @@ const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 const UnsubscribePage = lazy(() => import('./pages/unsubscribe'));
 const RefreshPage = lazy(() => import('./pages/refresh/index'));
 const FreeJobsPage = lazy(() => import('./pages/free-jobs'));
+const TeamPage = lazy(() => import('./pages/employer/team'));
+const AcceptInvitePage = lazy(() => import('./pages/accept-invite'));
 
 export const routes: RouteObject[] = [
   // Marketing homepage
@@ -77,6 +79,9 @@ export const routes: RouteObject[] = [
   // Public: Unsubscribe (job alerts)
   { path: '/unsubscribe', element: <UnsubscribePage /> },
 
+  // Public: Accept team invite (teammate isn't logged in yet)
+  { path: '/accept-invite', element: <AcceptInvitePage /> },
+
   // Public: Let's Refresh — games page
   { path: '/refresh', element: <RefreshPage /> },
 
@@ -97,6 +102,14 @@ export const routes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/employer/team',
+    element: (
+      <ProtectedRoute allowedRoles={['employer', 'admin']}>
+        <TeamPage />
+      </ProtectedRoute>
+    ),
+  },
 
   // Protected: Consultant
   {
@@ -112,6 +125,14 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['consultant', 'admin']}>
         <ConsultantJobDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/consultant/team',
+    element: (
+      <ProtectedRoute allowedRoles={['consultant', 'admin']}>
+        <TeamPage />
       </ProtectedRoute>
     ),
   },
@@ -176,8 +197,11 @@ export type Path =
   | '/about'
   | '/blog'
   | '/employer/dashboard'
+  | '/employer/team'
   | '/consultant/dashboard'
+  | '/consultant/team'
   | '/candidate/profile'
   | '/billing'
-  | '/admin';
+  | '/admin'
+  | '/accept-invite';
 export type Params = Record<string, string | undefined>;

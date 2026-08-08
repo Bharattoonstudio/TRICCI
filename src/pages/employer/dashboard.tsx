@@ -1753,6 +1753,18 @@ export default function EmployerDashboard() {
                   <p className="text-muted-foreground text-sm">Manage your profile, password, and notification settings.</p>
                 </div>
                 <AccountDetails theme="light" />
+                <div className="bg-card border border-border rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="text-base font-bold text-foreground mb-1">Team Management</h3>
+                    <p className="text-muted-foreground text-sm">Invite teammates and manage who has access to your company account.</p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/employer/team')}
+                    className="bg-primary text-primary-foreground font-semibold text-sm px-4 py-2 rounded-lg hover:opacity-90 transition whitespace-nowrap"
+                  >
+                    Manage Team
+                  </button>
+                </div>
                 <LegalDocumentsCard role="employer" theme="light" />
                 <AccountDocumentsCard theme="light" />
               </motion.div>

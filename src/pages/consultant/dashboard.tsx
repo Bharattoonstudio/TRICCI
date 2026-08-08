@@ -1023,6 +1023,18 @@ export default function ConsultantDashboard() {
                 </div>
                 <ConsultantIndustriesCard />
                 <AccountDetails theme="dark" />
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="text-base font-bold text-white mb-1">Team Management</h3>
+                    <p className="text-white/30 text-sm">Invite teammates and manage who has access to your agency account.</p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/consultant/team')}
+                    className="bg-primary text-primary-foreground font-semibold text-sm px-4 py-2 rounded-lg hover:opacity-90 transition whitespace-nowrap"
+                  >
+                    Manage Team
+                  </button>
+                </div>
                 <LegalDocumentsCard role="consultant" theme="dark" />
                 <AccountDocumentsCard theme="dark" />
               </motion.div>

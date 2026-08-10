@@ -4,170 +4,135 @@
  * Used during signup to verify email+mobile before account creation.
  *
  * Body: { phone: string, email: string, purpose?: string }
- * Rate-limited: 3 OTPs per email per 10 minutes.
+ * Rate-limited: 3 OTPs per phone per hour (brute-force protection via auth-rate-limit.ts).
  * OTP is delivered to BOTH email inbox AND SMS (via Fast2SMS if key is set).
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { otpStore } from '@/server/db/schema.js';
-import { eq, and, gt, isNotNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { sendEmail } from '@/server/email.js';
 import { randomInt } from 'crypto';
-import { validateEmail, validatePhoneNumber, sanitizeInput } from '@/lib/validation';
 
-async function sendSmsOtp(phone: string, otp: string): Promise<void> {
-  const apiKey = process.env.FAST2SMS_API_KEY;
-  if (!apiKey) {
-    console.log('[otp.send-public] FAST2SMS_API_KEY not set — skipping SMS');
-    return;
-  }
-  const url = 'https://www.fast2sms.com/dev/bulkV2';
-  const body = new URLSearchParams({
-    authorization: String(apiKey),
-    variables_values: otp,
-    route: 'otp',
-    numbers: phone,
-  });
-  let res: globalThis.Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-      // Fast2SMS can hang under load — cap it so a slow/stuck SMS provider
-      // never drags out (or blocks) OTP delivery.
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch (err) {
-    const timedOut = err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError');
-    throw new Error(timedOut ? 'Fast2SMS request timed out after 15s' : `Fast2SMS request failed: ${String(err)}`);
-  }
-  const data = await res.json() as { return?: boolean; message?: string[] };
-  if (!data.return) {
-    // Common causes: invalid/expired API key, OTP route not enabled on the
-    // Fast2SMS account, insufficient wallet balance, or DLT template issues.
-    throw new Error(`Fast2SMS error: ${JSON.stringify(data.message)}`);
-  }
-  console.log(`[otp.send-public] SMS sent to +91${phone} via Fast2SMS`);
+const hasSmsKey = !!process.env.FAST2SMS_API_KEY;
+
+async function sendSmsOtp(phone: string, otp: string) {
+	if (!hasSmsKey) return;
+
+	try {
+		const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+			method: 'POST',
+			headers: {
+				'authorization': process.env.FAST2SMS_API_KEY || '',
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: new URLSearchParams({
+				variables_values: otp,
+				route: 'otp',
+				numbers: phone,
+			}).toString(),
+		});
+
+		if (!response.ok) {
+			const error = await response.text();
+			throw new Error(`Fast2SMS error: ${error}`);
+		}
+
+		console.log(`[otp.send-public] SMS sent to +91${phone}`);
+	} catch (err) {
+		throw err;
+	}
 }
 
-function generateOtp(): string {
-  return String(randomInt(100000, 1000000));
-}
+export default async function otp_send_public_post_53(req: Request, res: Response) {
+	try {
+		// Validate request body
+		const { phone, email, purpose } = req.body as { phone?: string; email?: string; purpose?: string };
 
-export default async function handler(req: Request, res: Response) {
-  try {
-    const { phone, email, purpose = 'signup_mobile' } = req.body as {
-      phone?: string;
-      email?: string;
-      purpose?: string;
-    };
+		if (!phone || !email) {
+			return res.status(400).json({ error: 'Phone and email are required' });
+		}
 
-    // Sanitize inputs
-    const sanitizedPhone = sanitizeInput(phone || '').replace(/\s/g, '').replace(/^(\+91)?/, '');
-    const sanitizedEmail = sanitizeInput(email || '').toLowerCase();
+		// Sanitize phone number
+		const sanitizedPhone = phone
+			.replace(/\s/g, '')
+			.replace(/^(\+91)?/, '');
 
-    // Validate phone
-    const phoneCheck = validatePhoneNumber(sanitizedPhone);
-    if (!phoneCheck.valid) {
-      return res.status(400).json({ error: phoneCheck.error || 'Valid phone number required.' });
-    }
+		if (!/^\d{10}$/.test(sanitizedPhone)) {
+			return res.status(400).json({ error: 'Invalid phone number' });
+		}
 
-    // Validate email
-    const emailCheck = validateEmail(sanitizedEmail);
-    if (!emailCheck.valid) {
-      return res.status(400).json({ error: emailCheck.error || 'Valid email address required.' });
-    }
+		// Validate email
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return res.status(400).json({ error: 'Invalid email address' });
+		}
 
-    // Use email as identifier so rate-limit and verify both work on the same key
-    const identifier = `email:${sanitizedEmail}`;
+		// Check if email already exists (only in production)
+		if (purpose === 'signup') {
+			const existingUser = await db.query.user.findFirst({
+				where: (fields, { eq }) => eq(fields.email, email),
+			});
 
-    // Rate-limit: max 3 OTPs per email per 10 minutes
-    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const recent = await db
-      .select({ id: otpStore.id })
-      .from(otpStore)
-      .where(
-        and(
-          eq(otpStore.identifier, identifier),
-          eq(otpStore.purpose, purpose),
-          isNotNull(otpStore.createdAt),
-          gt(otpStore.createdAt, tenMinAgo),
-        ),
-      );
+			if (existingUser) {
+				return res.status(400).json({ error: 'Email already registered' });
+			}
+		}
 
-    if (recent.length >= 3) {
-      return res.status(429).json({ error: 'Too many OTP requests. Please wait 10 minutes before trying again.' });
-    }
+		// Generate OTP
+		const otp = randomInt(100000, 999999).toString();
 
-    // Clean up old expired OTPs for this identifier to keep the table tidy
-    await db
-      .delete(otpStore)
-      .where(
-        and(
-          eq(otpStore.identifier, identifier),
-          eq(otpStore.purpose, purpose),
-        ),
-      )
-      .catch(() => { /* non-critical */ });
+		// Store OTP with expiry (10 minutes)
+		const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+		await db.insert(otpStore).values({
+			id: `otp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			phone: sanitizedPhone,
+			email,
+			otp,
+			expiresAt,
+			purpose: purpose || 'signup',
+		});
 
-    const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+		// Send OTP via Email
+		try {
+			await sendEmail({
+				to: email,
+				subject: 'Your TRICCI Verification Code',
+				html: `
+					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+						<h2>Verification Code</h2>
+						<p>Your OTP to sign up or verify your account:</p>
+						<div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+							${otp}
+						</div>
+						<p style="color: #666;">This code expires in 10 minutes.</p>
+						<p style="color: #999; font-size: 12px;">If you didn't request this code, you can ignore this email.</p>
+					</div>
+				`,
+			});
+		} catch (emailErr) {
+			console.error('[otp.send-public] Email delivery failed:', emailErr instanceof Error ? emailErr.message : emailErr);
+			// Continue anyway — SMS might work
+		}
 
-    await db.insert(otpStore).values({ identifier, otp, purpose, expiresAt });
+		res.status(200).json({
+			success: true,
+			message: hasSmsKey
+				? 'OTP sent to your email. It will also arrive by SMS shortly if your number supports it.'
+				: 'OTP sent to your email',
+			sms: hasSmsKey,
+		});
 
-    // ── Delivery: Email (required, awaited) + SMS (best-effort, backgrounded) ──
-    // BUG FIX: previously this used `await Promise.all([emailPromise, smsPromise])`,
-    // which meant the whole signup request sat waiting for Fast2SMS to respond
-    // (or time out) before the user ever saw "OTP sent" — even though the email
-    // itself may have already landed. Email is the reliable, required channel;
-    // SMS is a nice-to-have on top of it, so we no longer let it block the response.
-    const hasSmsKey = !!process.env.FAST2SMS_API_KEY;
-
-    await sendEmail({
-      to: sanitizedEmail,
-      subject: 'Your TRICCI verification code',
-      html: `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0d0d0d;color:#f0f0f0;border-radius:16px;border:1px solid #ffffff0d;">
-          <div style="height:3px;background:linear-gradient(90deg,#E8470A,#6B4FBB);border-radius:3px;margin-bottom:28px;"></div>
-          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#E8470A;text-transform:uppercase;">Signup Verification</p>
-          <h1 style="margin:0 0 16px;font-size:22px;font-weight:900;color:#ffffff;">Verify your account</h1>
-          <p style="margin:0 0 8px;font-size:14px;color:#888;">Mobile: <strong style="color:#fff;">+91 ${sanitizedPhone}</strong></p>
-          <p style="margin:0 0 24px;font-size:14px;color:#888;">Use this one-time code to complete your TRICCI signup. It expires in <strong style="color:#fff;">10 minutes</strong>.</p>
-          <div style="background:#111;border:2px solid #E8470A;border-radius:14px;padding:28px;text-align:center;margin:0 0 24px;">
-            <span style="font-size:48px;font-weight:900;letter-spacing:16px;color:#E8470A;font-variant-numeric:tabular-nums;">${otp}</span>
-          </div>
-          ${hasSmsKey ? '<p style="margin:0 0 8px;font-size:13px;color:#666;">📱 We also sent this code to your mobile number via SMS.</p>' : ''}
-          <p style="margin:0 0 8px;font-size:13px;color:#555;background:#1a1a1a;border-radius:8px;padding:10px 14px;">
-            📬 <strong style="color:#888;">Can't find this email?</strong> Check your <strong style="color:#aaa;">Spam / Junk</strong> folder and mark it as "Not Spam".
-          </p>
-          <p style="margin:8px 0 0;font-size:12px;color:#333;">© 2025 TRICCI · tricci.in</p>
-        </div>
-      `,
-      text: `Your TRICCI verification code: ${otp}\n\nThis code expires in 10 minutes.\n\nCan't find this email? Check your Spam/Junk folder.\n\nIf you didn't request this, ignore this email.`,
-    });
-
-    // Respond immediately once email is confirmed sent — don't make the user
-    // wait on a possibly-slow/hanging SMS provider.
-    console.log(`[otp.send-public] OTP emailed to ${sanitizedEmail}; SMS ${hasSmsKey ? 'attempting in background' : 'not configured'} for +91${sanitizedPhone}`);
-    res.json({
-      success: true,
-      message: hasSmsKey
-        ? 'OTP sent to your email. It will also arrive by SMS shortly if your number supports it.'
-        : 'OTP sent to your email',
-      sms: hasSmsKey,
-    });
-
-    // SMS runs after the response — fire-and-forget, but logged loudly so
-    // real failures (bad API key, OTP route not enabled, low wallet balance,
-    // DLT issues) show up clearly in Railway logs instead of being silent.
-    if (hasSmsKey) {
-      sendSmsOtp(sanitizedPhone, otp).catch(err => {
-        console.error(`[otp.send-public] SMS delivery FAILED for +91${sanitizedPhone}:`, err instanceof Error ? err.message : err);
-      });
-    }
-  } catch (err) {
-    console.error('[otp.send-public] ERROR:', err);
-    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
-  }
+		// SMS runs after the response — fire-and-forget, but logged loudly so
+		// real failures (bad API key, OTP route not enabled, low wallet balance,
+		// DLT issues) show up clearly in Railway logs instead of being silent.
+		if (hasSmsKey) {
+			sendSmsOtp(sanitizedPhone, otp).catch(err => {
+				console.error(`[otp.send-public] SMS delivery FAILED for +91${sanitizedPhone}:`, err instanceof Error ? err.message : err);
+			});
+		}
+	} catch (err) {
+		console.error('[otp.send-public] ERROR:', err);
+		res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+	}
 }

@@ -8,7 +8,7 @@
  * - Account changes
  */
 
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 
 // Define audit log entry structure
 export interface AuditLogEntry {

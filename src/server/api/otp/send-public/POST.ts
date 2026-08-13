@@ -82,15 +82,17 @@ export default async function otp_send_public_post_53(req: Request, res: Respons
 		// Generate OTP
 		const otp = randomInt(100000, 999999).toString();
 
+		// identifier must match exactly what verify-public expects: email:xxx or phone:xxx
+		const identifier = `email:${email.toLowerCase().trim()}`;
+
 		// Store OTP with expiry (10 minutes)
 		const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 		await db.insert(otpStore).values({
-			id: `otp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-			phone: sanitizedPhone,
-			email,
+			identifier,
 			otp,
 			expiresAt,
 			purpose: purpose || 'signup',
+			verified: false,
 		});
 
 		// Send OTP via Email

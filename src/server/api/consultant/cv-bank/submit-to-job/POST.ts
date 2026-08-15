@@ -10,7 +10,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { cvBankEntry, submission, job, jobAcceptance } from '@/server/db/schema.js';
+import { cvBankEntry, submission, job, jobAcceptance, candidateApplication, user } from '@/server/db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -47,7 +47,19 @@ export default async function handler(req: Request, res: Response) {
       .where(and(inArray(cvBankEntry.id, entryIds), eq(cvBankEntry.consultantUserId, session.user.id)));
 
     const existingSubs = await db.select({ candidateEmail: submission.candidateEmail }).from(submission).where(eq(submission.jobId, jobId));
-    const existingEmails = new Set(existingSubs.map(s => s.candidateEmail.toLowerCase()));
+    // Also exclude candidates who already applied directly to this job
+    // themselves — same cross-table check as POST /api/submissions, so
+    // bulk CV Bank submissions can't create a duplicate, unlinked pipeline
+    // entry for someone who already self-applied.
+    const existingDirectApps = await db
+      .select({ email: user.email })
+      .from(candidateApplication)
+      .innerJoin(user, eq(candidateApplication.candidateUserId, user.id))
+      .where(eq(candidateApplication.jobId, jobId));
+    const existingEmails = new Set([
+      ...existingSubs.map(s => s.candidateEmail.toLowerCase()),
+      ...existingDirectApps.map(a => a.email.toLowerCase()),
+    ]);
 
     let added = 0, skippedDuplicate = 0, skippedInvalid = 0;
     const seenInBatch = new Set<string>();

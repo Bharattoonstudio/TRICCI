@@ -432,6 +432,15 @@ export default async function handler(req: Request, res: Response) {
       }
     }
 
+      // Sync shortlist status to interview pipeline counter (Anomaly #4)
+      if (newStatus === 'shortlisted') {
+            await db
+              .update(jobTable)
+              .set({ applicants: sql`${jobTable.applicants} + 1` })
+              .where(eq(jobTable.id, submissionRecord.jobId))
+              .catch(err => console.error('[submissions] interview sync failed:', err));
+      }
+
     res.json({ ok: true, id, status });
   } catch (err) {
     console.error('submissions.status.put.error', err);

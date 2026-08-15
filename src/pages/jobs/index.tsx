@@ -1,6 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { trackJobSearch } from '@/lib/analytics';
 import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -587,6 +588,18 @@ export default function JobsPage() {
             </div>
           </div>
         </section>
+
+          // Debounce search handler (Anomaly #8)
+          const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+          const handleSearch = useCallback((value: string) => {
+                setSearchQuery(value);
+            if (searchTimeout) clearTimeout(searchTimeout);
+            const timeout = setTimeout(() => {
+                    fetchJobs({ q: value });
+        }, 300);
+            setSearchTimeout(timeout);
+        }, [searchTimeout]);
       </main>
     </>
   );

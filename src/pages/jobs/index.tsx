@@ -544,7 +544,7 @@ export default function JobsPage() {
                         Are you a recruitment consultant?
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Submit candidates for these roles and earn 68.75% of the placement fee.
+                        Submit candidates for these roles and earn % of the placement fee.
                       </p>
                     </div>
                     <Link to="/signup?role=consultant"

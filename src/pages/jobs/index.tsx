@@ -1,7 +1,6 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { trackJobSearch } from '@/lib/analytics';
 import { useState, useEffect, useCallback } from 'react';
-import { useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {

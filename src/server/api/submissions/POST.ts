@@ -10,8 +10,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import { db } from '@/server/db/client.js';
-import { submission, job, jobAcceptance } from '@/server/db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { submission, job, jobAcceptance, candidateApplication, user } from '@/server/db/schema.js';
+import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
@@ -101,6 +101,32 @@ export default async function handler(req: Request, res: Response) {
           ? `You've already submitted this candidate for this job (status: ${existing.status}).`
           : `This candidate has already been submitted for this job by another consultant (status: ${existing.status}). Duplicate submissions aren't allowed.`,
         status: existing.status,
+      });
+    }
+
+    // Cross-check against direct candidate applications: the check above
+    // only catches consultant-vs-consultant duplicates within the
+    // `submission` table. This catches the case where the SAME candidate
+    // already applied directly (self-applied) to this same job — matched
+    // by email (case-insensitive) via the account that owns the
+    // application. Without this, a candidate who applies for free could
+    // also be "found" and submitted by a consultant afterward, creating
+    // ambiguity over who — if anyone — is owed a placement fee.
+    const [existingDirectApp] = await db
+      .select({ id: candidateApplication.id, status: candidateApplication.status })
+      .from(candidateApplication)
+      .innerJoin(user, eq(candidateApplication.candidateUserId, user.id))
+      .where(and(
+        eq(candidateApplication.jobId, jobId),
+        sql`lower(${user.email}) = ${normalizedEmail}`,
+      ))
+      .limit(1);
+
+    if (existingDirectApp) {
+      return res.status(409).json({
+        error: 'duplicate_candidate',
+        message: `This candidate has already applied directly for this job (status: ${existingDirectApp.status}). Duplicate submissions aren't allowed.`,
+        status: existingDirectApp.status,
       });
     }
 

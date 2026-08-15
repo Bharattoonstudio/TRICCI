@@ -16,7 +16,7 @@ import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 
-const CV_DIR = '/shared-storage/public/assets/cvs';
+const CV_DIR = '/shared-storage/public/assets/uploads/cvs';
 
 const upload = multer({
   storage: multer.memoryStorage(),

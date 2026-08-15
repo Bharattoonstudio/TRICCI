@@ -21,7 +21,7 @@ const ROLES: { id: Role; label: string; description: string; icon: React.Element
   {
     id: 'consultant',
     label: 'Consultant',
-    description: 'Submit candidates and earn 68.75% of placement fees',
+    description: 'Submit candidates and earn % of placement fees',
     icon: Star,
     color: '#FF6B35',
   },
@@ -292,7 +292,7 @@ export default function SignupPage() {
     <>
       <Helmet>
         <title>Create Account — TRICCI</title>
-        <meta name="description" content="Join TRICCI free — post jobs as an employer, earn 68.75% placement fees as a consultant, or get discovered by top recruiters as a candidate." />
+        <meta name="description" content="Join TRICCI free — post jobs as an employer, earn % placement fees as a consultant, or get discovered by top recruiters as a candidate." />
         <link rel="canonical" href="https://tricci.in/signup" />
         <meta property="og:title" content="Create Your Free TRICCI Account" />
         <meta property="og:description" content="Join India's recruitment aggregator. Employers, consultants, and candidates all on one transparent platform." />

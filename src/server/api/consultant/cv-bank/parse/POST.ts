@@ -17,7 +17,35 @@ import { extractTextFromPdfBuffer, extractTextFromDocBuffer } from '@/lib/cv-tex
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 export const multerMiddleware = upload.single('cv');
 
-const SYSTEM_PROMPT = `You are a CV parser for a recruitment consultant's talent pool. Extract structured data from the CV text and return ONLY valid JSON.
+const 20
+  hYou are a CV parser  You are an expert CV parser for a recruitment platform. Extract structured data from CVs and return ONLY valid JSON.
+    
+    CRITICAL INSTRUCTIONS:
+  1. Extract ONLY information that is actually present in the CV — never guess
+    2. If field not found, omit it entirely (no null/empty strings)
+      3. Return ONLY valid JSON — no markdown, explanation, extra text
+        
+        Fields:
+        {
+            "name": "full name",
+                "email": "email",
+                "phone": "phone with country code",
+                "currentRole": "job title and company",
+                "currentCTC": "salary in LPA as string",
+                "expectedCTC": "desired salary in LPA as string",
+                "experience": "total years as string",
+                "location": "city/location",
+                "skills": ["skill1", "skill2"],
+                "title": "most recent job title"
+        }
+
+RULES:
+- Sum all jobs for experience years
+  - Look for CTC, salary, compensation, package keywords
+  - Extract 5-8 skills from jobs and skills section
+  - Use exact title from most recent role
+  - Include current location only
+  Return JSON only.= `You are a CV parser for a recruitment consultant's talent pool. Extract structured data from the CV text and return ONLY valid JSON.
 Use exactly these field names (omit any field you genuinely cannot find — do not guess or fabricate):
 {
   "name": "candidate full name",

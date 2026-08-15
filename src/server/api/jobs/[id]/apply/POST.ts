@@ -7,8 +7,8 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { candidateApplication, job, user, notification, candidateProfile } from '@/server/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { candidateApplication, job, user, notification, candidateProfile, submission } from '@/server/db/schema.js';
+import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
@@ -205,6 +205,30 @@ export default async function handler(req: Request, res: Response) {
       }
     }
 
+    // Cross-check against consultant submissions: if a consultant already
+    // submitted this same candidate (matched by their own account email,
+    // case-insensitive) for this same job, block the direct application
+    // rather than silently creating a second, unlinked record. Mirrors the
+    // equivalent check in POST /api/submissions so "first submission wins"
+    // holds in both directions and no job ever has two live, disconnected
+    // pipelines for the same person.
+    const [existingSubmission] = await db
+      .select({ id: submission.id, status: submission.status })
+      .from(submission)
+      .where(and(
+        eq(submission.jobId, jobId),
+        sql`lower(${submission.candidateEmail}) = lower(${session.user.email})`,
+      ))
+      .limit(1);
+
+    if (existingSubmission) {
+      return res.status(409).json({
+        error: 'duplicate_candidate',
+        message: `You've already been submitted for this job by a recruitment consultant (status: ${existingSubmission.status}). Check your dashboard for updates instead of reapplying — track it under "Consultant Submissions" on your profile.`,
+        status: existingSubmission.status,
+      });
+    }
+
     await db.insert(candidateApplication).values({
       jobId,
       candidateUserId: session.user.id,
@@ -228,7 +252,7 @@ export default async function handler(req: Request, res: Response) {
 
     res.status(201).json({ ok: true, message: 'Application submitted successfully' });
 
-    // ── Fire-and-forget emails (SOP §24) ──────────────────────────────────────
+    // ── Fire-and-forget emails (SOP §24) ───────────────────────────────────
     try {
       // Fetch candidate name + email
       const [candidateUser] = await db

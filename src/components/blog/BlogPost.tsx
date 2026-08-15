@@ -19,7 +19,7 @@ function PostJobsCTA({ category }: { category?: string }) {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-secondary mb-2">For Consultants</p>
           <h3 className="text-xl font-black text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-            Ready to earn 68.75% of every placement?
+            Ready to earn % of every placement?
           </h3>
           <p className="text-sm text-muted-foreground">
             Browse live mandates on TRICCI and submit candidates for roles that match your domain.

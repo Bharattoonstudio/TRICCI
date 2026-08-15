@@ -57,13 +57,13 @@ function getRoleContent(role: string, name: string): RoleContent {
     return {
       headline: `${firstName}, your recruitment business just levelled up.`,
       subheadline: 'Welcome to the platform built exclusively for independent recruiters.',
-      tagline: 'Submit candidates. Track progress. Earn 68.75% of every placement fee.',
+      tagline: 'Submit candidates. Track progress. Earn % of every placement fee.',
       ctaLabel: 'Browse Live Mandates →',
       ctaUrl: `${BASE}/consultant/dashboard`,
       accentColor: ORANGE,
       badge: '⭐ CONSULTANT',
       features: [
-        { icon: '💰', title: '68.75% fee share', desc: 'The highest payout in India\'s recruitment industry. Guaranteed.' },
+        { icon: '💰', title: '% fee share', desc: 'The highest payout in India\'s recruitment industry. Guaranteed.' },
         { icon: '📋', title: 'Live mandates daily', desc: 'Fresh job mandates from verified employers — updated every day.' },
         { icon: '🚀', title: 'Submit in 60 seconds', desc: 'Upload CV, fill details, submit. No paperwork. No gatekeepers.' },
         { icon: '📈', title: 'Real-time dashboard', desc: 'Track every submission, shortlist, and payout in real time.' },

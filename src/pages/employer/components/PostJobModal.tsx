@@ -839,7 +839,26 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
             }}
             disabled={submitting}
             className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
-          >
+
+            {/* Payment Term Explanation - Anomaly #5 */}
+                        <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                        <p className="text-xs text-foreground/80">
+                                                          <strong>Payment Terms:</strong>strong><br/>
+                                                          • <strong>45 days:</strong>strong> Payment from successful placement<br/>
+                                                          • <strong>90 days:</strong>strong> Extended window for larger teams
+                                        </p>p>
+                        </div>div>
+        
+          {/* Contact-Unlock Disclosure - Anomaly #6 */}
+                      <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                      <label className="flex items-start gap-2 cursor-pointer">
+                                                        <input type="checkbox" required className="mt-1" />
+                                                        <span className="text-xs text-foreground/80">
+                                                                            I understand that candidates directly applying will have access to unlock my contact information based on standard unlock fees.
+                                                        </span>span>
+                                      </label>label>
+                      </div>div></div>
+            >
             {submitting ? (
               <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>Posting…</>
             ) : step === 1 ? 'Next: Job Description →' : step === 2 ? 'Preview Job →' : 'Confirm & Post Job'}

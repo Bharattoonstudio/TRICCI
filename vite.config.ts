@@ -80,7 +80,17 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
   },
 
   ssr: {
-    noExternal: isSsrBuild ? true : undefined
+    noExternal: isSsrBuild ? true : undefined,
+    // pdfkit loads its standard font metrics (Helvetica.afm etc.) at runtime
+    // via fs.readFileSync(__dirname + '/data/...'). When bundled into the
+    // single-file SSR output, Rollup rewrites __dirname to the bundle's own
+    // directory (dist/), which never contains those font files, so every
+    // PDF render throws and the CV Enhancer's "Approve & Download" step
+    // fails with a 500. Keeping pdfkit external means it's resolved via
+    // normal Node module resolution at runtime instead, so its own
+    // __dirname correctly points at node_modules/pdfkit/js/ where the
+    // font data actually lives.
+    external: isSsrBuild ? ["pdfkit"] : undefined
   },
 
   server: {

@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { fileURLToPath } from "node:url";
 import { dirname, extname, join } from "node:path";
 import { readFileSync } from "node:fs";
+import { checkRequiredEnv } from "@/server/lib/checkRequiredEnv.js";
 
 // <api-imports>
 import admin_assessments_get_0 from "./api/admin/assessments/GET";
@@ -636,6 +637,8 @@ if (import.meta.env.PROD) {
 			void shutdown(signal);
 		});
 	});
+
+	checkRequiredEnv();
 
 	const rawPort = process.env.PORT || "3000";
 	const port = parseInt(rawPort, 10);

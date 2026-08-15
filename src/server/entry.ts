@@ -439,6 +439,26 @@ app.get("/sitemap.xml", (req, res) => {
 	res.type("application/xml").set("Cache-Control", "public, max-age=60, must-revalidate").set("Vary", "Host").send(body);
 });
 
+// Serve user-uploaded files (candidate/consultant CVs, consent proofs,
+// AI-enhanced CV PDFs). Every upload handler writes to
+// /shared-storage/public/assets/... and returns a matching
+// /airo-assets/... URL for the client to use, but no route anywhere
+// actually mapped that URL prefix to the directory on disk -- so every
+// uploaded file 404'd regardless of format, including the AI CV
+// Enhancer's generated PDF. Registered unconditionally (not gated behind
+// PROD) so it also works against a mounted /shared-storage in other
+// environments; harmlessly falls through to the next handler if the
+// directory doesn't exist.
+app.use(
+	"/airo-assets",
+	express.static("/shared-storage/public/assets", {
+		index: false,
+		setHeaders(res) {
+			res.set("Cache-Control", "private, no-cache");
+		},
+	}),
+);
+
 if (import.meta.env.PROD) {
 	const __dirname = dirname(fileURLToPath(import.meta.url));
 	const clientDir = join(__dirname, "client");

@@ -1,4 +1,4 @@
-import { Helmet } from '@dr.pogodin/react-helmet';
+himport { Helmet } from '@dr.pogodin/react-helmet';
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSession } from '@/lib/auth/auth-client';
@@ -85,7 +85,7 @@ const CONSULTANT_PLANS = [
     features: [
       'Access to all open mandates',
       'Unlimited candidate submissions',
-      'Standard payout: 68.75% of fee',
+      'Standard payout: 75% of fee',
       'Basic profile listing',
       'Community support',
     ],
@@ -191,10 +191,10 @@ function FeeCalculator() {
         <div className="flex h-8 rounded-xl overflow-hidden mb-3">
           <motion.div
             className="h-full bg-secondary flex items-center justify-center"
-            animate={{ width: '68.75%' }}
+            animate={{ width: '75%' }}
             transition={{ duration: 0.4 }}
           >
-            <span className="text-xs font-black text-background px-2 truncate">Consultant 68.75%</span>
+            <span className="text-xs font-black text-background px-2 truncate">Consultant 75%</span>
           </motion.div>
           <motion.div
             className="h-full bg-primary flex items-center justify-center"
@@ -213,7 +213,7 @@ function FeeCalculator() {
           <div className="bg-secondary/10 border border-secondary/20 rounded-xl p-4 text-center">
             <p className="text-xs text-muted-foreground mb-1">Consultant Earns</p>
             <p className="text-xl font-black text-secondary" style={{ fontFamily: 'var(--font-heading)' }}>{fmt(consultantShare)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">68.75% of fee</p>
+            <p className="text-xs text-muted-foreground mt-0.5">75% of fee</p>
           </div>
           <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
             <p className="text-xs text-muted-foreground mb-1">TRICCI Retains</p>
@@ -554,7 +554,7 @@ export default function BillingPage() {
                       {
                         step: '03',
                         title: 'TRICCI collects & splits',
-                        desc: 'TRICCI collects the full fee from the employer. 68.75% goes to the consultant who made the placement. TRICCI retains 31.25% as platform commission.',
+                        desc: 'TRICCI collects the full fee from the employer. 75% goes to the consultant who made the placement. TRICCI retains 31.25% as platform commission.',
                         color: '#35c9ff',
                       },
                       {
@@ -594,7 +594,7 @@ export default function BillingPage() {
                       </thead>
                       <tbody className="divide-y divide-border">
                         {[
-                          { plan: 'Free', consultant: '68.75%', tricci: '31.25%', speed: '7 business days' },
+                          { plan: 'Free', consultant: '75%', tricci: '31.25%', speed: '7 business days' },
                           { plan: 'Pro', consultant: '71%', tricci: '29%', speed: '3 business days', highlight: true },
                           { plan: 'Agency', consultant: '73%', tricci: '27%', speed: '1 business day' },
                         ].map(row => (

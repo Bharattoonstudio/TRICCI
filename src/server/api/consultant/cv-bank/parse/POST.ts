@@ -17,48 +17,35 @@ import { extractTextFromPdfBuffer, extractTextFromDocBuffer } from '@/lib/cv-tex
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 export const multerMiddleware = upload.single('cv');
 
-const 20
-  hYou are a CV parser  You are an expert CV parser for a recruitment platform. Extract structured data from CVs and return ONLY valid JSON.
-    
-    CRITICAL INSTRUCTIONS:
-  1. Extract ONLY information that is actually present in the CV — never guess
-    2. If field not found, omit it entirely (no null/empty strings)
-      3. Return ONLY valid JSON — no markdown, explanation, extra text
-        
-        Fields:
-        {
-            "name": "full name",
-                "email": "email",
-                "phone": "phone with country code",
-                "currentRole": "job title and company",
-                "currentCTC": "salary in LPA as string",
-                "expectedCTC": "desired salary in LPA as string",
-                "experience": "total years as string",
-                "location": "city/location",
-                "skills": ["skill1", "skill2"],
-                "title": "most recent job title"
-        }
+const SYSTEM_PROMPT = `You are an expert CV parser for a recruitment consultant's talent pool. Extract structured data from the CV text and return ONLY valid JSON.
 
-RULES:
-- Sum all jobs for experience years
-  - Look for CTC, salary, compensation, package keywords
-  - Extract 5-8 skills from jobs and skills section
-  - Use exact title from most recent role
-  - Include current location only
-  Return JSON only.= `You are a CV parser for a recruitment consultant's talent pool. Extract structured data from the CV text and return ONLY valid JSON.
-Use exactly these field names (omit any field you genuinely cannot find — do not guess or fabricate):
+CRITICAL INSTRUCTIONS:
+1. Extract ONLY information that is actually present in the CV text — never guess or fabricate
+2. If a field is not found, omit it entirely (no null or empty strings)
+3. Return ONLY the JSON object — no markdown fences, no explanation, no extra text
+
+Fields to extract:
 {
-  "name": "candidate full name",
-  "email": "email address",
-  "phone": "mobile number",
-  "currentRole": "current or most recent job title, and company if available e.g. 'Senior Engineer at Acme Corp'",
-  "currentCTC": "current CTC in LPA as a plain number string e.g. '12'",
-  "expectedCTC": "expected CTC in LPA as a plain number string e.g. '18'",
-  "experience": "total years of experience as a plain number string e.g. '5'",
-  "location": "city, state",
-  "skills": ["skill1", "skill2", "skill3"]
-}
-Only extract information that is actually present in the CV text. Return ONLY the JSON object — no markdown fences, no explanation, no extra text.`;
+  "name": "full name",
+    "email": "email",
+      "phone": "phone with country code",
+        "currentRole": "job title and company if available e.g. 'Senior Engineer at Acme Corp'",
+          "currentCTC": "current salary in LPA as a plain number string e.g. '12'",
+            "expectedCTC": "expected salary in LPA as a plain number string e.g. '18'",
+              "experience": "total years of experience as a plain number string e.g. '5'",
+                "location": "current city or location",
+                  "skills": ["skill1", "skill2"],
+                    "title": "most recent job title"
+                    }
+
+                    RULES:
+                    - Sum all jobs for total experience years
+                    - Look for CTC, salary, compensation, package keywords
+                    - Extract 5-8 relevant skills from jobs and skills sections
+                    - Use the exact title from the most recent role
+                    - Include only the current location
+
+                    Only extract information that is actually present in the CV text. Return ONLY the JSON object — no markdown fences, no explanation, no extra text.`;
 
 export default async function handler(req: Request, res: Response) {
   try {

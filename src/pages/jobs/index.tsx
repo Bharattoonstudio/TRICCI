@@ -587,18 +587,6 @@ export default function JobsPage() {
             </div>
           </div>
         </section>
-
-          // Debounce search handler (Anomaly #8)
-          const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-
-          const handleSearch = useCallback((value: string) => {
-                setSearchQuery(value);
-            if (searchTimeout) clearTimeout(searchTimeout);
-            const timeout = setTimeout(() => {
-                    fetchJobs({ q: value });
-        }, 300);
-            setSearchTimeout(timeout);
-        }, [searchTimeout]);
       </main>
     </>
   );

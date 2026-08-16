@@ -20,7 +20,8 @@ export async function extractTextFromPdfBuffer(buf: Buffer): Promise<string> {
       fullText += content.items.map((item: any) => item.str ?? '').join(' ') + '\n';
     }
     return fullText.replace(/\s{3,}/g, '\n').trim().slice(0, 7000);
-  } catch {
+  } catch (err) {
+    console.error('[cv-text] PDF extraction failed:', err instanceof Error ? err.stack : err);
     return '';
   }
 }
@@ -29,8 +30,10 @@ export async function extractTextFromPdfBuffer(buf: Buffer): Promise<string> {
 export async function extractTextFromDocBuffer(buf: Buffer): Promise<string> {
   try {
     const result = await mammoth.extractRawText({ buffer: buf });
+    console.log('[cv-text] mammoth result length:', (result.value || '').length, 'messages:', JSON.stringify(result.messages));
     return (result.value || '').replace(/\s{3,}/g, '\n').trim().slice(0, 7000);
-  } catch {
+  } catch (err) {
+    console.error('[cv-text] DOC extraction failed:', err instanceof Error ? err.stack : err);
     return '';
   }
 }

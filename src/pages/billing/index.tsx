@@ -1,4 +1,4 @@
-himport { Helmet } from '@dr.pogodin/react-helmet';
+import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSession } from '@/lib/auth/auth-client';

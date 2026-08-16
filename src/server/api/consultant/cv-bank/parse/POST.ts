@@ -63,8 +63,8 @@ export default async function handler(req: Request, res: Response) {
 
     const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
     const text = isPdf
-      ? extractTextFromPdfBuffer(file.buffer)
-      : extractTextFromDocBuffer(file.buffer);
+      ?await  extractTextFromPdfBuffer(file.buffer)
+      :await  extractTextFromDocBuffer(file.buffer);
 
     if (!text || text.trim().length < 40) {
       return res.status(200).json({ parsed: null, reason: 'no_text' });

@@ -45,8 +45,8 @@ export default async function handler(req: Request, res: Response) {
     // Extract text from buffer
     const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
     const text = isPdf
-      ? extractTextFromPdfBuffer(file.buffer)
-      : extractTextFromDocBuffer(file.buffer);
+      ? await extractTextFromPdfBuffer(file.buffer)
+      : await extractTextFromDocBuffer(file.buffer);
 
     if (!text || text.trim().length < 40) {
       console.warn('[cv-parse] insufficient text extracted, length:', text.length);

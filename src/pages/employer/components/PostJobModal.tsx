@@ -631,6 +631,23 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
                 </div>
               </div>
 
+              {/* Payment Term Explanation */}
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-xs text-foreground/80">
+                  <strong>Payment Terms:</strong><br />
+                  <strong>45 days:</strong> Payment is due 45 days after the candidate's joining date — the standard option for most roles.<br />
+                  <strong>90 days:</strong> An extended window, useful for larger teams or longer notice periods.
+                </p>
+              </div>
+
+              {/* Contact-Unlock Disclosure */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <p className="text-xs text-foreground/80 flex items-start gap-2">
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-amber-600" />
+                  <span>Candidates who apply directly will be able to unlock your contact information based on standard unlock fees.</span>
+                </p>
+              </div>
+
               {/* Interview Rounds */}
               <div>
                 <div className="flex items-center justify-between mb-2">

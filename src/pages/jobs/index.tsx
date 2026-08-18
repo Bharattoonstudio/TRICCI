@@ -193,6 +193,10 @@ export default function JobsPage() {
   const location = searchParams.get('location') ?? 'all';
   const locationType = searchParams.get('locationType') ?? 'all';
 
+  // Local, instantly-responsive search input; synced to the URL param on a debounce
+  // so fast typing doesn't fire a fetch (and re-render) on every keystroke (Anomaly #8)
+  const [searchInput, setSearchInput] = useState(q);
+
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     setFetchError(false);
@@ -219,6 +223,16 @@ export default function JobsPage() {
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
+  // Debounce: only push the typed search text into the URL (and trigger a fetch)
+  // 300ms after the user stops typing.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setParam('q', searchInput);
+    }, 300);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
     if (value === 'all' || value === '') next.delete(key);
@@ -227,6 +241,7 @@ export default function JobsPage() {
   }
 
   function clearFilters() {
+    setSearchInput('');
     setSearchParams({}, { replace: true });
   }
 
@@ -331,12 +346,12 @@ export default function JobsPage() {
                 <input
                   type="text"
                   placeholder="Search by title, skill, or company…"
-                  value={q}
-                  onChange={e => setParam('q', e.target.value)}
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
                   className="w-full pl-11 pr-4 py-4 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all text-sm"
                 />
-                {q && (
-                  <button onClick={() => setParam('q', '')}
+                {searchInput && (
+                  <button onClick={() => { setSearchInput(''); setParam('q', ''); }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     <X size={16} />
                   </button>

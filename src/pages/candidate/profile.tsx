@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import AccountDetails from '@/components/shared/AccountDetails';
 import AgreementGate from '@/components/shared/AgreementGate';
 import ConsultantSubmissionsCard from '@/components/candidate/ConsultantSubmissionsCard';
+import CVViewer from '@/components/candidate/CVViewer';
 
 // ─── TIC GPT ─────────────────────────────────────────────────────────────────
 const TIC_GPT_ID = 'g-6a1b310c327c8191a48366560e14fd6e-tic-1-0-talent-intelligence-copilot';
@@ -205,6 +206,7 @@ export default function CandidateProfilePage() {
   const [cvUploading, setCvUploading] = useState(false);
   const [cvParsing, setCvParsing] = useState(false);
   const [cvError, setCvError] = useState('');
+  const [showCvViewer, setShowCvViewer] = useState(false);
   const cvInputRef = useRef<HTMLInputElement>(null);
 
   // Applications state
@@ -884,6 +886,10 @@ export default function CandidateProfilePage() {
                       <span className="flex items-center gap-1 text-xs text-green-400 font-semibold">
                         <CheckCircle size={12} /> Uploaded
                       </span>
+                      <button onClick={() => setShowCvViewer(true)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
+                        <Eye size={12} /> Preview
+                      </button>
                       <a href={profile.cvUrl} target="_blank" rel="noopener noreferrer"
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:text-foreground transition-colors">
                         <Download size={12} /> View
@@ -1139,6 +1145,14 @@ export default function CandidateProfilePage() {
 
         </AnimatePresence>
       </div>
+
+      {showCvViewer && profile.cvUrl && (
+        <CVViewer
+          cvUrl={profile.cvUrl}
+          fileName={profile.cvFileName}
+          onClose={() => setShowCvViewer(false)}
+        />
+      )}
     </>
   );
 }

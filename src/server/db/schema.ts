@@ -533,6 +533,29 @@ export const placement = pgTable('placement', {
   joiningNote: text('joining_note'),
 });
 
+// ── Interview Rounds (Interview tracking & feedback) ────────────────────────────
+
+export const interviewRound = pgTable('interview_rounds', {
+  id: serial('id').primaryKey(),
+  submissionId: integer('submission_id').notNull().references(() => submission.id, { onDelete: 'cascade' }),
+  round: integer('round').notNull(),  // Round number: 1, 2, 3, etc.
+  roundName: varchar('round_name', { length: 100 }),  // "Technical", "HR", "Manager", etc.
+  status: varchar('status', { length: 50 }).notNull().default('scheduled'),  // scheduled, in_progress, completed, cancelled
+  scheduledAt: timestamp('scheduled_at'),  // When interview is scheduled for
+  completedAt: timestamp('completed_at'),  // When interview actually happened
+  interviewerId: varchar('interviewer_id', { length: 36 }),  // ID of person who interviewed
+  feedback: text('feedback'),  // Feedback from interviewer
+  score: integer('score'),  // 1-5 rating
+  reasonForSelection: varchar('reason_for_selection', { length: 500 }),  // Why moving forward or not
+  nextSteps: text('next_steps'),  // What happens next
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  index('idx_interview_submission').on(t.submissionId),
+  index('idx_interview_status').on(t.status),
+  index('idx_interview_scheduled').on(t.scheduledAt),
+]);
+
 // ── Employer wallet (Razorpay credit top-ups) ─────────────────────────────────
 
 // ── Contact unlock requests (points 11-12) ──────────────────────────────────

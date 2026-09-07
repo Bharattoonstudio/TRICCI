@@ -66,6 +66,7 @@ export default async function handler(req: Request, res: Response) {
       to,
       subject: `Offer released — ${row.candidateName} for ${row.jobTitle}`,
       html: `<p>An offer has been released for <strong>${row.candidateName}</strong> — <strong>${row.jobTitle}</strong> at ${row.companyName}.</p><p>Offered CTC: <strong>₹${offerCtcLpa}L</strong></p><p>Offer valid until: <strong>${new Date(offerExpiryDate).toLocaleDateString('en-IN')}</strong></p>${note ? `<p>${note}</p>` : ''}`,
+      senderName: `${row.companyName} via TRICCI`,
     }).catch(e => console.error('offer.send.email.error', e))));
 
     res.json({ ok: true, offerStatus: 'sent' });

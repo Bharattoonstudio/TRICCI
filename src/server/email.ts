@@ -29,6 +29,7 @@ export type SendEmailInput = {
 	html?: string;
 	replyTo?: string;
 	from?: string;
+	senderName?: string;  // Optional display name (defaults to BREVO_SENDER_NAME or "TRICCI")
 	attachments?: EmailAttachment[];
 };
 
@@ -39,7 +40,7 @@ export type SendEmailResult = {
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
 	const apiKey = process.env.BREVO_API_KEY;
 	const senderEmail = process.env.BREVO_SENDER_EMAIL;
-	const senderName = process.env.BREVO_SENDER_NAME || "TRICCI";
+	const senderName = input.senderName || process.env.BREVO_SENDER_NAME || "TRICCI";
 
 	if (!apiKey || !senderEmail) {
 		throw new Error(

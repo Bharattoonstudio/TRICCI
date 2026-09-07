@@ -112,6 +112,37 @@ export default function OfferModal({ submissionId, candidateName, onClose, onUpd
           <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-muted-foreground" /></div>
         ) : !placement ? (
           <p className="text-sm text-muted-foreground py-4">No placement record found for this candidate yet — offer management requires the candidate to be at Selected stage.</p>
+        ) : placement.offerStatus === 'withdrawn' ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 bg-orange-500/15 border border-orange-500/30 rounded-lg p-3">
+              <AlertCircle size={18} className="text-orange-500 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-orange-600">Offer Withdrawn</p>
+                <p className="text-xs text-orange-500">This offer was withdrawn. You can send a new one below.</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Offered CTC (LPA) *</label>
+              <input type="number" min="0" step="0.1" value={offerCtc} onChange={e => setOfferCtc(e.target.value)}
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Offer Valid Until *</label>
+              <input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)}
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Note (optional)</label>
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground" />
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <button onClick={handleSend} disabled={submitting}
+              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-2.5 rounded-xl disabled:opacity-60">
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={14} />}
+              Resend Offer
+            </button>
+          </div>
         ) : placement.offerStatus === 'not_sent' ? (
           <div className="space-y-3">
             <div>

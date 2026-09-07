@@ -39,6 +39,14 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'Not your placement' });
     }
 
+    // Prevent duplicate offers — can only send if status is 'not_sent' or 'withdrawn'
+    if (row.offerStatus !== 'not_sent' && row.offerStatus !== 'withdrawn') {
+      return res.status(400).json({
+        error: 'Cannot send offer',
+        message: `Offer already ${row.offerStatus} — cannot send a new one`,
+      });
+    }
+
     await db.update(placement).set({
       offerStatus: 'sent',
       offerCtcLpa,

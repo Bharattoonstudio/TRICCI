@@ -1,0 +1,12 @@
+/**
+ * GET /api/payments/mode
+ * Returns whether Razorpay is in test or live mode.
+ * Safe to call unauthenticated — only reveals test/live, never the key itself.
+ */
+import type { Request, Response } from 'express';
+
+export default function handler(_req: Request, res: Response) {
+  const key_id = process.env.RAZORPAY_KEY_ID;
+  const isTest = typeof key_id === 'string' && key_id.startsWith('rzp_test_');
+  res.json({ mode: isTest ? 'test' : 'live' }); }
+

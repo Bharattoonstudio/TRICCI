@@ -514,6 +514,8 @@ export const placement = pgTable('placement', {
   offerExpiryDate: timestamp('offer_expiry_date'),
   offerRespondedAt: timestamp('offer_responded_at'),
   offerNote: text('offer_note'),
+  offerWithdrawnAt: timestamp('offer_withdrawn_at'),  // When offer was withdrawn
+  offerWithdrawnBy: varchar('offer_withdrawn_by', { length: 36 }),  // Employer user ID who withdrew
   joiningDate: timestamp('joining_date'),
   // ── Joining Tracker ──────────────────────────────────────────────────
   // pending | in_progress | cleared | flagged

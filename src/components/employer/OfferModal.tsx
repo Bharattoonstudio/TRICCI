@@ -11,7 +11,7 @@
  */
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { X, Loader2, Send, CheckCircle2, XCircle } from 'lucide-react';
+import { X, Loader2, Send, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 interface PlacementRecord {
   id: number;
@@ -37,6 +37,7 @@ export default function OfferModal({ submissionId, candidateName, onClose, onUpd
   const [joiningDate, setJoiningDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
 
   useEffect(() => {
     fetch(`/api/employer/placements/by-submission/${submissionId}`)
@@ -78,6 +79,23 @@ export default function OfferModal({ submissionId, candidateName, onClose, onUpd
       else { const d = await res.json(); setError(d.error || 'Failed to record response.'); }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleWithdraw() {
+    if (!placement) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/employer/placements/${placement.id}/offer/withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) { onUpdated(); onClose(); }
+      else { const d = await res.json(); setError(d.error || 'Failed to withdraw offer.'); }
+    } finally {
+      setSubmitting(false);
+      setShowWithdrawConfirm(false);
     }
   }
 
@@ -140,6 +158,10 @@ export default function OfferModal({ submissionId, candidateName, onClose, onUpd
                 {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} Accepted
               </button>
             </div>
+            <button onClick={() => setShowWithdrawConfirm(true)} disabled={submitting}
+              className="w-full flex items-center justify-center gap-1.5 border border-orange-500/30 text-orange-500 text-xs font-semibold py-2 rounded-lg disabled:opacity-40 hover:bg-orange-500/5">
+              <AlertCircle size={13} /> Withdraw Offer
+            </button>
           </div>
         ) : (
           <div className="text-center py-4">
@@ -149,6 +171,35 @@ export default function OfferModal({ submissionId, candidateName, onClose, onUpd
           </div>
         )}
       </motion.div>
+
+      {/* Withdrawal Confirmation Dialog */}
+      {showWithdrawConfirm && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-sm bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertCircle size={24} className="text-orange-500 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-foreground">Withdraw Offer?</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This will notify {candidateName} that the offer has been withdrawn.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowWithdrawConfirm(false)} disabled={submitting}
+                className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-40">
+                Cancel
+              </button>
+              <button onClick={handleWithdraw} disabled={submitting}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-500 disabled:opacity-40 flex items-center justify-center gap-2">
+                {submitting ? <Loader2 size={14} className="animate-spin" /> : <AlertCircle size={14} />}
+                Withdraw
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

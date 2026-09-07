@@ -13,6 +13,7 @@ import Spinner from './components/Spinner';
 import { routes } from './routes';
 import { initAnalytics, trackPageView } from './lib/analytics';
 import { getAnalyticsConsent, onConsentChange } from './lib/analytics-consent';
+import { ThemeProvider } from './lib/theme-context';
 
 const CookieBanner = lazy(() =>
   import('@/components/CookieBanner').catch((error) => {
@@ -81,18 +82,20 @@ const router = createBrowserRouter(routeTree);
 
 export default function App() {
   return (
-    <>
-      <RouterProvider router={router} />
-      {/*
-        CookieBanner reads document.cookie and subscribes to browser events.
-        App.tsx is client-only (entry-server.tsx renders the route tree
-        directly without importing App), so no SSR gate is needed here.
-      */}
-      <CookieBannerErrorBoundary>
-        <Suspense fallback={null}>
-          <CookieBanner />
-        </Suspense>
-      </CookieBannerErrorBoundary>
-    </>
+    <ThemeProvider>
+      <>
+        <RouterProvider router={router} />
+        {/*
+          CookieBanner reads document.cookie and subscribes to browser events.
+          App.tsx is client-only (entry-server.tsx renders the route tree
+          directly without importing App), so no SSR gate is needed here.
+        */}
+        <CookieBannerErrorBoundary>
+          <Suspense fallback={null}>
+            <CookieBanner />
+          </Suspense>
+        </CookieBannerErrorBoundary>
+      </>
+    </ThemeProvider>
   );
 }

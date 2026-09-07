@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import SubmitToJobModal from './SubmitToJobModal';
 import CVUploadModal, { CandidateData } from './CVUploadModal';
+import BulkCVUploadModal from './BulkCVUploadModal';
 
 interface ConsultantCVBankProps {
   onSubmitSuccess?: () => void;
@@ -189,6 +190,7 @@ export default function ConsultantCVBank({ onSubmitSuccess }: ConsultantCVBankPr
   const [selectedCV, setSelectedCV] = useState<CVEntry | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [showCVUploadModal, setShowCVUploadModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -294,6 +296,29 @@ export default function ConsultantCVBank({ onSubmitSuccess }: ConsultantCVBankPr
     };
     setCVs(prev => [newEntry, ...prev]);
     setShowCVUploadModal(false);
+  }
+
+  function handleBulkUploadSuccess(candidatesData: CandidateData[]) {
+    const newEntries: CVEntry[] = candidatesData.map(candidateData => ({
+      id: crypto.randomUUID(),
+      name: candidateData.name,
+      email: candidateData.email,
+      phone: candidateData.phone,
+      currentRole: candidateData.currentRole,
+      currentCTC: candidateData.currentCTC,
+      expectedCTC: candidateData.expectedCTC,
+      experience: candidateData.experience,
+      location: candidateData.location,
+      skills: Array.isArray(candidateData.skills) ? candidateData.skills : candidateData.skills.split(',').map(s => s.trim()),
+      tags: [],
+      uploadedAt: new Date().toISOString(),
+      fileName: candidateData.fileName,
+      fileSize: '',
+      starred: false,
+      notes: `Added from bulk upload: ${candidateData.fileName}`,
+    }));
+    setCVs(prev => [...newEntries, ...prev]);
+    setShowBulkUploadModal(false);
   }
 
   async function toggleStar(id: string) {
@@ -485,6 +510,10 @@ export default function ConsultantCVBank({ onSubmitSuccess }: ConsultantCVBankPr
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
             <Upload size={14} /> {bulkUploading ? 'Uploading…' : 'Bulk Upload (CSV)'}
           </button>
+          <button onClick={() => setShowBulkUploadModal(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-primary/50 text-sm font-semibold text-primary hover:border-primary transition-colors">
+            <Upload size={14} /> Bulk Upload (PDF/Word)
+          </button>
           <button onClick={() => setShowCVUploadModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-opacity">
             <Plus size={14} /> Add Candidate via CV
@@ -652,6 +681,14 @@ export default function ConsultantCVBank({ onSubmitSuccess }: ConsultantCVBankPr
         <CVUploadModal
           onClose={() => setShowCVUploadModal(false)}
           onSuccess={handleCVUploadSuccess}
+        />
+      )}
+
+      {/* Bulk PDF/Word Upload Modal */}
+      {showBulkUploadModal && (
+        <BulkCVUploadModal
+          onClose={() => setShowBulkUploadModal(false)}
+          onSuccess={handleBulkUploadSuccess}
         />
       )}
 

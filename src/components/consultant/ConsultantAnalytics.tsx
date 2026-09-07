@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp, TrendingDown, Users, Briefcase, CheckCircle,
   XCircle, Clock, Star, Award, Target, Zap, IndianRupee,
   ArrowUpRight, ArrowDownRight, Download, BarChart3, Activity, Loader2
 } from 'lucide-react';
+import { AnalyticsDrilldown } from './AnalyticsDrilldown';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AnalyticsData {
@@ -185,17 +186,18 @@ function StarRating({ rating, max = 5 }: { rating: number; max?: number }) {
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 function KPICard({
-  icon: Icon, label, value, sub, color, trend, prefix = '', suffix = '', decimals = 0,
+  icon: Icon, label, value, sub, color, trend, prefix = '', suffix = '', decimals = 0, onClick,
 }: {
   icon: React.ElementType; label: string; value: number; sub?: string;
-  color: string; trend?: 'up' | 'down'; prefix?: string; suffix?: string; decimals?: number;
+  color: string; trend?: 'up' | 'down'; prefix?: string; suffix?: string; decimals?: number; onClick?: () => void;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="bg-card border border-border rounded-2xl p-5 relative overflow-hidden"
+      className={`bg-card border border-border rounded-2xl p-5 relative overflow-hidden ${onClick ? 'cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all' : ''}`}
+      onClick={onClick}
     >
       {/* Glow */}
       <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 pointer-events-none"
@@ -381,6 +383,7 @@ function PerformanceGauge({ rating, percentile }: { rating: number; percentile: 
 export default function ConsultantAnalytics() {
   const [data, setData] = useState<AnalyticsData>(MOCK_DATA);
   const [loading, setLoading] = useState(true);
+  const [drilldown, setDrilldown] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/consultant/analytics')
@@ -462,11 +465,103 @@ export default function ConsultantAnalytics() {
 
       {/* ── Row 1: Top KPIs ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={Briefcase} label="Jobs Accepted" value={data.jobsAccepted} color="#6B4FBB" trend="up" />
-        <KPICard icon={Zap} label="Jobs Live" value={data.jobsLive} color="#E8470A" sub={`${data.jobsClosed} closed`} />
-        <KPICard icon={Users} label="CVs Submitted" value={data.cvsSubmitted} color="#35c9ff" trend="up" />
-        <KPICard icon={IndianRupee} label="Total Earned" value={data.totalEarned / 100000} prefix="₹" suffix="L" decimals={2} color="#22c55e" trend="up" />
+        <KPICard 
+          icon={Briefcase} 
+          label="Jobs Accepted" 
+          value={data.jobsAccepted} 
+          color="#6B4FBB" 
+          trend="up"
+          onClick={() => setDrilldown('jobs')}
+        />
+        <KPICard 
+          icon={Zap} 
+          label="Jobs Live" 
+          value={data.jobsLive} 
+          color="#E8470A" 
+          sub={`${data.jobsClosed} closed`}
+          onClick={() => setDrilldown('jobsLive')}
+        />
+        <KPICard 
+          icon={Users} 
+          label="CVs Submitted" 
+          value={data.cvsSubmitted} 
+          color="#35c9ff" 
+          trend="up"
+          onClick={() => setDrilldown('cvs')}
+        />
+        <KPICard 
+          icon={IndianRupee} 
+          label="Total Earned" 
+          value={data.totalEarned / 100000} 
+          prefix="₹" 
+          suffix="L" 
+          decimals={2} 
+          color="#22c55e" 
+          trend="up"
+          onClick={() => setDrilldown('earnings')}
+        />
       </div>
+
+      {/* ── Drilldown Modals ── */}
+      <AnimatePresence>
+        {drilldown === 'jobs' && (
+          <AnalyticsDrilldown
+            title="Jobs Accepted"
+            metric="Total Mandates"
+            value={data.jobsAccepted}
+            description="Total job mandates you've accepted from employers"
+            details={[
+              { label: 'Live / Active', value: data.jobsLive, color: '#E8470A' },
+              { label: 'Closed / Filled', value: data.jobsClosed, color: '#22c55e' },
+              { label: 'In Progress', value: data.jobsAccepted - data.jobsLive - data.jobsClosed, color: '#6B4FBB' },
+            ]}
+            onClose={() => setDrilldown(null)}
+          />
+        )}
+        {drilldown === 'jobsLive' && (
+          <AnalyticsDrilldown
+            title="Live Jobs"
+            metric="Active Mandates"
+            value={data.jobsLive}
+            description="Job mandates currently open for submissions"
+            details={[
+              { label: 'Total Accepted', value: data.jobsAccepted, color: '#6B4FBB' },
+              { label: 'Closed', value: data.jobsClosed, color: '#22c55e' },
+              { label: 'Avg. Submissions/Job', value: (data.cvsSubmitted / Math.max(data.jobsAccepted, 1)).toFixed(1), color: '#35c9ff' },
+            ]}
+            onClose={() => setDrilldown(null)}
+          />
+        )}
+        {drilldown === 'cvs' && (
+          <AnalyticsDrilldown
+            title="CVs Submitted"
+            metric="Total Submissions"
+            value={data.cvsSubmitted}
+            description="Total candidate CVs submitted across all jobs"
+            details={[
+              { label: 'Shortlisted', value: data.cvsShortlisted, color: '#6B4FBB' },
+              { label: 'Rejected', value: data.cvsRejected, color: '#ef4444' },
+              { label: 'In Review', value: data.cvsSubmitted - data.cvsShortlisted - data.cvsRejected, color: '#ffd035' },
+              { label: 'Shortlist Rate', value: `${Math.round((data.cvsShortlisted / Math.max(data.cvsSubmitted, 1)) * 100)}%`, color: '#6B4FBB' },
+            ]}
+            onClose={() => setDrilldown(null)}
+          />
+        )}
+        {drilldown === 'earnings' && (
+          <AnalyticsDrilldown
+            title="Total Earned"
+            metric="Lifetime Earnings"
+            value={`₹${(data.totalEarned / 100000).toFixed(2)}L`}
+            description="Total commission earned from placements"
+            details={[
+              { label: 'Pending', value: `₹${(data.pendingEarnings / 100000).toFixed(2)}L`, color: '#ffd035' },
+              { label: 'Placements', value: data.candidatesJoined, color: '#22c55e' },
+              { label: 'Avg per Placement', value: `₹${(data.totalEarned / Math.max(data.candidatesJoined, 1) / 100000).toFixed(2)}L`, color: '#35c9ff' },
+            ]}
+            onClose={() => setDrilldown(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Row 2: Performance gauge + Donut + Ratios ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

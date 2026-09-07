@@ -4,6 +4,7 @@ import { HelmetProvider } from '@dr.pogodin/react-helmet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './styles/globals.css';
+import './styles/theme.css';
 import './content/blog';
 
 if (import.meta.env.MODE === 'development') {

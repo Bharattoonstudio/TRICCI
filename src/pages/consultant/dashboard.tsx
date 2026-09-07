@@ -9,8 +9,9 @@ import {
   BarChart3, Database, ChevronRight, MapPin,
   BookOpen, Gamepad2, FileText, Video, HelpCircle,
   ExternalLink, PlayCircle, Target, Flame, Trophy,
-  Clock, TrendingDown, Activity, Sparkles
+  Clock, TrendingDown, Activity, Sparkles, Moon, Sun, Monitor
 } from 'lucide-react';
+import { useTheme } from '@/lib/theme-context';
 import ConsultantAgreementModal from '@/components/consultant/ConsultantAgreementModal';
 import ConsultantJobsTab from '@/components/consultant/ConsultantJobsTab';
 import ConsultantCVBank from '@/components/consultant/ConsultantCVBank';
@@ -158,11 +159,14 @@ type TabId = 'overview' | 'jobs' | 'cvbank' | 'submissions' | 'analytics' | 'ear
 
 export default function ConsultantDashboard() {
   const navigate = useNavigate();
+  const { theme, setTheme, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [liveJobs, setLiveJobs] = useState<Job[]>([]);
   const [agreementSigned, setAgreementSigned] = useState<boolean | null>(null);
   const [showAgreement, setShowAgreement] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [earningsDrilldown, setEarningsDrilldown] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/consultant/agreement')
@@ -319,7 +323,7 @@ export default function ConsultantDashboard() {
       </Helmet>
 
       {/* ── Full dark canvas ── */}
-      <div className="min-h-screen" style={{ background: '#080808' }}>
+      <div className="min-h-screen" style={{ background: isDark ? '#080808' : '#ffffff' }}>
         <h1 className="sr-only">Consultant Portal — TRICCI</h1>
 
         {/* ══════════════════════════════════════════════════════
@@ -523,6 +527,42 @@ export default function ConsultantDashboard() {
                   <Bell size={14} />
                   <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-primary rounded-full" />
                 </button>
+                {/* Theme toggle */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowThemeMenu(!showThemeMenu)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                    style={{ background: '#ffffff08', border: '1px solid #ffffff10' }}>
+                    {isDark ? <Moon size={14} /> : <Sun size={14} />}
+                  </button>
+                  {showThemeMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="absolute right-0 mt-2 rounded-lg shadow-lg z-50"
+                      style={{ background: '#1a1a1a', border: '1px solid #333' }}>
+                      {['light', 'dark', 'auto'].map(t => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            setTheme(t as any);
+                            setShowThemeMenu(false);
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-colors ${
+                            theme === t ? 'text-primary bg-primary/10' : 'text-white/60 hover:text-white'
+                          }`}
+                          style={{ borderBottom: t !== 'auto' ? '1px solid #333' : 'none' }}>
+                          {t === 'light' && <Sun size={14} />}
+                          {t === 'dark' && <Moon size={14} />}
+                          {t === 'auto' && <Monitor size={14} />}
+                          <span className="capitalize">{t}</span>
+                          {theme === t && <span className="ml-auto">✓</span>}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
                 <button onClick={() => setActiveTab('account')} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
                   style={{ background: '#ffffff08', border: '1px solid #ffffff10' }}>
                   <Settings size={14} />
@@ -910,14 +950,17 @@ export default function ConsultantDashboard() {
                     { label: 'Pending Payouts', value: `₹${pendingPayoutLpa.toFixed(2)}L`, sub: pendingPayoutLpa > 0 ? 'Fee accepted, awaiting payment' : 'Nothing pending', color: '#ffd035' },
                     { label: 'Active Pipeline', value: String(shortlistedCount), sub: shortlistedCount > 0 ? 'Candidates in progress' : 'Submit candidates to build pipeline', color: '#E8470A' },
                   ].map(e => (
-                    <div key={e.label} className="rounded-2xl border p-6 relative overflow-hidden"
+                    <button 
+                      key={e.label} 
+                      onClick={() => setEarningsDrilldown(e.label.toLowerCase().replace(' ', ''))}
+                      className="rounded-2xl border p-6 relative overflow-hidden text-left cursor-pointer hover:opacity-90 transition-opacity active:scale-95 disabled:opacity-50"
                       style={{ background: `linear-gradient(135deg, ${e.color}08 0%, #0d0d0d 100%)`, borderColor: `${e.color}20` }}>
                       <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none opacity-15"
                         style={{ background: `radial-gradient(circle, ${e.color} 0%, transparent 70%)` }} />
                       <p className="text-xs text-white/30 mb-2">{e.label}</p>
                       <p className="text-3xl font-black mb-1" style={{ fontFamily: 'var(--font-heading)', color: e.color }}>{e.value}</p>
                       <p className="text-xs text-white/25">{e.sub}</p>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
@@ -956,6 +999,114 @@ export default function ConsultantDashboard() {
                     ))}
                   </div>
                 </div>
+
+                {/* Earnings Drilldown Modals */}
+                <AnimatePresence>
+                  {earningsDrilldown === 'totalearned' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                      onClick={() => setEarningsDrilldown(null)}>
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                        className="bg-card border border-border rounded-2xl max-w-md w-full p-6"
+                        style={{ background: '#0d0d0d', borderColor: '#333' }}
+                        onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-bold text-white mb-1">Total Earned</h2>
+                        <p className="text-sm text-white/50 mb-6">Lifetime commission from placements</p>
+                        <div className="bg-green-500/10 rounded-lg p-4 mb-4 border border-green-500/20">
+                          <p className="text-xs text-white/50 mb-1">Total Commission</p>
+                          <p className="text-3xl font-black text-green-400" style={{ fontFamily: 'var(--font-heading)' }}>₹{totalEarnedLpa.toFixed(2)}L</p>
+                        </div>
+                        <div className="space-y-3 mb-6">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-white/50">Placements Closed</span>
+                            <span className="text-white font-semibold">{placementsClosed}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-white/50">Avg per Placement</span>
+                            <span className="text-white font-semibold">₹{(totalEarnedLpa / Math.max(placementsClosed, 1)).toFixed(2)}L</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setEarningsDrilldown(null)}
+                          className="w-full px-4 py-2 rounded-lg bg-primary text-white font-semibold hover:opacity-90 transition-opacity">
+                          Close
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                  {earningsDrilldown === 'pendingpayouts' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                      onClick={() => setEarningsDrilldown(null)}>
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                        className="bg-card border border-border rounded-2xl max-w-md w-full p-6"
+                        style={{ background: '#0d0d0d', borderColor: '#333' }}
+                        onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-bold text-white mb-1">Pending Payouts</h2>
+                        <p className="text-sm text-white/50 mb-6">Fees awaiting payment from employers</p>
+                        <div className="bg-yellow-500/10 rounded-lg p-4 mb-4 border border-yellow-500/20">
+                          <p className="text-xs text-white/50 mb-1">Pending Amount</p>
+                          <p className="text-3xl font-black text-yellow-400" style={{ fontFamily: 'var(--font-heading)' }}>₹{pendingPayoutLpa.toFixed(2)}L</p>
+                        </div>
+                        <div className="space-y-3 mb-6 text-sm text-white/70">
+                          <p>✓ Fees have been accepted by you</p>
+                          <p>✓ Awaiting payment from employer</p>
+                          <p>⏱ Typically paid within 7-30 days</p>
+                        </div>
+                        <button
+                          onClick={() => setEarningsDrilldown(null)}
+                          className="w-full px-4 py-2 rounded-lg bg-primary text-white font-semibold hover:opacity-90 transition-opacity">
+                          Close
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                  {earningsDrilldown === 'activepipeline' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                      onClick={() => setEarningsDrilldown(null)}>
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                        className="bg-card border border-border rounded-2xl max-w-md w-full p-6"
+                        style={{ background: '#0d0d0d', borderColor: '#333' }}
+                        onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-bold text-white mb-1">Active Pipeline</h2>
+                        <p className="text-sm text-white/50 mb-6">Candidates in interview/selection stage</p>
+                        <div className="bg-orange-500/10 rounded-lg p-4 mb-4 border border-orange-500/20">
+                          <p className="text-xs text-white/50 mb-1">In Progress</p>
+                          <p className="text-3xl font-black text-orange-400" style={{ fontFamily: 'var(--font-heading)' }}>{shortlistedCount}</p>
+                        </div>
+                        <div className="space-y-3 mb-6 text-sm text-white/70">
+                          <p>👥 Candidates shortlisted</p>
+                          <p>📋 In interview rounds</p>
+                          <p>✅ Moving towards placement</p>
+                        </div>
+                        <button
+                          onClick={() => setEarningsDrilldown(null)}
+                          className="w-full px-4 py-2 rounded-lg bg-primary text-white font-semibold hover:opacity-90 transition-opacity">
+                          Close
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 

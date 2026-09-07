@@ -46,13 +46,15 @@ export default async function handler(req: Request, res: Response) {
         postedByUserId: job.postedByUserId,
         candidatePhone: submission.candidatePhone,
         candidateLocation: submission.candidateLocation,
-        ctcFixed: submission.ctcFixed,
-        ctcVariable: submission.ctcVariable,
-        ctcEsops: submission.ctcEsops,
-        experience: submission.experience,
-        noticePeriodDays: submission.noticePeriodDays,
+        candidateCurrentCtcLpa: submission.candidateCurrentCtcLpa,
+        candidateExpectedCtcLpa: submission.candidateExpectedCtcLpa,
+        candidateExperienceYears: submission.candidateExperienceYears,
+        cvUrl: submission.cvUrl,
+        coverNote: submission.coverNote,
         duplicateFlag: submission.duplicateFlag,
         winningConsultantId: submission.winningConsultantId,
+        createdAt: submission.createdAt,
+        updatedAt: submission.updatedAt,
       })
       .from(submission)
       .leftJoin(job, eq(submission.jobId, job.id))
@@ -97,14 +99,16 @@ export default async function handler(req: Request, res: Response) {
         candidateUserId: sub.candidateUserId,
         jobTitle: sub.jobTitle,
         company: sub.company,
-        ctcFixed: sub.ctcFixed,
-        ctcVariable: sub.ctcVariable,
-        ctcEsops: sub.ctcEsops,
-        experience: sub.experience,
-        noticePeriodDays: sub.noticePeriodDays,
+        ctcCurrent: sub.candidateCurrentCtcLpa,
+        ctcExpected: sub.candidateExpectedCtcLpa,
+        experience: sub.candidateExperienceYears,
+        cvUrl: sub.cvUrl,
+        coverNote: sub.coverNote,
         duplicateFlag: sub.duplicateFlag,
         // Only show winning_consultant_id to admin and affected parties
         winningConsultantId: isAdmin || sub.winningConsultantId === userId ? sub.winningConsultantId : null,
+        createdAt: sub.createdAt,
+        updatedAt: sub.updatedAt,
       },
     });
   } catch (err) {

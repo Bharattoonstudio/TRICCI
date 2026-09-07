@@ -12,13 +12,16 @@ import {
 
 interface Submission {
   id: number;
-  candidateId: string;
   jobId: string;
   candidateName: string;
   candidateEmail: string;
+  candidatePhone?: string;
   candidateLocation?: string;
-  experience?: string;
-  ctcFixed?: string;
+  experience?: number; // candidateExperienceYears
+  ctcExpected?: number; // candidateExpectedCtcLpa
+  ctcCurrent?: number; // candidateCurrentCtcLpa
+  cvUrl?: string;
+  coverNote?: string;
   status: 'pending' | 'shortlisted' | 'rejected' | 'placed';
   isDuplicate: boolean;
   isWinner: boolean;
@@ -26,7 +29,7 @@ interface Submission {
   createdAt: string;
   updatedAt: string;
   jobTitle?: string;
-  companyName?: string;
+  jobCompany?: string;
 }
 
 interface ConsultantSubmissionsListProps {
@@ -40,6 +43,7 @@ export default function ConsultantSubmissionsList({ refresh }: ConsultantSubmiss
   const [filter, setFilter] = useState<'all' | 'primary' | 'duplicate' | 'pending' | 'shortlisted'>('all');
   const [search, setSearch] = useState('');
 
+  // Load on mount and when refresh changes
   useEffect(() => {
     loadSubmissions();
   }, [refresh]);
@@ -48,14 +52,23 @@ export default function ConsultantSubmissionsList({ refresh }: ConsultantSubmiss
     setLoading(true);
     setError('');
     try {
+      console.log('[ConsultantSubmissionsList] Fetching submissions...');
       const res = await fetch('/api/consultant/submissions');
       const data = await res.json();
+      
+      console.log('[ConsultantSubmissionsList] Response status:', res.status, 'Data:', data);
+      
       if (!res.ok) {
-        setError(data.message || 'Failed to load submissions.');
+        console.error('[ConsultantSubmissionsList] API error:', data);
+        setError(data.error || data.message || 'Failed to load submissions.');
         return;
       }
-      setSubmissions(data.submissions || []);
-    } catch {
+      
+      const submissionsData = data.submissions || [];
+      console.log('[ConsultantSubmissionsList] Loaded', submissionsData.length, 'submissions');
+      setSubmissions(submissionsData);
+    } catch (err) {
+      console.error('[ConsultantSubmissionsList] Fetch error:', err);
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -98,6 +111,12 @@ export default function ConsultantSubmissionsList({ refresh }: ConsultantSubmiss
         <Eye size={32} className="mx-auto text-muted-foreground/50 mb-3" />
         <p className="text-sm text-muted-foreground">No submissions yet.</p>
         <p className="text-xs text-muted-foreground mt-1">Select candidates from CV Bank and submit them to job postings.</p>
+        <button
+          onClick={loadSubmissions}
+          className="mt-4 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+        >
+          🔄 Refresh
+        </button>
       </div>
     );
   }
@@ -150,7 +169,7 @@ export default function ConsultantSubmissionsList({ refresh }: ConsultantSubmiss
             className="w-full bg-muted border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 flex-wrap">
           {(['all', 'primary', 'duplicate', 'pending', 'shortlisted'] as const).map((f) => (
             <button
               key={f}
@@ -165,6 +184,23 @@ export default function ConsultantSubmissionsList({ refresh }: ConsultantSubmiss
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
+          <button
+            onClick={loadSubmissions}
+            disabled={loading}
+            className="px-3 py-2.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all bg-muted border border-border text-foreground hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh submissions list"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={12} className="inline mr-1.5 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                🔄 Refresh
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -219,7 +255,7 @@ export default function ConsultantSubmissionsList({ refresh }: ConsultantSubmiss
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-semibold text-foreground">{sub.jobTitle || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground">{sub.companyName || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground">{sub.jobCompany || 'N/A'}</p>
                       </div>
                     </td>
 

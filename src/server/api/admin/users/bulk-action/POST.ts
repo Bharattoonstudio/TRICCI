@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '@/server/db/client';
-import { users, auditLog } from '@/server/db/schema';
+import { user, auditLog } from '@/server/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 interface BulkActionRequest {
@@ -10,14 +10,14 @@ interface BulkActionRequest {
   emailTemplate?: string;
 }
 
-export async function POST(req: Request, res: Response) {
+export default async function POST(req: Request, res: Response) {
   try {
     const adminId = req.user?.id;
     const { userIds, action, reason, emailTemplate } = req.body as BulkActionRequest;
 
     // Verify admin
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, adminId!),
+    const adminUser = await db.query.user.findFirst({
+      where: eq(user.id, adminId!),
     });
 
     if (adminUser?.role !== 'admin') {
@@ -58,7 +58,7 @@ export async function POST(req: Request, res: Response) {
                 suspendedAt: new Date(),
                 suspendReason: reason || 'Bulk admin suspension',
               })
-              .where(eq(users.id, userId));
+              .where(eq(user.id, userId));
             actionResults.success.push(userId);
             updatedCount++;
           } catch (error) {
@@ -79,7 +79,7 @@ export async function POST(req: Request, res: Response) {
                 suspendedAt: null,
                 suspendReason: null,
               })
-              .where(eq(users.id, userId));
+              .where(eq(user.id, userId));
             actionResults.success.push(userId);
             updatedCount++;
           } catch (error) {
@@ -94,8 +94,8 @@ export async function POST(req: Request, res: Response) {
       case 'delete':
         for (const userId of userIds) {
           try {
-            const targetUser = await db.query.users.findFirst({
-              where: eq(users.id, userId),
+            const targetUser = await db.query.user.findFirst({
+              where: eq(user.id, userId),
             });
 
             await db.update(users)
@@ -106,7 +106,7 @@ export async function POST(req: Request, res: Response) {
                 deletedAt: new Date(),
                 deletedBy: adminId!,
               })
-              .where(eq(users.id, userId));
+              .where(eq(user.id, userId));
             actionResults.success.push(userId);
             updatedCount++;
           } catch (error) {
@@ -121,8 +121,8 @@ export async function POST(req: Request, res: Response) {
       case 'resetPassword':
         for (const userId of userIds) {
           try {
-            const targetUser = await db.query.users.findFirst({
-              where: eq(users.id, userId),
+            const targetUser = await db.query.user.findFirst({
+              where: eq(user.id, userId),
             });
 
             if (!targetUser) {
@@ -140,7 +140,7 @@ export async function POST(req: Request, res: Response) {
                 passwordResetToken: resetToken,
                 passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
               })
-              .where(eq(users.id, userId));
+              .where(eq(user.id, userId));
 
             // Send reset email
             await sendPasswordResetEmail(targetUser.email, resetToken);
@@ -158,8 +158,8 @@ export async function POST(req: Request, res: Response) {
       case 'sendEmail':
         for (const userId of userIds) {
           try {
-            const targetUser = await db.query.users.findFirst({
-              where: eq(users.id, userId),
+            const targetUser = await db.query.user.findFirst({
+              where: eq(user.id, userId),
             });
 
             if (!targetUser) {

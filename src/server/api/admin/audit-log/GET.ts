@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '@/server/db/client';
-import { auditLog, users } from '@/server/db/schema';
+import { auditLog, user } from '@/server/db/schema';
 import { eq, like, and, gte, lte, desc } from 'drizzle-orm';
 
 interface AuditLogQuery {
@@ -15,12 +15,12 @@ interface AuditLogQuery {
   search?: string;
 }
 
-export async function GET(req: Request, res: Response) {
+export default async function GET(req: Request, res: Response) {
   try {
     // Verify admin
     const userId = req.user?.id;
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, userId!),
+    const adminUser = await db.query.user.findFirst({
+      where: eq(user.id, userId!),
     });
 
     if (adminUser?.role !== 'admin') {
@@ -141,8 +141,8 @@ export async function exportAuditLogs(req: Request, res: Response) {
   try {
     // Verify admin
     const userId = req.user?.id;
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, userId!),
+    const adminUser = await db.query.user.findFirst({
+      where: eq(user.id, userId!),
     });
 
     if (adminUser?.role !== 'admin') {

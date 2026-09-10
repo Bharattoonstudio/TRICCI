@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '@/server/db/client';
-import { users } from '@/server/db/schema';
+import { user } from '@/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -45,11 +45,11 @@ export async function adminAuth(
     }
 
     // Fetch user from database
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+    const userData = await db.query.user.findFirst({
+      where: eq(user.id, userId),
     });
 
-    if (!user) {
+    if (!userData) {
       res.status(401).json({
         success: false,
         error: 'User not found',
@@ -58,18 +58,18 @@ export async function adminAuth(
     }
 
     // Check if user is admin
-    if (user.role !== 'admin') {
+    if (userData.role !== 'admin') {
       res.status(403).json({
         success: false,
         error: 'Forbidden',
         message: 'You do not have permission to access admin features',
-        userRole: user.role,
+        userRole: userData.role,
       });
       return;
     }
 
     // Check if user is suspended or deleted
-    if (user.suspendedAt) {
+    if (userData.suspendedAt) {
       res.status(403).json({
         success: false,
         error: 'Account suspended',
@@ -113,14 +113,14 @@ export async function adminAuth(
  */
 export async function hasAdminAccess(userId: string): Promise<boolean> {
   try {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+    const userData = await db.query.user.findFirst({
+      where: eq(user.id, userId),
     });
 
     return (
-      user?.role === 'admin' &&
-      !user?.suspendedAt &&
-      !user?.deletedAt
+      userData?.role === 'admin' &&
+      !userData?.suspendedAt &&
+      !userData?.deletedAt
     );
   } catch {
     return false;

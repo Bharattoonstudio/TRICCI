@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { db } from '@/server/db/client';
-import { users } from '@/server/db/schema';
+import { user } from '@/server/db/schema';
 import { eq, like, and, or } from 'drizzle-orm';
 
-export async function GET(req: Request, res: Response) {
+export default async function GET(req: Request, res: Response) {
   try {
     // Check admin authorization
     const adminId = req.user?.id;
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, adminId!),
+    const adminUser = await db.query.user.findFirst({
+      where: eq(user.id, adminId!),
     });
 
     if (adminUser?.role !== 'admin') {
@@ -42,11 +42,11 @@ export async function GET(req: Request, res: Response) {
     }
 
     if (role !== 'all') {
-      filters.push(eq(users.role, role as any));
+      filters.push(eq(user.role, role as any));
     }
 
     if (status !== 'all') {
-      filters.push(eq(users.status, status as any));
+      filters.push(eq(user.status, status as any));
     }
 
     // Fetch users with filters
@@ -61,7 +61,7 @@ export async function GET(req: Request, res: Response) {
         lastLogin: users.lastLoginAt,
         activityScore: users.activityScore,
       })
-      .from(users)
+      .from(user)
       .limit(limitNum)
       .offset(offset);
 
@@ -76,7 +76,7 @@ export async function GET(req: Request, res: Response) {
     const usersData = await query;
 
     // Get total count
-    let countQuery = db.select({ count: 'count' }).from(users);
+    let countQuery = db.select({ count: 'count' }).from(user)
     if (filters.length > 0) {
       countQuery = countQuery.where(and(...filters));
     }

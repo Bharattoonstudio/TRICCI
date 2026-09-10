@@ -1,20 +1,20 @@
 import { Request, Response } from 'express';
 import { db } from '@/server/db/client';
 import {
-  users,
-  jobs,
-  submissions,
-  placements,
-  wallet,
+  user,
+  job,
+  submission,
+  placement,
+  walletTransaction,
 } from '@/server/db/schema';
 import { eq, and, gte } from 'drizzle-orm';
 
-export async function GET(req: Request, res: Response) {
+export default async function GET(req: Request, res: Response) {
   try {
     // Verify admin
     const adminId = req.user?.id;
-    const adminUser = await db.query.users.findFirst({
-      where: eq(users.id, adminId!),
+    const adminUser = await db.query.user.findFirst({
+      where: eq(user.id, adminId!),
     });
 
     if (adminUser?.role !== 'admin') {
@@ -41,31 +41,31 @@ export async function GET(req: Request, res: Response) {
       conversionMetricsResult,
     ] = await Promise.all([
       // Total users
-      db.select({ count: 'count' }).from(users),
+      db.select({ count: 'count' }).from(user),
 
       // Active users
       db
         .select({ count: 'count' })
-        .from(users)
-        .where(eq(users.status, 'active')),
+        .from(user)
+        .where(eq(user.status, 'active')),
 
       // Suspended users
       db
         .select({ count: 'count' })
-        .from(users)
-        .where(eq(users.status, 'suspended')),
+        .from(user)
+        .where(eq(user.status, 'suspended')),
 
-      // Total jobs
-      db.select({ count: 'count' }).from(jobs),
+      // Total job
+      db.select({ count: 'count' }).from(job),
 
       // Total applications
-      db.select({ count: 'count' }).from(submissions),
+      db.select({ count: 'count' }).from(submission),
 
-      // Total placements
+      // Total placement
       db
         .select({ count: 'count' })
-        .from(placements)
-        .where(eq(placements.status, 'placed')),
+        .from(placement)
+        .where(eq(placement.status, 'placed')),
 
       // Revenue calculation
       db
@@ -73,13 +73,13 @@ export async function GET(req: Request, res: Response) {
           totalRevenue: 'sum(amount)',
           pendingPayouts: 'sum(pending_amount)',
         })
-        .from(wallet)
-        .where(gte(wallet.createdAt, startDate)),
+        .from(walletTransaction)
+        .where(gte(walletTransaction.createdAt, startDate)),
 
       // Users by role
       db
         .select({ role: users.role, count: 'count' })
-        .from(users)
+        .from(user)
         .groupBy(users.role),
 
       // Recent users (last 7 days)
@@ -91,19 +91,19 @@ export async function GET(req: Request, res: Response) {
           role: users.role,
           createdAt: users.createdAt,
         })
-        .from(users)
+        .from(user)
         .where(gte(users.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)))
         .limit(10),
 
-      // Top consultants by placements
+      // Top consultants by placement
       db
         .select({
-          consultantId: placements.consultantId,
-          placements: 'count',
+          consultantId: placement.consultantId,
+          placement: 'count',
           totalEarnings: 'sum(fee)',
         })
-        .from(placements)
-        .groupBy(placements.consultantId)
+        .from(placement)
+        .groupBy(placement.consultantId)
         .limit(5),
 
       // Conversion metrics
@@ -114,7 +114,7 @@ export async function GET(req: Request, res: Response) {
           rejectedApplications:
             'count(case when status = "rejected" then 1 end)',
         })
-        .from(submissions),
+        .from(submission),
     ]);
 
     // Calculate metrics
@@ -138,7 +138,7 @@ export async function GET(req: Request, res: Response) {
     previousPeriodDate.setDate(previousPeriodDate.getDate() - days * 2);
     const previousUsersResult = await db
       .select({ count: 'count' })
-      .from(users)
+      .from(user)
       .where(
         and(
           gte(users.createdAt, previousPeriodDate),
@@ -154,8 +154,8 @@ export async function GET(req: Request, res: Response) {
     // Job stats
     const activeJobsResult = await db
       .select({ count: 'count' })
-      .from(jobs)
-      .where(eq(jobs.status, 'active'));
+      .from(job)
+      .where(eq(job.status, 'active'));
     const activeJobs = activeJobsResult[0]?.count || 0;
 
     // Average metrics

@@ -2,11 +2,9 @@
 // Created: September 10, 2026
 
 import { sql } from "drizzle-orm";
-import { getDb } from "../client.js";
+import { db } from "../client.js";
 
 export async function migrateAdminPanelSystem() {
-  const db = await getDb();
-  
   console.log("[migration] admin_panel_system: starting...");
 
   try {

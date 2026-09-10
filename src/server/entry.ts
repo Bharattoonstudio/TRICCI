@@ -3,7 +3,6 @@ import { fileURLToPath } from "node:url";
 import { dirname, extname, join } from "node:path";
 import { readFileSync } from "node:fs";
 import { checkRequiredEnv } from "@/server/lib/checkRequiredEnv.js";
-import { adminAuth } from "@/server/middleware/admin-auth.js";
 
 // <api-imports>
 import admin_assessments_get_0 from "./api/admin/assessments/GET";
@@ -243,10 +242,6 @@ app.use((_req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// ═══ ADMIN PANEL SECURITY ═══════════════════════════════════════
-// Protect all /api/admin/* routes with authentication middleware
-app.use(/^\/api\/admin/, adminAuth);
 
 // <api-registrations>
 app.get("/api/admin/assessments", admin_assessments_get_0);

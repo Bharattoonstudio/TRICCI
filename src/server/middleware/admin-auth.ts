@@ -74,12 +74,12 @@ export async function adminAuth(
         success: false,
         error: 'Account suspended',
         message: 'Your admin account has been suspended',
-        reason: user.suspendReason || 'No reason provided',
+        reason: userData.suspend_reason || 'No reason provided',
       });
       return;
     }
 
-    if (user.deletedAt) {
+    if (userData.deletedAt) {
       res.status(403).json({
         success: false,
         error: 'Account deleted',
@@ -90,9 +90,9 @@ export async function adminAuth(
 
     // Attach admin user to request for logging purposes
     req.user = {
-      id: user.id,
-      role: user.role,
-      email: user.email,
+      id: userData.id,
+      role: userData.role,
+      email: userData.email,
     };
 
     // Continue to next middleware/route handler

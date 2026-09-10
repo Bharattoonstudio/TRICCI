@@ -1,0 +1,112 @@
+/* Global theme styles */
+
+:root {
+  /* Dark theme - default */
+  --bg-primary: #080808;
+  --bg-secondary: #0d0d0d;
+  --bg-tertiary: #1a1a1a;
+  --bg-hover: #2a2a2a;
+  --bg-card: #0d0d0d;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #d0d0d0;
+  --text-tertiary: #999999;
+  
+  --border-primary: #ffffff0d;
+  --border-secondary: #ffffff06;
+  
+  --accent-primary: #6B4FBB;
+  --accent-secondary: #E8470A;
+  --accent-tertiary: #35c9ff;
+  --accent-success: #22c55e;
+  --accent-warning: #ffd035;
+  --accent-error: #ef4444;
+}
+
+/* Light theme */
+.light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e8e8e8;
+  --bg-hover: #f0f0f0;
+  --bg-card: #ffffff;
+  
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  
+  --border-primary: #e0e0e0;
+  --border-secondary: #f0f0f0;
+  
+  --accent-primary: #6B4FBB;
+  --accent-secondary: #E8470A;
+  --accent-tertiary: #35c9ff;
+  --accent-success: #22c55e;
+  --accent-warning: #ffa500;
+  --accent-error: #ef4444;
+}
+
+/* Apply theme colors to common elements */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Update background colors */
+.bg-primary {
+  background-color: var(--bg-primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--bg-secondary) !important;
+}
+
+.bg-card {
+  background-color: var(--bg-card) !important;
+}
+
+/* Update text colors */
+.text-white {
+  color: var(--text-primary) !important;
+}
+
+.text-white\/50 {
+  color: rgba(var(--text-primary-rgb, 255, 255, 255), 0.5);
+}
+
+.text-white\/40 {
+  color: rgba(var(--text-primary-rgb, 255, 255, 255), 0.4);
+}
+
+.text-white\/30 {
+  color: rgba(var(--text-primary-rgb, 255, 255, 255), 0.3);
+}
+
+.text-white\/25 {
+  color: rgba(var(--text-primary-rgb, 255, 255, 255), 0.25);
+}
+
+.text-foreground {
+  color: var(--text-primary) !important;
+}
+
+.text-muted-foreground {
+  color: var(--text-tertiary) !important;
+}
+
+/* Border colors */
+.border-border {
+  border-color: var(--border-primary) !important;
+}
+
+/* Transition for smooth theme switching */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Prevent transition on first load */
+* {
+  @media (prefers-reduced-motion: reduce) {
+    transition: none !important;
+  }
+}

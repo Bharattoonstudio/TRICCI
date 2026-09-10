@@ -1,0 +1,722 @@
+import {
+  pgTable,
+  varchar,
+  text,
+  boolean,
+  timestamp,
+  integer,
+  serial,
+  doublePrecision,
+  jsonb,
+  index,
+} from 'drizzle-orm/pg-core';
+
+// ── BetterAuth core tables ────────────────────────────────────────────────────
+
+export const user = pgTable('user', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  name: text('name').notNull(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  image: text('image'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+  // TRICCI role field — one of: employer | consultant | candidate | admin
+  role: varchar('role', { length: 32 }).notNull().default('candidate'),
+  // Prevent clients from writing isAdmin directly (enforced in auth.ts)
+  isAdmin: boolean('is_admin').notNull().default(false),
+
+  // P0 #2: Candidate consent tracking
+  // consent_status: 'pending' (no consent yet) | 'granted' (can be submitted) | 'withdrawn' (consent revoked)
+  consentStatus: varchar('consent_status', { length: 32 }).default('pending'),
+  // When did candidate grant consent?
+  consentGrantedAt: timestamp('consent_granted_at'),
+  // When did candidate withdraw consent?
+  consentWithdrawnAt: timestamp('consent_withdrawn_at'),
+  // How was consent obtained? (for audit trail)
+  consentGrantedVia: varchar('consent_granted_via', { length: 32 }).default('portal'),
+
+  // Guards the welcome email + admin signup notification from firing more
+  // than once per user if the client calls /api/auth/welcome again (e.g.
+  // a page refresh right after verification) -- previously claimed in a
+  // comment to be "idempotent via DB flag" but no such flag existed.
+  welcomeSentAt: timestamp('welcome_sent_at'),
+});
+
+export const session = pgTable('session', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: varchar('user_id', { length: 36 })
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+});
+
+export const account = pgTable('account', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: varchar('user_id', { length: 36 })
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const verification = pgTable('verification', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── TRICCI profile extension ──────────────────────────────────────────────────
+
+export const employerProfile = pgTable('employer_profile', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 })
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  companyName: varchar('company_name', { length: 255 }),
+  industry: varchar('industry', { length: 128 }),
+  website: varchar('website', { length: 255 }),
+  organizationId: varchar('organization_id', { length: 36 }),
+  createdAt: timestamp('created_at').defaultNow(),
+  // Agreement / T&C fields (cross-cutting rule: all 3 roles must accept)
+  signatoryName: varchar('signatory_name', { length: 255 }),
+  designation: varchar('designation', { length: 255 }),
+  agreementSignedAt: timestamp('agreement_signed_at'),
+  agreementIp: varchar('agreement_ip', { length: 64 }),
+  agreementHash: varchar('agreement_hash', { length: 128 }),
+});
+
+export const consultantProfile = pgTable('consultant_profile', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 })
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  specialisation: varchar('specialisation', { length: 255 }),
+  yearsExperience: integer('years_experience'),
+  createdAt: timestamp('created_at').defaultNow(),
+  // Industries dropdown (points 23-24): industries of expertise (worked in)
+  // vs industries interested in working in (future) — both structured
+  // multi-select instead of the old free-text specialisation field.
+  industriesExpertise: jsonb('industries_expertise').$type<string[]>(),
+  industriesInterested: jsonb('industries_interested').$type<string[]>(),
+  // Agreement / KYC fields
+  agencyName: varchar('agency_name', { length: 255 }),
+  signatoryName: varchar('signatory_name', { length: 255 }),
+  designation: varchar('designation', { length: 255 }),
+  agreementSignedAt: timestamp('agreement_signed_at'),
+  agreementIp: varchar('agreement_ip', { length: 64 }),
+  agreementHash: varchar('agreement_hash', { length: 128 }),
+  reminderSentAt: timestamp('reminder_sent_at'),
+  organizationId: varchar('organization_id', { length: 36 }),
+  // Gamification (points, badges, leaderboard rank are all computed live
+  // from real submission/placement data — see /api/consultant/gamification
+  // — but login streak genuinely can't be derived from anything else, so
+  // it's the only piece that needs real storage.
+  loginStreak: integer('login_streak').notNull().default(0),
+  lastLoginDate: varchar('last_login_date', { length: 10 }), // 'YYYY-MM-DD'
+});
+
+export const candidateProfile = pgTable('candidate_profile', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 })
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  // Basic info
+  currentTitle: varchar('current_title', { length: 255 }),
+  location: varchar('location', { length: 255 }),
+  phone: varchar('phone', { length: 20 }),
+  mobileVerified: boolean('mobile_verified').notNull().default(false),
+  summary: text('summary'),
+  // CTC (stored as LPA × 100000 integer, e.g. 12 LPA = 1200000)
+  currentCTC: integer('current_ctc'),
+  expectedCTC: integer('expected_ctc'),
+  noticePeriod: integer('notice_period'),
+  totalExperience: integer('total_experience'), // years
+  // Skills, experience, education stored as JSON arrays
+  skills: jsonb('skills').$type<string[]>(),
+  experience: jsonb('experience').$type<Array<{ id: number; title: string; company: string; duration: string; current: boolean }>>(),
+  education: jsonb('education').$type<Array<{ id: number; degree: string; institution: string; year: string }>>(),
+  // CV
+  cvUrl: varchar('cv_url', { length: 512 }),
+  cvFileName: varchar('cv_file_name', { length: 255 }),
+  cvUploadedAt: timestamp('cv_uploaded_at'),
+  // Visibility
+  visibility: varchar('visibility', { length: 16 }).notNull().default('consultants'),
+  // Profile completeness (0-100)
+  profileComplete: integer('profile_complete').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+  // Agreement / T&C fields (cross-cutting rule: all 3 roles must accept)
+  signatoryName: varchar('signatory_name', { length: 255 }),
+  agreementSignedAt: timestamp('agreement_signed_at'),
+  agreementIp: varchar('agreement_ip', { length: 64 }),
+  agreementHash: varchar('agreement_hash', { length: 128 }),
+});
+
+// ── OTP store for mobile 2FA ──────────────────────────────────────────────────
+export const otpStore = pgTable('otp_store', {
+  id: serial('id').primaryKey(),
+  identifier: varchar('identifier', { length: 255 }).notNull(), // phone or email
+  otp: varchar('otp', { length: 8 }).notNull(),
+  purpose: varchar('purpose', { length: 32 }).notNull().default('verify'), // 'verify' | '2fa'
+  expiresAt: timestamp('expires_at').notNull(),
+  verified: boolean('verified').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// ── Job postings ──────────────────────────────────────────────────────────────
+
+export const job = pgTable('job', {
+  id: varchar('id', { length: 128 }).primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  company: varchar('company', { length: 255 }).notNull(),
+  postedByUserId: varchar('posted_by_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  department: varchar('department', { length: 128 }).notNull(),
+  location: varchar('location', { length: 128 }).notNull(),
+  locationType: varchar('location_type', { length: 16 }).notNull().default('onsite'),
+  ctcMin: integer('ctc_min').notNull(),
+  ctcMax: integer('ctc_max').notNull(),
+  ctcLabel: varchar('ctc_label', { length: 64 }).notNull(),
+  experience: varchar('experience', { length: 64 }).notNull(),
+  experienceYears: integer('experience_years').notNull().default(0),
+  category: varchar('category', { length: 64 }).notNull(),
+  skills: jsonb('skills').notNull().$type<string[]>(),
+  description: text('description').notNull(),
+  responsibilities: jsonb('responsibilities').notNull().$type<string[]>(),
+  requirements: jsonb('requirements').notNull().$type<string[]>(),
+  postedDays: integer('posted_days').notNull().default(0),
+  status: varchar('status', { length: 16 }).notNull().default('active'),
+  // Priority / urgency: 1 = Normal, 2 = Urgent, 3 = Very Urgent (burning)
+  priority: integer('priority').notNull().default(1),
+  applicants: integer('applicants').notNull().default(0),
+  feePercent: doublePrecision('fee_percent').notNull().default(8.5),
+  // Point 52: employer-defined payment term (days from candidate joining
+  // until placement fee is due). Common values: 45 or 90.
+  paymentTermDays: integer('payment_term_days').notNull().default(45),
+  interviewRounds: jsonb('interview_rounds').$type<{ label: string; description: string }[]>(),
+  // Job visibility: 'public' (default, shown to everyone) | 'consultant_only'
+  // (hidden from the public candidate job board, visible to consultants/admin)
+  // | 'confidential' (same as consultant_only, PLUS company name is masked
+  // even for consultants unless they are the job owner or an admin).
+  visibility: varchar('visibility', { length: 24 }).notNull().default('public'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── Consultant submissions ────────────────────────────────────────────────────
+// A consultant submits a candidate (by candidateUserId) for a job posting.
+
+// ── Job Acceptance (spec STEP 5) ────────────────────────────────────────────
+// A consultant must explicitly accept a job's terms (replacement period,
+// no duplicate submission, no fake profiles, no resume farming, no consent
+// violation) before they can submit candidates to it.
+// ── CV Bank (spec: consultant's own talent pool / CRM) ─────────────────────
+// ── Account Documents ────────────────────────────────────────────────────
+// Generic document upload/management for employer and consultant accounts
+// (GST certificates, incorporation docs, agency registration, etc.) —
+// separate from the platform agreement, which has its own dedicated flow.
+export const accountDocument = pgTable('account_document', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  role: varchar('role', { length: 16 }).notNull(), // 'employer' | 'consultant'
+  label: varchar('label', { length: 255 }).notNull(),
+  fileUrl: varchar('file_url', { length: 512 }).notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  fileSize: integer('file_size'),
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+}, (t) => [index('idx_account_document_user').on(t.userId)]);
+
+export const cvBankEntry = pgTable('cv_bank_entry', {
+  id: serial('id').primaryKey(),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 32 }),
+  currentRole: varchar('current_role', { length: 255 }),
+  currentCTC: varchar('current_ctc', { length: 64 }),
+  expectedCTC: varchar('expected_ctc', { length: 64 }),
+  experience: varchar('experience', { length: 64 }),
+  location: varchar('location', { length: 255 }),
+  skills: jsonb('skills').$type<string[]>().default([]),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  notes: text('notes'),
+  starred: boolean('starred').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => [index('idx_cv_bank_consultant').on(t.consultantUserId)]);
+
+export const jobAcceptance = pgTable('job_acceptance', {
+  id: serial('id').primaryKey(),
+  jobId: varchar('job_id', { length: 128 }).notNull().references(() => job.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  acceptedAt: timestamp('accepted_at').notNull().defaultNow(),
+}, (t) => [index('idx_job_acceptance_job').on(t.jobId), index('idx_job_acceptance_consultant').on(t.consultantUserId)]);
+
+export const submission = pgTable('submission', {
+  id: serial('id').primaryKey(),
+  jobId: varchar('job_id', { length: 128 }).notNull().references(() => job.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  candidateUserId: varchar('candidate_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  // Candidate details at time of submission (in case no registered account)
+  candidateName: varchar('candidate_name', { length: 255 }).notNull(),
+  candidateEmail: varchar('candidate_email', { length: 255 }).notNull(),
+  candidatePhone: varchar('candidate_phone', { length: 32 }),
+  cvUrl: varchar('cv_url', { length: 512 }),
+  coverNote: text('cover_note'),
+  // Status: pending | shortlisted | rejected | placed
+  status: varchar('status', { length: 32 }).notNull().default('pending'),
+  rejectionReason: text('rejection_reason'),
+  viewedAt: timestamp('viewed_at'),
+  // Candidate details captured at submission time (spec STEP 7) — these
+  // were being sent by the frontend form already but silently discarded
+  // by the backend, which never read or stored them.
+  candidateCurrentCtcLpa: doublePrecision('candidate_current_ctc_lpa'),
+  candidateExpectedCtcLpa: doublePrecision('candidate_expected_ctc_lpa'),
+  candidateExperienceYears: doublePrecision('candidate_experience_years'),
+  candidateLocation: varchar('candidate_location', { length: 255 }),
+  // Point 33-34: consultant confirms candidate has consented to apply,
+  // plus an optional proof attachment (screenshot/email of consent)
+  consentConfirmed: boolean('consent_confirmed').notNull().default(false),
+  consentProofUrl: varchar('consent_proof_url', { length: 512 }),
+
+  // P0 #1: Duplicate candidate ownership tracking
+  // duplicate_flag: 'original' | 'duplicate' | NULL (active submission)
+  duplicateFlag: varchar('duplicate_flag', { length: 32 }),
+  // ID of consultant who owns this job/candidate combo (first submitter wins)
+  winningConsultantId: varchar('winning_consultant_id', { length: 36 }),
+  // When does this submission's ownership expire?
+  ownershipEndDate: timestamp('ownership_end_date'),
+  // How many days until ownership auto-clears? (e.g., 30 days)
+  ownershipExpireDays: integer('ownership_expire_days').default(30),
+
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── Candidate direct applications ────────────────────────────────────────────
+// A candidate self-applies to a job from the job detail page.
+// Distinct from consultant submissions (submission table).
+
+export const candidateApplication = pgTable('candidate_application', {
+  id: serial('id').primaryKey(),
+  jobId: varchar('job_id', { length: 128 }).notNull().references(() => job.id, { onDelete: 'cascade' }),
+  candidateUserId: varchar('candidate_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // Status: applied | shortlisted | rejected | placed
+  status: varchar('status', { length: 32 }).notNull().default('applied'),
+  rejectionReason: text('rejection_reason'),
+  viewedAt: timestamp('viewed_at'),
+  coverNote: text('cover_note'),
+  // Optional per-application CV: set when the candidate approves an
+  // AI-enhanced, JD-tailored CV for this specific job. When null, the
+  // employer/consultant views fall back to the candidate's profile CV.
+  cvUrl: varchar('cv_url', { length: 512 }),
+  cvFileName: varchar('cv_file_name', { length: 255 }),
+  cvMatchScore: integer('cv_match_score'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+  // CTC breakdown at time of application (point 62) — stored as LPA × 100000,
+  // same convention as candidateProfile. All 4 required at apply time.
+  ctcFixed: integer('ctc_fixed'),
+  ctcVariable: integer('ctc_variable'),
+  ctcEsops: integer('ctc_esops'),
+  ctcOther: integer('ctc_other'),
+  // Notice period negotiability (point 61)
+  noticePeriodDays: integer('notice_period_days'),
+  noticePeriodNegotiable: boolean('notice_period_negotiable').default(true),
+}, (t) => [index('idx_candidate_app_job').on(t.jobId), index('idx_candidate_app_user').on(t.candidateUserId)]);
+
+// ── Communication log ──────────────────────────────────────────────────────
+// A shared timeline of notes/calls/WhatsApp/email/meeting entries attached
+// to a job, a consultant submission, or a candidate application — so every
+// interaction lives with the record instead of scattered across inboxes.
+export const communicationLog = pgTable('communication_log', {
+  id: serial('id').primaryKey(),
+  // 'job' | 'submission' | 'application'
+  entityType: varchar('entity_type', { length: 24 }).notNull(),
+  // job.id (varchar) OR submission/candidateApplication numeric id, stored as text
+  entityId: varchar('entity_id', { length: 64 }).notNull(),
+  // 'whatsapp' | 'email' | 'call' | 'meeting' | 'note'
+  type: varchar('type', { length: 16 }).notNull().default('note'),
+  message: text('message').notNull(),
+  createdByUserId: varchar('created_by_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [index('idx_comm_log_entity').on(t.entityType, t.entityId)]);
+
+// ── Audit trail ─────────────────────────────────────────────────────────────
+// Append-only log of important mutations (job created, visibility changed,
+// application/submission status changed, etc.) for dispute resolution and
+// enterprise compliance needs.
+export const auditLog = pgTable('audit_log', {
+  id: serial('id').primaryKey(),
+  entityType: varchar('entity_type', { length: 32 }).notNull(),
+  entityId: varchar('entity_id', { length: 64 }).notNull(),
+  action: varchar('action', { length: 64 }).notNull(),
+  actorUserId: varchar('actor_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  actorRole: varchar('actor_role', { length: 16 }),
+  // Free-form JSON details: { from, to, note, ... } depending on the action
+  metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [index('idx_audit_log_entity').on(t.entityType, t.entityId), index('idx_audit_log_created').on(t.createdAt)]);
+
+// ── Platform commission configuration ────────────────────────────────────────
+// Single-row config table (id = 1 always). Admin sets platformFeePct (what
+// TRICCI keeps) and the consultant automatically gets the remainder.
+// e.g. employer pays 8% → admin sets platformFeePct = 2 → consultant gets 6%.
+
+export const commissionConfig = pgTable('commission_config', {
+  id: serial('id').primaryKey(),
+  // Employer-facing: allowed fee range on job postings
+  minFeePercent: doublePrecision('min_fee_percent').notNull().default(5),
+  maxFeePercent: doublePrecision('max_fee_percent').notNull().default(15),
+  // Default fee % charged to employer when posting a job
+  defaultFeePercent: doublePrecision('default_fee_percent').notNull().default(8),
+  // Platform margin — what TRICCI retains from the employer fee
+  platformFeePct: doublePrecision('platform_fee_pct').notNull().default(2),
+  // Consultant payout SLA (business days)
+  payoutDays: integer('payout_days').notNull().default(3),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── Candidate assessments ─────────────────────────────────────────────────────
+// Employer sends an assessment task to a candidate in the ATS pipeline.
+// Linked to a submission (consultant-submitted candidate) or a candidateApplication.
+
+export const assessment = pgTable('assessment', {
+  id: serial('id').primaryKey(),
+  // Link to the submission this assessment belongs to
+  submissionId: integer('submission_id').references(() => submission.id, { onDelete: 'cascade' }),
+  // Denormalised for quick display (avoids joins on every list fetch)
+  candidateName: varchar('candidate_name', { length: 255 }).notNull(),
+  candidateEmail: varchar('candidate_email', { length: 255 }).notNull(),
+  jobTitle: varchar('job_title', { length: 255 }).notNull(),
+  jobId: varchar('job_id', { length: 128 }).references(() => job.id, { onDelete: 'set null' }),
+  // Who posted this job (used for employer-scoped queries)
+  postedByUserId: varchar('posted_by_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  // Assessment details
+  type: varchar('type', { length: 128 }).notNull().default('Technical'),
+  score: integer('score').notNull().default(0),
+  maxScore: integer('max_score').notNull().default(100),
+  status: varchar('status', { length: 16 }).notNull().default('pending'), // pending | completed | expired
+  completedAt: timestamp('completed_at'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── Interview scorecards ──────────────────────────────────────────────────────
+// Panel scorecard submitted by an interviewer after an interview round.
+
+export const scorecard = pgTable('scorecard', {
+  id: serial('id').primaryKey(),
+  submissionId: integer('submission_id').references(() => submission.id, { onDelete: 'cascade' }),
+  candidateName: varchar('candidate_name', { length: 255 }).notNull(),
+  candidateEmail: varchar('candidate_email', { length: 255 }).notNull(),
+  jobTitle: varchar('job_title', { length: 255 }).notNull(),
+  jobId: varchar('job_id', { length: 128 }).references(() => job.id, { onDelete: 'set null' }),
+  postedByUserId: varchar('posted_by_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  // Scores (0–100)
+  technicalScore: integer('technical_score').notNull().default(0),
+  communicationScore: integer('communication_score').notNull().default(0),
+  cultureFitScore: integer('culture_fit_score').notNull().default(0),
+  leadershipScore: integer('leadership_score').notNull().default(0),
+  overallScore: integer('overall_score').notNull().default(0),
+  recommendation: varchar('recommendation', { length: 16 }).notNull().default('maybe'), // strong_yes | yes | maybe | no
+  notes: text('notes'),
+  submittedBy: varchar('submitted_by', { length: 255 }), // interviewer name
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── Placements ────────────────────────────────────────────────────────────────
+// Auto-created when a submission reaches `payment_done` status.
+// Captures a point-in-time snapshot of the placement for reporting.
+
+// ── Interview Scheduling (points 39-43) ─────────────────────────────────────
+// Consultant proposes a date/time → employer confirms with interviewer
+// details (or requests an alternate) → both consultant and candidate get
+// notified. One row per submission; re-proposing overwrites the pending slot.
+export const interviewSchedule = pgTable('interview_schedule', {
+  id: serial('id').primaryKey(),
+  submissionId: integer('submission_id').notNull().unique().references(() => submission.id, { onDelete: 'cascade' }),
+  // proposed | confirmed | alternate_requested | completed
+  status: varchar('status', { length: 24 }).notNull().default('proposed'),
+  proposedDate: timestamp('proposed_date').notNull(),
+  proposedByRole: varchar('proposed_by_role', { length: 16 }).notNull().default('consultant'),
+  proposalNote: text('proposal_note'),
+  // Filled in by employer on confirm
+  interviewerName: varchar('interviewer_name', { length: 255 }),
+  interviewerDesignation: varchar('interviewer_designation', { length: 255 }),
+  interviewerContact: varchar('interviewer_contact', { length: 255 }),
+  confirmedAt: timestamp('confirmed_at'),
+  // Outcome (point 44-47) — filled in after the interview happens
+  outcome: varchar('outcome', { length: 16 }), // selected | rejected | hold
+  outcomeReason: text('outcome_reason'),
+  outcomeSetAt: timestamp('outcome_set_at'),
+  // Candidate confirms they've seen and will attend (points 42, 75) —
+  // lightweight, doesn't participate in the propose/reschedule negotiation,
+  // which stays consultant-mediated per the spec.
+  candidateAcknowledgedAt: timestamp('candidate_acknowledged_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+});
+
+export const placement = pgTable('placement', {
+  id: serial('id').primaryKey(),
+  // Source: either a consultant submission OR a direct candidate application
+  // (exactly one is set). Direct hires still carry the full platform fee —
+  // there's just no consultant to split it with.
+  submissionId: integer('submission_id').references(() => submission.id, { onDelete: 'cascade' }),
+  applicationId: integer('application_id').references(() => candidateApplication.id, { onDelete: 'cascade' }),
+  // Denormalised for fast reporting (no joins needed for the admin table)
+  jobId: varchar('job_id', { length: 128 }).references(() => job.id, { onDelete: 'set null' }),
+  jobTitle: varchar('job_title', { length: 255 }).notNull(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  candidateName: varchar('candidate_name', { length: 255 }).notNull(),
+  candidateEmail: varchar('candidate_email', { length: 255 }).notNull(),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  consultantName: varchar('consultant_name', { length: 255 }),
+  employerUserId: varchar('employer_user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+  // Fee details (snapshot at time of placement)
+  ctcLpa: doublePrecision('ctc_lpa'),           // candidate CTC in LPA
+  feePercent: doublePrecision('fee_percent'),   // % charged to employer (total)
+  feeAmountLpa: doublePrecision('fee_amount_lpa'), // feePercent × ctcLpa (total)
+  // Fee split (points 28, 49): platform keeps a flat cut, consultant gets the rest
+  platformFeePercent: doublePrecision('platform_fee_percent').default(2),
+  consultantFeePercent: doublePrecision('consultant_fee_percent'),
+  consultantFeeAmountLpa: doublePrecision('consultant_fee_amount_lpa'),
+  // Consultant fee acceptance (points 50-51): pending | accepted | rejected
+  feeAcceptanceStatus: varchar('fee_acceptance_status', { length: 16 }).notNull().default('pending'),
+  feeRespondedAt: timestamp('fee_responded_at'),
+  // Payment term (point 52): days from placedAt until payment is due
+  paymentTermDays: integer('payment_term_days').notNull().default(45),
+  // Consultant acknowledgment of payment received (point 55)
+  consultantAcknowledgedAt: timestamp('consultant_acknowledged_at'),
+  // Payment status: pending | paid
+  paymentStatus: varchar('payment_status', { length: 16 }).notNull().default('pending'),
+  placedAt: timestamp('placed_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').defaultNow(),
+  // ── Offer Management ──────────────────────────────────────────────────
+  // not_sent | sent | accepted | declined | expired
+  offerStatus: varchar('offer_status', { length: 16 }).notNull().default('not_sent'),
+  offerCtcLpa: doublePrecision('offer_ctc_lpa'),
+  offerSentAt: timestamp('offer_sent_at'),
+  offerExpiryDate: timestamp('offer_expiry_date'),
+  offerRespondedAt: timestamp('offer_responded_at'),
+  offerNote: text('offer_note'),
+  offerWithdrawnAt: timestamp('offer_withdrawn_at'),  // When offer was withdrawn
+  offerWithdrawnBy: varchar('offer_withdrawn_by', { length: 36 }),  // Employer user ID who withdrew
+
+  // Internal approval workflow (optional layer before the offer is actually
+  // sent) -- null means the offer was/will be sent directly via the simple
+  // OfferModal flow, no approval step used.
+  offerApprovalStatus: varchar('offer_approval_status', { length: 24 }),  // draft | pending_approval | approved
+  offerApprovalRequestedBy: varchar('offer_approval_requested_by', { length: 36 }),
+  offerApprovedBy: varchar('offer_approved_by', { length: 36 }),
+  offerApprovalNote: text('offer_approval_note'),
+  offerVerificationStatus: varchar('offer_verification_status', { length: 24 }),  // pending | verified | failed
+  joiningDate: timestamp('joining_date'),
+  // ── Joining Tracker ──────────────────────────────────────────────────
+  // pending | in_progress | cleared | flagged
+  bgvStatus: varchar('bgv_status', { length: 16 }).default('pending'),
+  bgvNote: text('bgv_note'),
+  documentsChecklist: jsonb('documents_checklist').$type<{ label: string; received: boolean }[]>().default([
+    { label: 'Offer Letter (Signed)', received: false },
+    { label: 'Previous Employment Proof', received: false },
+    { label: 'Educational Certificates', received: false },
+    { label: 'ID Proof', received: false },
+    { label: 'Address Proof', received: false },
+  ]),
+  inductionCompleted: boolean('induction_completed').notNull().default(false),
+  actualJoiningConfirmed: boolean('actual_joining_confirmed').notNull().default(false),
+  joiningNote: text('joining_note'),
+});
+
+// ── Interview Rounds (Interview tracking & feedback) ────────────────────────────
+
+export const interviewRound = pgTable('interview_rounds', {
+  id: serial('id').primaryKey(),
+  submissionId: integer('submission_id').notNull().references(() => submission.id, { onDelete: 'cascade' }),
+  round: integer('round').notNull(),  // Round number: 1, 2, 3, etc.
+  roundName: varchar('round_name', { length: 100 }),  // "Technical", "HR", "Manager", etc.
+  status: varchar('status', { length: 50 }).notNull().default('scheduled'),  // scheduled, in_progress, completed, cancelled
+  scheduledAt: timestamp('scheduled_at'),  // When interview is scheduled for
+  completedAt: timestamp('completed_at'),  // When interview actually happened
+  interviewerId: varchar('interviewer_id', { length: 36 }),  // ID of person who interviewed
+  feedback: text('feedback'),  // Feedback from interviewer
+  score: integer('score'),  // 1-5 rating
+  reasonForSelection: varchar('reason_for_selection', { length: 500 }),  // Why moving forward or not
+  nextSteps: text('next_steps'),  // What happens next
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  index('idx_interview_submission').on(t.submissionId),
+  index('idx_interview_status').on(t.status),
+  index('idx_interview_scheduled').on(t.scheduledAt),
+]);
+
+// Document collection: employer asks for documents (PAN, payslips, relieving
+// letter, etc.) once a candidate is shortlisted/selected — on either a
+// consultant submission or a direct candidate application (entityType
+// distinguishes which, same convention as communicationLog/auditLog above).
+export const documentRequest = pgTable('document_request', {
+  id: serial('id').primaryKey(),
+  entityType: varchar('entity_type', { length: 24 }).notNull(),  // 'submission' | 'application'
+  entityId: varchar('entity_id', { length: 64 }).notNull(),
+  requestedByUserId: varchar('requested_by_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),  // employer
+  documentLabels: jsonb('document_labels').notNull().default('[]'),  // e.g. ["PAN Card", "Last 3 Payslips"]
+  message: text('message'),  // optional note from employer
+  status: varchar('status', { length: 32 }).notNull().default('pending'),  // pending | completed
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  index('idx_doc_request_entity').on(t.entityType, t.entityId),
+]);
+
+// Actual uploaded files. Visibility is derived from uploadedByRole:
+// consultant-uploaded docs are visible to {consultant, employer}; candidate-
+// uploaded docs are visible to {candidate, employer}. Never both at once.
+export const documentSubmission = pgTable('document_submission', {
+  id: serial('id').primaryKey(),
+  entityType: varchar('entity_type', { length: 24 }).notNull(),  // 'submission' | 'application'
+  entityId: varchar('entity_id', { length: 64 }).notNull(),
+  requestId: integer('request_id').references(() => documentRequest.id, { onDelete: 'set null' }),
+  uploadedByUserId: varchar('uploaded_by_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  uploadedByRole: varchar('uploaded_by_role', { length: 16 }).notNull(),  // 'consultant' | 'candidate'
+  documentLabel: varchar('document_label', { length: 255 }).notNull(),
+  fileUrl: varchar('file_url', { length: 512 }).notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  fileSize: integer('file_size'),
+  uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
+}, (t) => [
+  index('idx_doc_submission_entity').on(t.entityType, t.entityId),
+  index('idx_doc_submission_uploader').on(t.uploadedByUserId),
+]);
+
+// ── Employer wallet (Razorpay credit top-ups) ─────────────────────────────────
+
+// ── Contact unlock requests (points 11-12) ──────────────────────────────────
+// When an employer shortlists a masked direct candidate application and
+// wants real contact details, they file a request here. Admin reviews and
+// releases the contact info only after payment is confirmed — contact
+// details are NEVER auto-unlocked on shortlist alone.
+export const contactUnlockRequest = pgTable('contact_unlock_request', {
+  id: serial('id').primaryKey(),
+  applicationId: integer('application_id').notNull().references(() => candidateApplication.id, { onDelete: 'cascade' }),
+  employerUserId: varchar('employer_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  candidateUserId: varchar('candidate_user_id', { length: 36 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // pending | approved | denied
+  status: varchar('status', { length: 16 }).notNull().default('pending'),
+  requestNote: text('request_note'),
+  resolvedByUserId: varchar('resolved_by_user_id', { length: 36 }),
+  resolvedAt: timestamp('resolved_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [index('idx_unlock_req_application').on(t.applicationId), index('idx_unlock_req_status').on(t.status)]);
+
+export const walletTransaction = pgTable('wallet_transaction', {
+  id: serial('id').primaryKey(),
+  employerUserId: varchar('employer_user_id', { length: 36 }).notNull(),
+  razorpayOrderId: varchar('razorpay_order_id', { length: 128 }).notNull().unique(),
+  razorpayPaymentId: varchar('razorpay_payment_id', { length: 128 }),
+  amountPaise: integer('amount_paise').notNull(),
+  currency: varchar('currency', { length: 8 }).notNull().default('INR'),
+  status: varchar('status', { length: 32 }).notNull().default('created'),
+  receipt: varchar('receipt', { length: 128 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+}, (t) => [index('idx_wallet_employer').on(t.employerUserId), index('idx_wallet_order').on(t.razorpayOrderId)]);
+
+// ── Job alert subscriptions ───────────────────────────────────────────────────
+// Stores candidate email alert preferences. Not tied to auth — anyone can
+// subscribe with an email address. Candidates who are logged in can also
+// manage subscriptions from their profile dashboard.
+
+export const jobAlertSubscription = pgTable(
+  'job_alert_subscription',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    // Subscriber email — the address that receives match digests
+    email: varchar('email', { length: 255 }).notNull(),
+    // Optional: link to a logged-in candidate's user record
+    userId: varchar('user_id', { length: 36 }).references(() => user.id, { onDelete: 'set null' }),
+    // Preference filters — null means "any"
+    categories: jsonb('categories').$type<string[]>(),   // e.g. ['technology','product']
+    locations: jsonb('locations').$type<string[]>(),     // e.g. ['Bengaluru','Mumbai']
+    locationTypes: jsonb('location_types').$type<string[]>(), // e.g. ['remote','hybrid']
+    minCtc: integer('min_ctc'),                             // minimum CTC in LPA
+    minExperienceYears: integer('min_experience_years'),
+    // Unsubscribe token — random UUID used in one-click unsubscribe links
+    unsubscribeToken: varchar('unsubscribe_token', { length: 64 }).notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [index('idx_job_alert_email').on(t.email), index('idx_job_alert_token').on(t.unsubscribeToken)],
+);
+
+// ── Organizations (Multi-User Accounts) ──────────────────────────────────────
+
+export const organization = pgTable('organization', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  type: varchar('type', { length: 32 }).notNull(),
+  ownerId: varchar('owner_id', { length: 36 })
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const organizationMember = pgTable('organization_member', {
+  id: serial('id').primaryKey(),
+  organizationId: varchar('organization_id', { length: 36 })
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  userId: varchar('user_id', { length: 36 })
+    .references(() => user.id, { onDelete: 'cascade' }),
+  email: varchar('email', { length: 255 }).notNull(),
+  role: varchar('role', { length: 32 }).notNull().default('recruiter'),
+  status: varchar('status', { length: 16 }).notNull().default('pending'),
+  inviteToken: varchar('invite_token', { length: 64 }),
+  invitedAt: timestamp('invited_at').notNull().defaultNow(),
+  joinedAt: timestamp('joined_at'),
+}, (table) => ({
+  orgUserIdx: index('org_member_org_user_idx').on(table.organizationId, table.userId),
+  emailIdx: index('org_member_email_idx').on(table.email),
+}));
+
+// ── Notifications (in-app bell) ───────────────────────────────────────────────
+
+export const notification = pgTable('notification', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 })
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  type: varchar('type', { length: 32 }).notNull(),
+  message: text('message').notNull(),
+  link: varchar('link', { length: 255 }),
+  read: boolean('read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  userReadIdx: index('notification_user_read_idx').on(table.userId, table.read),
+}));

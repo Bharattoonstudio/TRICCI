@@ -1,0 +1,58 @@
+═════════════════════════════════════════════════════════════════════
+UPDATE: src/routes.tsx
+═════════════════════════════════════════════════════════════════════
+
+ADD these 2 lazy imports near the top, next to the other page imports
+(around line 12-14, after EmployerDashboard):
+
+const TeamPage = lazy(() => import('./pages/employer/team'));
+const AcceptInvitePage = lazy(() => import('./pages/accept-invite'));
+
+─────────────────────────────────────────────────────────────────────
+
+ADD this PUBLIC route (accept-invite is public — teammate isn't
+logged in yet). Put it near the other public routes, e.g. right
+after the '/unsubscribe' route:
+
+  { path: '/accept-invite', element: <AcceptInvitePage /> },
+
+─────────────────────────────────────────────────────────────────────
+
+ADD this PROTECTED route right after the existing
+'/employer/dashboard' route block:
+
+  {
+    path: '/employer/team',
+    element: (
+      <ProtectedRoute allowedRoles={['employer', 'admin']}>
+        <TeamPage />
+      </ProtectedRoute>
+    ),
+  },
+
+(Optional — if you also want consultants to use the same page at
+/consultant/team, add this too, right after the consultant dashboard
+route block:)
+
+  {
+    path: '/consultant/team',
+    element: (
+      <ProtectedRoute allowedRoles={['consultant', 'admin']}>
+        <TeamPage />
+      </ProtectedRoute>
+    ),
+  },
+
+═════════════════════════════════════════════════════════════════════
+
+ADD a link to "Team" somewhere in the employer dashboard nav so users
+can actually find this page (e.g. in dashboard.tsx's header/sidebar
+area, wherever "Settings" or similar links live):
+
+  <Link to="/employer/team">Team</Link>
+
+(Exact placement depends on your dashboard's existing nav structure —
+send me a screenshot of the dashboard header/sidebar and I'll give you
+the exact line to add.)
+
+═════════════════════════════════════════════════════════════════════

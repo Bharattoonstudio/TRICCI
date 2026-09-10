@@ -246,7 +246,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ═══ ADMIN PANEL SECURITY ═══════════════════════════════════════
 // Protect all /api/admin/* routes with authentication middleware
-app.use("/api/admin/*", adminAuth);
+app.use(/^\/api\/admin/, adminAuth);
 
 // <api-registrations>
 app.get("/api/admin/assessments", admin_assessments_get_0);

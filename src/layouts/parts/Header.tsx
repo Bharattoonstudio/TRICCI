@@ -147,6 +147,8 @@ export default function Header() {
     // Free Jobs aggregator — candidates only
     { href: '/free-jobs', label: '⚡ Free Jobs', isRoute: true, hasDropdown: false, authOnly: true, hideForRoles: ['employer', 'consultant', 'admin'], highlight: true },
     { href: '/blog', label: 'Resources', isRoute: true, hasDropdown: false },
+    // Admin panel — admin only
+    { href: '/admin', label: '🔐 Admin', isRoute: true, hasDropdown: false, authOnly: true, hideForRoles: ['employer', 'consultant', 'candidate'], highlight: true },
     { href: '/refresh', label: "Let's Refresh 🎮", isRoute: true, hasDropdown: false, highlight: true },
   ];
 

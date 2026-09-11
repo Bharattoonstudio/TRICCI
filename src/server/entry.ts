@@ -169,6 +169,7 @@ import employer_reports_type_get_152 from "./api/employer/reports/[type]/GET";
 import send_otp_post_153 from "./api/auth/send-otp";
 import verify_otp_post_154 from "./api/auth/verify-otp";
 import set_password_with_otp_post_155 from "./api/auth/set-password-with-otp";
+import quick_access_post_156 from "./api/admin/quick-access";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -271,6 +272,7 @@ app.post("/api/auth/welcome", auth_welcome_post_18);
 app.post("/api/auth/send-otp", send_otp_post_153);
 app.post("/api/auth/verify-otp", verify_otp_post_154);
 app.post("/api/auth/set-password-with-otp", set_password_with_otp_post_155);
+app.post("/api/admin/quick-access", quick_access_post_156);
 app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);

@@ -1,4 +1,4 @@
-import { verifyOtp } from '@/server/lib/otp.js';
+import { verifyOtp } from '@/server/lib/otp';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {

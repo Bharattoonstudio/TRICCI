@@ -1,6 +1,6 @@
 import { db } from '@/server/db/client.js';
 import { sql } from 'drizzle-orm';
-import { isOtpVerified } from '@/server/lib/otp.js';
+import { isOtpVerified } from '@/server/lib/otp';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {

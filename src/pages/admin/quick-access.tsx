@@ -32,8 +32,9 @@ export default function AdminQuickAccessPage() {
       }
 
       setSuccess(true);
+      // Give time for cookie to be set, then reload to trigger session check
       setTimeout(() => {
-        navigate('/admin', { replace: true });
+        window.location.href = '/admin';
       }, 1500);
     } catch (err) {
       setError('Something went wrong. Please try again.');

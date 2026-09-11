@@ -67,21 +67,65 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Fetch stats
-      const statsResponse = await fetch('/api/admin/stats');
-      const statsData = await statsResponse.json();
-      setStats(statsData);
+      try {
+        const statsResponse = await fetch('/api/admin/stats');
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData);
+        } else {
+          // Provide default stats if API fails
+          setStats({
+            totalUsers: 0,
+            activeUsers: 0,
+            suspendedUsers: 0,
+            totalJobs: 0,
+            totalApplications: 0,
+            totalPlacements: 0,
+            platformRevenue: 0,
+            pendingPayouts: 0,
+          });
+        }
+      } catch (e) {
+        console.error('Error fetching stats:', e);
+        setStats({
+          totalUsers: 0,
+          activeUsers: 0,
+          suspendedUsers: 0,
+          totalJobs: 0,
+          totalApplications: 0,
+          totalPlacements: 0,
+          platformRevenue: 0,
+          pendingPayouts: 0,
+        });
+      }
 
       // Fetch users
-      const usersResponse = await fetch('/api/admin/users');
-      const usersData = await usersResponse.json();
-      setUsers(usersData);
+      try {
+        const usersResponse = await fetch('/api/admin/users');
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json();
+          setUsers(usersData);
+        } else {
+          setUsers([]);
+        }
+      } catch (e) {
+        console.error('Error fetching users:', e);
+        setUsers([]);
+      }
 
       // Fetch alerts
-      const alertsResponse = await fetch('/api/admin/alerts');
-      const alertsData = await alertsResponse.json();
-      setAlerts(alertsData);
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
+      try {
+        const alertsResponse = await fetch('/api/admin/alerts');
+        if (alertsResponse.ok) {
+          const alertsData = await alertsResponse.json();
+          setAlerts(alertsData);
+        } else {
+          setAlerts([]);
+        }
+      } catch (error) {
+        console.error('Error fetching alerts:', error);
+        setAlerts([]);
+      }
     } finally {
       setIsLoading(false);
     }

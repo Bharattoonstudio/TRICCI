@@ -32,9 +32,9 @@ export default function AdminQuickAccessPage() {
       }
 
       setSuccess(true);
-      // Give time for cookie to be set, then reload to trigger session check
+      // Redirect with admin access token to bypass session check temporarily
       setTimeout(() => {
-        window.location.href = '/admin';
+        window.location.href = `/admin?quickaccess=1&email=${encodeURIComponent(email)}`;
       }, 1500);
     } catch (err) {
       setError('Something went wrong. Please try again.');

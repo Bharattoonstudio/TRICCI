@@ -7,7 +7,7 @@ import { signIn, signUp } from '@/lib/auth/auth-client';
 import { trackSignup } from '@/lib/analytics';
 import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput, validateSignupForm } from '@/lib/validation';
 
-type Role = 'employer' | 'consultant' | 'candidate';
+type Role = 'employer' | 'consultant' | 'candidate' | 'admin';
 type Step = 'role' | 'details' | 'mobile_otp';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
@@ -31,6 +31,13 @@ const ROLES: { id: Role; label: string; description: string; icon: React.Element
     description: 'Get discovered by top consultants for your next role',
     icon: User,
     color: '#ffd035',
+  },
+  {
+    id: 'admin',
+    label: 'Admin',
+    description: 'Manage platform, users, and operations',
+    icon: Shield,
+    color: '#7c3aed',
   },
 ];
 
@@ -275,6 +282,8 @@ export default function SignupPage() {
         ? '/employer/dashboard'
         : selectedRole === 'consultant'
           ? '/consultant/dashboard'
+          : selectedRole === 'admin'
+          ? '/admin'
           : '/candidate/profile';
       navigate(dest, { replace: true });
     } catch {

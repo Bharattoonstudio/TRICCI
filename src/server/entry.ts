@@ -166,6 +166,9 @@ import employer_placements_id_offer_reject_approval_post_149 from "./api/employe
 import employer_placements_id_offer_verification_put_150 from "./api/employer/placements/[id]/offer/verification/PUT";
 import employer_offers_get_151 from "./api/employer/offers/GET";
 import employer_reports_type_get_152 from "./api/employer/reports/[type]/GET";
+import send_otp_post_153 from "./api/auth/send-otp";
+import verify_otp_post_154 from "./api/auth/verify-otp";
+import set_password_with_otp_post_155 from "./api/auth/set-password-with-otp";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -264,6 +267,10 @@ app.post("/api/alerts/subscribe", alerts_subscribe_post_15);
 app.delete("/api/alerts/unsubscribe", alerts_unsubscribe_delete_16);
 app.get("/api/analytics/config", analytics_config_get_17);
 app.post("/api/auth/welcome", auth_welcome_post_18);
+// OTP Password Reset Flow
+app.post("/api/auth/send-otp", send_otp_post_153);
+app.post("/api/auth/verify-otp", verify_otp_post_154);
+app.post("/api/auth/set-password-with-otp", set_password_with_otp_post_155);
 app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);
@@ -413,6 +420,7 @@ console.log('[Security] Rate limit cleanup initialized');
 
 // Run DB migrations at startup
 import("./db/migrations/admin_panel_system.js").then(m => m.migrateAdminPanelSystem()).catch(console.error);
+import("./db/migrations/otp-system.js").then(m => m.createOtpTable()).catch(console.error);
 import("./db/migrations/commission_config.js").then(m => m.migrateCommissionConfig()).catch(console.error);
 import("./db/migrations/admin_visibility.js").then(m => m.migrateAdminVisibility()).catch(console.error);
 import("./db/migrations/interview_rounds.js").then(m => m.migrateInterviewRounds()).catch(console.error);

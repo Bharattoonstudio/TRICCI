@@ -266,8 +266,6 @@ export default function SignupPage() {
         name: sanitizedName,
         email: sanitizedEmail,
         password,
-        // @ts-expect-error — BetterAuth additional fields
-        role: selectedRole,
         phone: sanitizeInput(phone),
       });
       if (result.error) {
@@ -275,6 +273,22 @@ export default function SignupPage() {
         setOtpVerified(false);
         return;
       }
+
+      // Set the role after signup (BetterAuth doesn't handle custom fields)
+      try {
+        const roleResponse = await fetch('/api/auth/set-role-after-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: sanitizedEmail, role: selectedRole }),
+        });
+
+        if (!roleResponse.ok) {
+          console.error('Failed to set role');
+        }
+      } catch (roleError) {
+        console.error('Error setting role:', roleError);
+      }
+
       trackSignup(selectedRole, 'email');
       // Email verification removed — mobile OTP is the verification gate.
       // Redirect straight to the role dashboard.

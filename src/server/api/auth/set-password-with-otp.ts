@@ -1,6 +1,7 @@
 import { db } from '@/server/db/client.js';
 import { sql } from 'drizzle-orm';
 import { isOtpVerified } from '@/server/lib/otp';
+import { hashPassword } from 'better-auth/crypto';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -35,13 +36,8 @@ export default async function handler(req: any, res: any) {
 
     const userId = (userResult.rows[0] as any).id;
 
-    // Hash password using bcrypt (crypt function in PostgreSQL)
-    const hashedPassword = await (async () => {
-      const hashResult = await db.execute(
-        sql`SELECT crypt(${password}, gen_salt('bf')) as hashed`
-      );
-      return (hashResult.rows[0] as any).hashed;
-    })();
+    // Hash password using BetterAuth's scrypt method (NOT bcrypt!)
+    const hashedPassword = await hashPassword(password);
 
     // Update or create account record with new password
     const accountResult = await db.execute(

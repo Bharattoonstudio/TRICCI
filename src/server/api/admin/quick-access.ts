@@ -1,6 +1,10 @@
 import { db } from '@/server/db/client.js';
 import { sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth/auth.js';
+import { createHash, randomBytes } from 'crypto';
+
+function generateSessionToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -29,15 +33,23 @@ export default async function handler(req: any, res: any) {
       return res.status(403).json({ message: 'Not an admin user' });
     }
 
-    // Create session using BetterAuth's internal session management
     try {
-      const session = await auth.api.createSession({
-        userId: user.id,
-      });
+      // Generate session token
+      const token = generateSessionToken();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      const sessionId = randomBytes(18).toString('hex');
 
-      if (!session) {
-        return res.status(500).json({ message: 'Failed to create session' });
-      }
+      // Insert session into database
+      await db.execute(
+        sql`INSERT INTO session (id, user_id, expires_at, token)
+            VALUES (${sessionId}, ${user.id}, ${expiresAt}, ${token})`
+      );
+
+      // Set session cookie (BetterAuth uses auth_session)
+      res.setHeader(
+        'Set-Cookie',
+        `auth_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`
+      );
 
       return res.status(200).json({ 
         success: true, 

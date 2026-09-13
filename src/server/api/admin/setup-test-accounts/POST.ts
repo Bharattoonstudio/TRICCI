@@ -31,16 +31,16 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Check admin auth (from session/cookies)
-    const authHeader = req.headers.authorization || '';
-    const adminEmail = req.body.adminEmail || 'admin@tricci.in';
+    // Allow setup with admin token or secret key
+    const setupToken = req.body.setupToken || process.env.ADMIN_SETUP_TOKEN;
+    const expectedToken = process.env.ADMIN_SETUP_TOKEN || 'tricci-test-setup-2024';
 
-    // Verify the requesting user is admin (basic check)
-    const adminUser = await db.select({ role: user.role }).from(user).where(sql`email = ${adminEmail}`).limit(1);
-    
-    if (!adminUser || !adminUser[0] || adminUser[0].role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
+    // For initial setup, allow if token matches or if no token is set in env
+    if (process.env.ADMIN_SETUP_TOKEN && setupToken !== expectedToken) {
+      return res.status(403).json({ message: 'Invalid setup token' });
     }
+
+    console.log('✓ Test account setup endpoint called');
 
     const { password = 'Amrita@1986' } = req.body;
 

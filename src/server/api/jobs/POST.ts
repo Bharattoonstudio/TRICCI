@@ -151,17 +151,27 @@ export default async function handler(req: Request, res: Response) {
 
     const id = uniqueId(String(title), String(location));
 
-    // Resolve company name from employer profile; fall back to 'Confidential'
-    let companyName = 'Confidential';
+    // Resolve company name from employer profile
+    // For public/consultant_only jobs, use actual company name
+    // For confidential jobs, use 'Confidential' as fallback if no profile name exists
+    let companyName = visibility === 'confidential' ? 'Confidential' : '';
     try {
       const [profile] = await db
         .select({ companyName: employerProfile.companyName })
         .from(employerProfile)
         .where(eq(employerProfile.userId, session.user.id))
         .limit(1);
-      if (profile?.companyName) companyName = profile.companyName;
+      if (profile?.companyName) {
+        companyName = profile.companyName;
+      } else if (visibility === 'confidential') {
+        // Only use 'Confidential' fallback for confidential jobs
+        companyName = 'Confidential';
+      }
     } catch {
-      // Non-fatal — use fallback
+      // Non-fatal — use fallback if confidential, otherwise empty string
+      if (visibility === 'confidential') {
+        companyName = 'Confidential';
+      }
     }
 
     // Use provided job code or generate one with crypto.randomInt (never Math.random)

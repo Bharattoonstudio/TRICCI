@@ -1,4 +1,4 @@
-import express, { type NextFunction, type Request, type Response } from "express";
+﻿import express, { type NextFunction, type Request, type Response } from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, extname, join } from "node:path";
 import { readFileSync } from "node:fs";
@@ -189,7 +189,7 @@ function normalizeCommerceApiBaseUrlEnv() {
 normalizeCommerceApiBaseUrlEnv();
 
 import multer from "multer";
-// Shared multer instance — used by file-upload routes (CV, PDF, etc.)
+// Shared multer instance â€” used by file-upload routes (CV, PDF, etc.)
 export const multerMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const app = express();
@@ -200,7 +200,7 @@ const app = express();
 // the sitemap origin in robots.txt.
 app.set("trust proxy", true);
 
-// ── COMPREHENSIVE SECURITY HEADERS ────────────────────────────────────────────
+// â”€â”€ COMPREHENSIVE SECURITY HEADERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Applied to every response before any route handler runs.
 app.use((_req, res, next) => {
 	// Prevent MIME type sniffing
@@ -244,7 +244,7 @@ app.use((_req, res, next) => {
 	
 	next();
 });
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -276,6 +276,9 @@ app.post("/api/auth/verify-otp", verify_otp_post_154);
 app.post("/api/auth/set-password-with-otp", set_password_with_otp_post_155);
 app.post("/api/admin/quick-access", quick_access_post_156);
 app.post("/api/auth/set-role-after-signup", set_role_post_157);
+
+app.post("/api/logging/error", logs_error_post_158);
+app.post("/api/admin/resend-verification-emails", admin_resend_verification_emails_post_159);
 app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);
@@ -698,7 +701,7 @@ if (import.meta.env.PROD) {
 			// level for the observability pipeline to alert on.
 			console.error("ssr.render.failed", {
 				url: req.url,
-				// Log the full stack — React's renderToString annotates it with
+				// Log the full stack â€” React's renderToString annotates it with
 				// the failing component's call tree, which the message alone
 				// discards.
 				error: err instanceof Error ? err.stack : String(err),
@@ -772,7 +775,7 @@ if (import.meta.env.PROD) {
 
 export default app;
 
-// ── Exported helpers (used by entry.test.ts) ──────────────────────────────────
+// â”€â”€ Exported helpers (used by entry.test.ts) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function renderSsrDocument(
   template: string,
@@ -808,3 +811,4 @@ export function registerAdSenseTextRoutes(
     }
   });
 }
+

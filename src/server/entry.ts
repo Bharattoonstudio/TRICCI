@@ -171,6 +171,7 @@ import verify_otp_post_154 from "./api/auth/verify-otp";
 import set_password_with_otp_post_155 from "./api/auth/set-password-with-otp";
 import quick_access_post_156 from "./api/admin/quick-access";
 import set_role_post_157 from "./api/auth/set-role-after-signup";
+import logs_error_post_158 from "./api/logs/error/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";
@@ -416,6 +417,7 @@ app.post("/api/employer/placements/:id/offer/reject-approval", employer_placemen
 app.put("/api/employer/placements/:id/offer/verification", employer_placements_id_offer_verification_put_150);
 app.get("/api/employer/offers", employer_offers_get_151);
 app.get("/api/employer/reports/:type", employer_reports_type_get_152);
+app.post("/api/logs/error", logs_error_post_158);
 // </api-registrations>
 
 // Setup rate limiting cleanup interval

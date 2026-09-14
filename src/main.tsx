@@ -3,6 +3,8 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import { HelmetProvider } from '@dr.pogodin/react-helmet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
+import ErrorBoundary from './lib/error-boundary';
+import { setupGlobalErrorHandler } from './lib/global-error-handler';
 import './styles/globals.css';
 import './content/blog';
 
@@ -12,6 +14,9 @@ if (import.meta.env.MODE === 'development') {
   meta.content = 'noindex, nofollow';
   document.head.appendChild(meta);
 }
+
+// Setup global error handlers once at startup
+setupGlobalErrorHandler();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,11 +34,13 @@ const rootElement = document.getElementById('app');
 if (!rootElement) throw new Error('Root element not found');
 
 const providers = (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </HelmetProvider>
+  <ErrorBoundary>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </HelmetProvider>
+  </ErrorBoundary>
 );
 
 const tree = <StrictMode>{providers}</StrictMode>;

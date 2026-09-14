@@ -47,6 +47,7 @@ export const routes: RouteObject[] = [
 
   // Public role info pages
   { path: '/company', element: <CompanyPage /> },
+  { path: '/companies', element: <CompanyPage /> }, // Alias for plural form
   { path: '/consultant', element: <ConsultantInfoPage /> },
   { path: '/candidate', element: <CandidateInfoPage /> },
 
@@ -223,6 +224,7 @@ export const routes: RouteObject[] = [
 export type Path =
   | '/'
   | '/company'
+  | '/companies'
   | '/consultant'
   | '/candidate'
   | '/login'

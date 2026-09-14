@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, User, Building2, Star, Shield, Zap } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from '@/lib/auth/auth-client';
+import { useHydrationReady } from '@/lib/useHydrationReady';
 
 const ROLE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; dashboard: string }> = {
   employer: { label: 'Employer', icon: Building2, color: '#E8470A', dashboard: '/employer/dashboard' },
@@ -121,7 +122,7 @@ function UserMenu() {
   );
 }
 
-export default function Header() {
+function HeaderContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, user } = useSession();
   const navigate = useNavigate();
@@ -290,4 +291,39 @@ export default function Header() {
       </div>
     </header>
   );
+}
+
+/**
+ * Header wrapper that suppresses hydration during initial render
+ * to prevent mismatches between server-rendered auth state and
+ * client-determined auth state from useSession().
+ */
+export default function Header() {
+  const isReady = useHydrationReady();
+
+  // During hydration, render a minimal placeholder to prevent
+  // React from trying to hydrate potentially mismatched content.
+  // Once the client is ready, render the full Header with auth state.
+  if (!isReady) {
+    return (
+      <header className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex h-[96px] items-center justify-between gap-6">
+            <Link to="/" className="flex items-center shrink-0">
+              <img
+                src="/assets/tricci-logo.png"
+                alt="TRICCI — We Make It Easy"
+                className="h-16 w-auto object-contain self-center"
+                fetchPriority="high"
+              />
+            </Link>
+            <div className="hidden lg:flex items-center gap-1" />
+            <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  return <HeaderContent />;
 }

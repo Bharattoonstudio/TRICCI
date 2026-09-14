@@ -459,6 +459,7 @@ import("./db/migrations/account_document.js").then(m => m.migrateAccountDocument
 import("./db/migrations/interview_candidate_ack.js").then(m => m.migrateInterviewCandidateAck()).catch(console.error);
 import("./db/migrations/consultant_login_streak.js").then(m => m.migrateConsultantLoginStreak()).catch(console.error);
 import("./db/migrations/placement_joining_tracker.js").then(m => m.migratePlacementJoiningTracker()).catch(console.error);
+import("./db/migrations/cleanup_orphaned_jobs.js").then(m => m.cleanupOrphanedJobs()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.

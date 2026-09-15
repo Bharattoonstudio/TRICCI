@@ -172,7 +172,7 @@ import verify_otp_post_154 from "./api/auth/verify-otp";
 import set_password_with_otp_post_155 from "./api/auth/set-password-with-otp";
 import quick_access_post_156 from "./api/admin/quick-access";
 import set_role_post_157 from "./api/auth/set-role-after-signup";
-import logs_error_post_158 from "./api/logs/error/POST";
+import logs_error_post_158 from "./api/logging/error/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import { isSystemHost } from "./seo-host";

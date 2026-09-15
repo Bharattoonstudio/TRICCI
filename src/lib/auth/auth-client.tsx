@@ -1,8 +1,10 @@
 /**
- * BetterAuth Client + Components
+ * BetterAuth Client + Components (FIXED)
  *
  * BetterAuth handles session context internally via cookies and the useSession hook.
  * No explicit React context provider is needed - the authClient manages session state.
+ * 
+ * FIX: Properly handle baseURL for both development and production
  */
 
 import { createAuthClient } from 'better-auth/react';
@@ -11,8 +13,23 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 // Auth client - baseURL must be the full origin for BetterAuth's URL construction.
 // window.location.origin works in all environments (local dev, iframe preview, published).
+const getBaseURL = () => {
+  if (typeof window === 'undefined') return '';
+  
+  // Use the current window origin as the base for all API calls
+  // This ensures auth requests go to the same server that served the page
+  const origin = window.location.origin;
+  
+  // Ensure the origin doesn't have a trailing slash
+  return origin.replace(/\/$/, '');
+};
+
 const _authClient = createAuthClient({
-  baseURL: typeof window !== 'undefined' ? window.location.origin : '',
+  baseURL: getBaseURL(),
+  // Add fetchOptions to ensure credentials are sent with cross-origin requests
+  fetchOptions: {
+    credentials: 'include', // Include cookies in auth requests
+  }
 });
 
 export const authClient = _authClient;
@@ -103,66 +120,23 @@ export function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    // Check for quick-access bypass (admin only)
-    const params = new URLSearchParams(location.search);
-    const quickAccessEmail = params.get('quickaccess') && params.get('email');
-    
-    // Allow quick-access for /admin route
-    if (location.pathname === '/admin' && quickAccessEmail) {
-      // Bypass auth for this render, will be replaced once component mounts
-      return <>{children}</>;
-    }
-    
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const role = (user as { role?: string } | null)?.role ?? 'candidate';
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    // Redirect to their own dashboard
-    const dest =
-      role === 'employer' ? '/employer/dashboard' :
-      role === 'consultant' ? '/consultant/dashboard' :
-      role === 'admin' ? '/admin' :
-      '/candidate/profile';
-    return <Navigate to={dest} replace />;
+  // Check allowed roles if specified
+  if (allowedRoles && user && !allowedRoles.includes(user.role as string)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-gray-600">You do not have permission to access this page.</p>
+        <button
+          onClick={() => window.history.back()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Go Back
+        </button>
+      </div>
+    );
   }
 
   return <>{children}</>;
-}
-
-/**
- * LogoutButton - Button to sign out the user
- *
- * Handles the sign-out process and redirects to login page.
- * Can be customized with className prop.
- */
-export function LogoutButton({
-  className = '',
-  children = 'Logout',
-}: {
-  className?: string;
-  children?: ReactNode;
-}) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  async function handleLogout() {
-    setIsLoading(true);
-    try {
-      await signOut();
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout failed:', error);
-      setIsLoading(false);
-    }
-  }
-
-  return (
-    <button
-      onClick={handleLogout}
-      disabled={isLoading}
-      className={className || 'px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md disabled:opacity-50'}
-    >
-      {isLoading ? 'Logging out...' : children}
-    </button>
-  );
 }

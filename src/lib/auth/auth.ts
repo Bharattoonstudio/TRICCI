@@ -1,5 +1,5 @@
 /**
- * BetterAuth Server Configuration
+ * BetterAuth Server Configuration (FIXED)
  *
  * Supports both Email/Password and OAuth authentication.
  * Enable/disable methods by uncommenting the relevant sections.
@@ -10,6 +10,8 @@
  *
  * CORS/Trusted Origins:
  * - Only trusts origins matching the server's hostname
+ * 
+ * FIX: Ensure proper configuration and error handling
  */
 
 import { betterAuth } from 'better-auth';
@@ -44,6 +46,7 @@ export function getAuth() {
 
   const auth = betterAuth({
     // Explicit base URL so BetterAuth can build verification/reset links correctly.
+    // Use process.env.BETTER_AUTH_URL if set, otherwise default to tricci.in
     baseURL: process.env.BETTER_AUTH_URL || 'https://tricci.in',
 
     // Schema passed explicitly — avoids BetterAuth's runtime schema inference.
@@ -60,7 +63,13 @@ export function getAuth() {
         role: {
           type: 'string',
           defaultValue: 'candidate',
-          input: true,
+          input: true,  // Allow setting role during signup
+          returned: true,
+        },
+        phone: {
+          type: 'string',
+          defaultValue: '',
+          input: true,  // Allow setting phone during signup
           returned: true,
         },
         isAdmin: {
@@ -114,12 +123,17 @@ export function getAuth() {
         const hostname = originUrl.hostname;
 
         // Trust localhost for development
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
           return [origin];
         }
 
         // Trust the custom domain and any www subdomain
         if (hostname === 'tricci.in' || hostname === 'www.tricci.in') {
+          return [origin];
+        }
+
+        // Trust any Railway internal hostname
+        if (hostname.includes('railway.app') || hostname.includes('railway.internal')) {
           return [origin];
         }
 
@@ -149,7 +163,7 @@ export function getAuth() {
       },
     },
 
-
+    // Social login providers (optional)
     socialProviders: {
       ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? {
         google: {
@@ -163,6 +177,13 @@ export function getAuth() {
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
         },
       } : {}),
+    },
+
+    // Rate limiting for auth endpoints
+    rateLimit: {
+      enabled: true,
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 10, // 10 requests per window
     },
   });
 

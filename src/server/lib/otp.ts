@@ -14,6 +14,10 @@ export function generateOtpCode(): string {
  */
 export async function sendOtpEmail(email: string, otp: string): Promise<boolean> {
   try {
+    console.log(`[OTP EMAIL] Attempting to send OTP to ${email}`);
+    console.log(`[OTP EMAIL] BREVO_SENDER_EMAIL=${process.env.BREVO_SENDER_EMAIL}`);
+    console.log(`[OTP EMAIL] BREVO_API_KEY exists=${!!process.env.BREVO_API_KEY}`);
+    
     await sendEmail({
       to: email,
       subject: 'Your TRICCI Password Reset Code',
@@ -30,9 +34,11 @@ export async function sendOtpEmail(email: string, otp: string): Promise<boolean>
       `,
       text: `Your TRICCI password reset code is: ${otp}`,
     });
+    
+    console.log(`[OTP EMAIL] ✅ Successfully sent OTP to ${email}`);
     return true;
   } catch (error) {
-    console.error('Failed to send OTP email:', error);
+    console.error(`[OTP EMAIL] ❌ Failed to send OTP to ${email}:`, error instanceof Error ? error.message : error);
     return false;
   }
 }

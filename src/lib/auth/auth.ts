@@ -147,19 +147,30 @@ export function getAuth() {
       enabled: true,
       requireEmailVerification: false,   // ← disabled: mobile OTP at signup is the verification gate
       sendResetPassword: async ({ user: u, url }) => {
-        await sendEmail({
-          to: u.email,
-          subject: 'Reset your TRICCI password',
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#1A0A00;color:#F5F5F5;border-radius:12px;">
-              <h1 style="color:#FF6B35;font-size:24px;margin:0 0 8px;">Reset your password</h1>
-              <p style="color:#aaa;margin:0 0 24px;">Hi ${u.name}, click the button below to set a new password for your TRICCI account.</p>
-              <a href="${url}" style="display:inline-block;background:#FF6B35;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;">Reset Password</a>
-              <p style="color:#666;font-size:12px;margin-top:24px;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
-            </div>
-          `,
-          text: `Reset your TRICCI password: ${url}`,
-        });
+        try {
+          console.log(`[PASSWORD RESET EMAIL] Attempting to send to ${u.email}`);
+          console.log(`[PASSWORD RESET EMAIL] BREVO_SENDER_EMAIL=${process.env.BREVO_SENDER_EMAIL}`);
+          console.log(`[PASSWORD RESET EMAIL] BREVO_API_KEY exists=${!!process.env.BREVO_API_KEY}`);
+          
+          await sendEmail({
+            to: u.email,
+            subject: 'Reset your TRICCI password',
+            html: `
+              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#1A0A00;color:#F5F5F5;border-radius:12px;">
+                <h1 style="color:#FF6B35;font-size:24px;margin:0 0 8px;">Reset your password</h1>
+                <p style="color:#aaa;margin:0 0 24px;">Hi ${u.name}, click the button below to set a new password for your TRICCI account.</p>
+                <a href="${url}" style="display:inline-block;background:#FF6B35;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;">Reset Password</a>
+                <p style="color:#666;font-size:12px;margin-top:24px;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+              </div>
+            `,
+            text: `Reset your TRICCI password: ${url}`,
+          });
+          
+          console.log(`[PASSWORD RESET EMAIL] ✅ Successfully sent to ${u.email}`);
+        } catch (error) {
+          console.error(`[PASSWORD RESET EMAIL] ❌ Failed to send to ${u.email}:`, error instanceof Error ? error.message : error);
+          throw error;
+        }
       },
     },
 

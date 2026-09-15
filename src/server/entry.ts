@@ -166,6 +166,7 @@ import employer_placements_id_offer_reject_approval_post_149 from "./api/employe
 import employer_placements_id_offer_verification_put_150 from "./api/employer/placements/[id]/offer/verification/PUT";
 import employer_offers_get_151 from "./api/employer/offers/GET";
 import employer_reports_type_get_152 from "./api/employer/reports/[type]/GET";
+import admin_resend_verification_emails_post_159 from "./api/admin/resend-verification-emails/POST";
 import send_otp_post_153 from "./api/auth/send-otp";
 import verify_otp_post_154 from "./api/auth/verify-otp";
 import set_password_with_otp_post_155 from "./api/auth/set-password-with-otp";

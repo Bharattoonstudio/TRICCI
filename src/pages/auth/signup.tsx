@@ -261,35 +261,52 @@ export default function SignupPage() {
       // Ensure all data is sanitized before sending
       const sanitizedName = sanitizeInput(name);
       const sanitizedEmail = sanitizeInput(email);
+      const sanitizedPassword = password;
       
+      // BetterAuth signUp only accepts: email, password, name
+      // Custom fields (phone, role) will be set AFTER account creation
       const result = await signUp.email({
         name: sanitizedName,
         email: sanitizedEmail,
-        password,
-        phone: sanitizeInput(phone),
+        password: sanitizedPassword,
+        // DO NOT pass custom fields like 'phone' or 'role' here - BetterAuth doesn't know about them
+        // They will be set in the next step via /api/auth/set-role-after-signup
       });
+      
       if (result.error) {
-        setOtpError(result.error.message ?? 'Could not create account. Please try again.');
+        const errorMsg = result.error.message ?? 'Could not create account. Please try again.';
+        setOtpError(errorMsg);
         setOtpVerified(false);
+        console.error('Signup error:', result.error);
         return;
       }
 
-      // Set the role after signup (BetterAuth doesn't handle custom fields)
+      console.log('Account created successfully, setting role...');
+
+      // Set the role after signup (BetterAuth doesn't handle custom fields in signup)
       try {
         const roleResponse = await fetch('/api/auth/set-role-after-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: sanitizedEmail, role: selectedRole }),
+          body: JSON.stringify({ 
+            email: sanitizedEmail, 
+            role: selectedRole,
+            phone: sanitizeInput(phone)
+          }),
         });
 
         if (!roleResponse.ok) {
-          console.error('Failed to set role');
+          const errorData = await roleResponse.json().catch(() => ({})) as { error?: string };
+          console.error('Failed to set role:', errorData.error || 'Unknown error');
+          // Continue anyway - role can be set later
         }
       } catch (roleError) {
         console.error('Error setting role:', roleError);
+        // Continue anyway - role can be set later
       }
 
       trackSignup(selectedRole, 'email');
+      
       // Email verification removed — mobile OTP is the verification gate.
       // Redirect straight to the role dashboard.
       const dest = selectedRole === 'employer'
@@ -299,8 +316,10 @@ export default function SignupPage() {
           : selectedRole === 'admin'
           ? '/admin'
           : '/candidate/profile';
+      
       navigate(dest, { replace: true });
-    } catch {
+    } catch (error) {
+      console.error('Signup exception:', error);
       setOtpError('Something went wrong. Please try again.');
       setOtpVerified(false);
     } finally {

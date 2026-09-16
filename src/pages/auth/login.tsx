@@ -121,8 +121,9 @@ export default function LoginPage() {
     setNeedsVerification(false);
     setLoading(true);
     try {
-      // Use custom /api/auth/login endpoint instead of BetterAuth's built-in
-      const response = await fetch('/api/auth/login', {
+      // FIXED: Use custom /api/login endpoint (NOT /api/auth/login)
+      // The /api/auth/* middleware will intercept /api/auth/login
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

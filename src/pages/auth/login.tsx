@@ -121,22 +121,32 @@ export default function LoginPage() {
     setNeedsVerification(false);
     setLoading(true);
     try {
-      const result = await signIn.email({ email, password });
-      if (result.error) {
-        const msg = result.error.message ?? '';
-        // BetterAuth returns "Email not verified" when requireEmailVerification is true
-        if (msg.toLowerCase().includes('email') && msg.toLowerCase().includes('verif')) {
-          setNeedsVerification(true);
-        } else {
-          setError(msg || 'Invalid email or password.');
-        }
+      // Use custom /api/auth/login endpoint instead of BetterAuth's built-in
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+
+      const data = await response.json() as any;
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid email or password.');
         return;
       }
-      const role = (result.data?.user as { role?: string })?.role ?? 'candidate';
+
+      if (!data.user) {
+        setError('Login failed');
+        return;
+      }
+
       trackLogin('email');
+      const role = data.user.role ?? 'candidate';
       const dest = from ?? getRoleDestination(role);
       navigate(dest, { replace: true });
-    } catch {
+    } catch (err) {
+      console.error('Login error:', err);
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);

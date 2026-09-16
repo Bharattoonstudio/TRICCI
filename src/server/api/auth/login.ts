@@ -1,7 +1,7 @@
 import { db } from '@/server/db/client';
 import { user, account } from '@/server/db/schema';
-import { sql, eq } from 'drizzle-orm';
-import { verify } from 'better-auth/password';
+import { sql } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 /**
@@ -46,14 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Verify password using bcrypt
-    let passwordValid = false;
-    try {
-      passwordValid = await verify({ hash: storedHash, password });
-    } catch (verifyError) {
-      console.error(`[LOGIN] Password verification error for ${email}:`,
-        verifyError instanceof Error ? verifyError.message : verifyError);
-      // Continue to invalid password response
-    }
+    const passwordValid = await bcrypt.compare(password, storedHash);
 
     if (!passwordValid) {
       console.log(`[LOGIN] ❌ Invalid password for ${email}`);

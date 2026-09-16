@@ -68,9 +68,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'linkedin' | null>(null);
   const [error, setError] = useState('');
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false);
   const [loggedInDest, setLoggedInDest] = useState('/');
@@ -102,48 +99,29 @@ export default function LoginPage() {
     return <Navigate to={loggedInDest} replace />;
   }
 
-  async function handleResendVerification() {
-    setResending(true);
-    try {
-      await (authClient as unknown as { sendVerificationEmail: (opts: { email: string; callbackURL: string }) => Promise<unknown> })
-        .sendVerificationEmail({ email, callbackURL: '/verify-email' });
-      setResent(true);
-    } catch {
-      // silent — user can try again
-    } finally {
-      setResending(false);
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    setNeedsVerification(false);
     setLoading(true);
     try {
-      // FIXED: Use custom /api/login endpoint (NOT /api/auth/login)
-      // The /api/auth/* middleware will intercept /api/auth/login
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
+      // Use Better Auth's signIn.email() which properly creates a session
+      const result = await signIn.email({
+        email,
+        password,
+        rememberMe: true,
       });
 
-      const data = await response.json() as any;
-
-      if (!response.ok) {
-        setError(data.error || 'Invalid email or password.');
+      if (result.error) {
+        setError(result.error.message || 'Invalid email or password.');
         return;
       }
 
-      if (!data.user) {
-        setError('Login failed');
-        return;
-      }
+      // Get the session to determine the role-based dashboard
+      const session = await authClient.getSession();
+      const sessionData = session as { data?: { user?: { role?: string } } | null } | null;
+      const role = sessionData?.data?.user?.role ?? 'candidate';
 
       trackLogin('email');
-      const role = data.user.role ?? 'candidate';
       const dest = from ?? getRoleDestination(role);
       navigate(dest, { replace: true });
     } catch (err) {
@@ -243,31 +221,6 @@ export default function LoginPage() {
               </motion.div>
             )}
 
-            {needsVerification && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl bg-secondary/10 border border-secondary/20 mb-5">
-                <p className="text-sm font-semibold text-secondary mb-1">Email not verified</p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Please check your inbox and click the verification link before signing in.
-                  {email && ' Didn\'t get it? Resend below.'}
-                </p>
-                {resent ? (
-                  <p className="text-xs text-green-400 font-semibold flex items-center gap-1.5">
-                    <CheckCircle size={13} /> Verification email sent — check your inbox.
-                  </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={resending || !email}
-                    className="text-xs font-semibold text-secondary hover:underline disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {resending ? <><Loader2 size={12} className="animate-spin" /> Sending…</> : 'Resend verification email →'}
-                  </button>
-                )}
-              </motion.div>
-            )}
-
             {/* Social Login */}
             <div className="grid grid-cols-2 gap-3 mb-5">
               <button type="button" onClick={() => handleSocialLogin('google')}
@@ -302,7 +255,7 @@ export default function LoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-sm font-semibold text-foreground">Password</label>
-                  <Link to="/forgot-password-otp" className="text-xs text-primary hover:underline">Forgot password?</Link>
+                  <Link to="/forgot-password" className="text-xs text-primary hover:underline">Forgot password?</Link>
                 </div>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} value={password}

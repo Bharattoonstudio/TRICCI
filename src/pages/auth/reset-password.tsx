@@ -41,6 +41,7 @@ export default function ResetPasswordPage() {
     try {
       if (!token) throw new Error('No reset token found');
 
+      // Use Better Auth's resetPassword() method with the token from URL
       const result = await authClient.resetPassword({
         token,
         newPassword: password,

@@ -2,13 +2,13 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, EyeOff, AlertCircle, Loader2, Building2, Star, User, Shield, CheckCircle, Mail, Phone } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2, Building2, Star, User, Shield, CheckCircle } from 'lucide-react';
 import { signIn, signUp } from '@/lib/auth/auth-client';
 import { trackSignup } from '@/lib/analytics';
 import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput, validateSignupForm } from '@/lib/validation';
 
 type Role = 'employer' | 'consultant' | 'candidate' | 'admin';
-type Step = 'role' | 'details' | 'mobile_otp';
+type Step = 'role' | 'details';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
   {
@@ -71,15 +71,10 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpVerified, setOtpVerified] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'linkedin' | null>(null);
   const [error, setError] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [otpSmsDelivered, setOtpSmsDelivered] = useState(false);
 
   function handleRoleSelect(role: Role) {
     setSelectedRole(role);
@@ -98,11 +93,10 @@ export default function SignupPage() {
     }
   }
 
-  // Step 2 → Step 3: validate all details + phone, auto-send OTP, then advance
-  async function handleDetailsContinue(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedRole) return;
-    
+
     setError('');
 
     // Sanitize inputs
@@ -124,174 +118,33 @@ export default function SignupPage() {
       return;
     }
 
-    // Update state with sanitized values
-    setName(sanitizedName);
-    setEmail(sanitizedEmail);
-    setPhone(sanitizedPhone);
-
-    // Auto-send OTP before advancing to step 3
     setLoading(true);
     try {
-      const res = await fetch('/api/otp/send-public', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: sanitizedPhone, 
-          email: sanitizedEmail, 
-          purpose: 'signup_mobile',
-          role: selectedRole
-        }),
-      });
-
-      // Handle rate limiting
-      if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After');
-        throw new Error(
-          `Too many attempts. Please try again in ${retryAfter || 15} seconds.`
-        );
-      }
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(d.error ?? 'Failed to send OTP');
-      }
-      const data = await res.json().catch(() => ({})) as { sms?: boolean };
-      setOtpSmsDelivered(!!data.sms);
-      setStep('mobile_otp');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Resend OTP from step 3
-  async function handleResendOtp() {
-    setOtpError('');
-    setOtp('');
-    setOtpLoading(true);
-    try {
-      const sanitizedPhone = sanitizeInput(phone).replace(/\s/g, '').replace(/^(\+91)?/, '');
-      const sanitizedEmail = sanitizeInput(email);
-
-      const res = await fetch('/api/otp/send-public', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: sanitizedPhone, 
-          email: sanitizedEmail, 
-          purpose: 'signup_mobile',
-          role: selectedRole
-        }),
-      });
-
-      // Handle rate limiting
-      if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After');
-        throw new Error(
-          `Too many attempts. Please try again in ${retryAfter || 15} seconds.`
-        );
-      }
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(d.error ?? 'Failed to resend OTP');
-      }
-      setOtpError('');
-    } catch (err) {
-      setOtpError(err instanceof Error ? err.message : 'Could not resend OTP. Please try again.');
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  // Verify OTP then create account
-  async function handleVerifyAndCreate() {
-    setOtpError('');
-    
-    // Validate OTP format
-    if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-      setOtpError('Enter the 6-digit OTP.');
-      return;
-    }
-
-    setOtpLoading(true);
-    try {
-      const sanitizedPhone = sanitizeInput(phone).replace(/\s/g, '').replace(/^(\+91)?/, '');
-      const sanitizedEmail = sanitizeInput(email);
-      const sanitizedOtp = sanitizeInput(otp);
-
-      const res = await fetch('/api/otp/verify-public', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: sanitizedPhone, 
-          email: sanitizedEmail, 
-          otp: sanitizedOtp, 
-          purpose: 'signup_mobile',
-          role: selectedRole
-        }),
-      });
-
-      // Handle rate limiting
-      if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After');
-        throw new Error(
-          `Too many attempts. Please try again in ${retryAfter || 15} seconds.`
-        );
-      }
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(d.error ?? 'Invalid OTP');
-      }
-      setOtpVerified(true);
-      // Now create the account
-      await createAccount();
-    } catch (err) {
-      setOtpError(err instanceof Error ? err.message : 'Invalid or expired OTP. Please try again.');
-      setOtpLoading(false);
-    }
-  }
-
-  async function createAccount() {
-    if (!selectedRole) return;
-    setLoading(true);
-    try {
-      // Ensure all data is sanitized before sending
-      const sanitizedName = sanitizeInput(name);
-      const sanitizedEmail = sanitizeInput(email);
-      const sanitizedPassword = password;
-      
-      // BetterAuth signUp only accepts: email, password, name
-      // Custom fields (phone, role) will be set AFTER account creation
+      // Use Better Auth's signUp.email() to create account
       const result = await signUp.email({
         name: sanitizedName,
         email: sanitizedEmail,
-        password: sanitizedPassword,
-        // DO NOT pass custom fields like 'phone' or 'role' here - BetterAuth doesn't know about them
-        // They will be set in the next step via /api/auth/set-role-after-signup
+        password: password,
       });
-      
+
       if (result.error) {
         const errorMsg = result.error.message ?? 'Could not create account. Please try again.';
-        setOtpError(errorMsg);
-        setOtpVerified(false);
+        setError(errorMsg);
         console.error('Signup error:', result.error);
         return;
       }
 
       console.log('Account created successfully, setting role...');
 
-      // Set the role after signup (BetterAuth doesn't handle custom fields in signup)
+      // Set the role and phone after signup
       try {
         const roleResponse = await fetch('/api/auth/set-role-after-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: sanitizedEmail, 
+          body: JSON.stringify({
+            email: sanitizedEmail,
             role: selectedRole,
-            phone: sanitizeInput(phone)
+            phone: sanitizedPhone
           }),
         });
 
@@ -306,9 +159,8 @@ export default function SignupPage() {
       }
 
       trackSignup(selectedRole, 'email');
-      
-      // Email verification removed — mobile OTP is the verification gate.
-      // Redirect straight to the role dashboard.
+
+      // Redirect straight to the role dashboard
       const dest = selectedRole === 'employer'
         ? '/employer/dashboard'
         : selectedRole === 'consultant'
@@ -316,15 +168,13 @@ export default function SignupPage() {
           : selectedRole === 'admin'
           ? '/admin'
           : '/candidate/profile';
-      
+
       navigate(dest, { replace: true });
     } catch (error) {
       console.error('Signup exception:', error);
-      setOtpError('Something went wrong. Please try again.');
-      setOtpVerified(false);
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
-      setOtpLoading(false);
     }
   }
 
@@ -470,19 +320,6 @@ export default function SignupPage() {
                     </div>
                   </div>
 
-                  {/* Step indicator */}
-                  <div className="flex items-center gap-2 mb-5">
-                    {['Details', 'Verify OTP', 'Done'].map((s, i) => (
-                      <div key={s} className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${i === 0 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                          {i + 1}
-                        </div>
-                        <span className={`text-xs font-medium ${i === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>{s}</span>
-                        {i < 2 && <div className="flex-1 h-px bg-border w-4" />}
-                      </div>
-                    ))}
-                  </div>
-
                   {error && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
                       className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
@@ -491,7 +328,7 @@ export default function SignupPage() {
                     </motion.div>
                   )}
 
-                  <form onSubmit={handleDetailsContinue} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="text-sm font-semibold text-foreground mb-1.5 block">
                         {selectedRole === 'employer' ? 'Company / Your Name' : 'Full Name'}
@@ -534,7 +371,7 @@ export default function SignupPage() {
                           className="flex-1 bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">OTP will be sent to your email and mobile number</p>
+                      <p className="text-xs text-muted-foreground mt-1">You can update this later in your profile</p>
                     </div>
 
                     <div>
@@ -574,138 +411,14 @@ export default function SignupPage() {
                       className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
                     >
                       {loading
-                        ? <><Loader2 size={16} className="animate-spin" /> Sending OTP…</>
-                        : <>Continue — Verify OTP →</>}
+                        ? <><Loader2 size={16} className="animate-spin" /> Creating account…</>
+                        : <><CheckCircle size={16} /> Create Account</>}
                     </button>
 
                     <p className="text-xs text-muted-foreground text-center">
                       By signing up you agree to TRICCI&apos;s Terms of Service and Privacy Policy.
                     </p>
                   </form>
-                </motion.div>
-              )}
-
-              {/* ── Step 3: OTP Verification ── */}
-              {step === 'mobile_otp' && roleInfo && (
-                <motion.div key="mobile_otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
-                  <button onClick={() => { setStep('details'); setOtp(''); setOtpError(''); }}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5">
-                    ← Back
-                  </button>
-
-                  {/* Step indicator */}
-                  <div className="flex items-center gap-2 mb-5">
-                    {['Details', 'Verify', 'Done'].map((s, i) => (
-                      <div key={s} className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${i === 0 ? 'bg-green-500 text-white' : i === 1 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                          {i === 0 ? <CheckCircle size={13} /> : i + 1}
-                        </div>
-                        <span className={`text-xs font-medium ${i <= 1 ? 'text-foreground' : 'text-muted-foreground'}`}>{s}</span>
-                        {i < 2 && <div className="flex-1 h-px bg-border w-4" />}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-primary/10 border border-primary/20">
-                      <Mail size={18} className="text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {otpSmsDelivered ? 'Check your email or SMS' : 'Check your email'}
-                      </h2>
-                      <p className="text-xs text-muted-foreground">Enter the 6-digit code we just sent</p>
-                    </div>
-                  </div>
-
-                  {/* Delivery notice — email + optional SMS */}
-                  <div className="space-y-2 mb-5">
-                    <div className="bg-primary/8 border border-primary/20 rounded-xl p-3 flex items-start gap-2">
-                      <Mail size={13} className="text-primary shrink-0 mt-0.5" />
-                      <div className="text-xs text-foreground">
-                        <p>OTP sent to <strong>{email}</strong></p>
-                        <p className="text-muted-foreground mt-0.5">Code expires in 10 minutes.</p>
-                      </div>
-                    </div>
-
-                    {otpSmsDelivered && (
-                      <div className="bg-green-500/8 border border-green-500/20 rounded-xl p-3 flex items-start gap-2">
-                        <Phone size={13} className="text-green-400 shrink-0 mt-0.5" />
-                        <div className="text-xs text-foreground">
-                          <p>Also sending SMS to <strong>+91 {phone}</strong></p>
-                          <p className="text-muted-foreground mt-0.5">May take a minute — the email code above works immediately.</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Spam warning — always visible */}
-                    <div className="bg-yellow-500/8 border border-yellow-500/25 rounded-xl p-3 flex items-start gap-2">
-                      <AlertCircle size={13} className="text-yellow-400 shrink-0 mt-0.5" />
-                      <div className="text-xs">
-                        <p className="font-semibold text-yellow-300">Not seeing the email?</p>
-                        <p className="text-muted-foreground mt-0.5">
-                          Check your <strong className="text-foreground">Spam / Junk</strong> folder — Yahoo and Gmail sometimes filter OTP emails. Mark it as "Not Spam" to receive future emails in your inbox.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {otpError && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
-                      <AlertCircle size={15} className="shrink-0" />
-                      {otpError}
-                    </motion.div>
-                  )}
-
-                  {otpVerified && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm mb-4">
-                      <CheckCircle size={15} className="shrink-0" />
-                      Verified! Creating your account…
-                    </motion.div>
-                  )}
-
-                  <div className="space-y-4">
-                    {/* OTP input */}
-                    <div>
-                      <label className="text-sm font-semibold text-foreground mb-1.5 block">Enter 6-digit OTP</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={otp}
-                        onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        placeholder="• • • • • •"
-                        maxLength={6}
-                        disabled={otpVerified || loading}
-                        autoFocus
-                        className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors tracking-[0.5em] text-center font-bold text-lg disabled:opacity-50"
-                      />
-                      <div className="flex items-center justify-between mt-1.5">
-                        <p className="text-xs text-muted-foreground">Code expires in 10 minutes</p>
-                        <button
-                          type="button"
-                          onClick={handleResendOtp}
-                          disabled={otpLoading || otpVerified || loading}
-                          className="text-xs text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
-                        >
-                          {otpLoading ? <Loader2 size={11} className="animate-spin" /> : null}
-                          Resend OTP
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleVerifyAndCreate}
-                      disabled={otp.length !== 6 || otpLoading || otpVerified || loading}
-                      className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
-                    >
-                      {(otpLoading || loading)
-                        ? <><Loader2 size={16} className="animate-spin" /> Verifying &amp; creating account…</>
-                        : <><CheckCircle size={16} /> Verify &amp; Create Account</>}
-                    </button>
-                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

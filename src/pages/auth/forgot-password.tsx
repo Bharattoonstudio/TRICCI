@@ -17,7 +17,8 @@ export default function ForgotPasswordPage() {
     setError('');
     setLoading(true);
     try {
-      await authClient.forgetPassword({
+      // Use Better Auth's requestPasswordReset() method
+      await authClient.requestPasswordReset({
         email,
         redirectURL: `${window.location.origin}/reset-password`,
       });

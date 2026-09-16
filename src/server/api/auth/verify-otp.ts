@@ -21,9 +21,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Find matching OTP that hasn't expired and hasn't been verified yet
     const result = await db.execute(
       sql`
-        SELECT id, otp, expires_at, verified 
-        FROM otp_store 
-        WHERE identifier = ${email} 
+        SELECT id, otp, expires_at, verified
+        FROM otp_store
+        WHERE identifier = ${email}
         AND otp = ${otp}
         AND expires_at > NOW()
         AND verified = FALSE

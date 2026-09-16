@@ -26,8 +26,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Verify OTP is marked as verified
     const otpResult = await db.execute(
       sql`
-        SELECT id FROM otp_store 
-        WHERE identifier = ${email} 
+        SELECT id FROM otp_store
+        WHERE identifier = ${email}
         AND otp = ${otp}
         AND verified = TRUE
         AND expires_at > NOW()

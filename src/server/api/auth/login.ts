@@ -1,9 +1,13 @@
-import { getAuth } from '@/lib/auth/auth';
+import { db } from '@/server/db/client';
+import { user, account } from '@/server/db/schema';
+import { sql, eq } from 'drizzle-orm';
+import { verify } from 'better-auth/password';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 /**
  * Login endpoint — email + password authentication
- * Returns: session token + user data on success
+ * Bypasses BetterAuth's built-in method and performs direct database verification
+ * Returns: user data on success
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -17,26 +21,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get BetterAuth instance
-    const auth = getAuth();
+    // Query user and account in one go
+    const result = await db.execute(
+      sql`
+        SELECT u.id, u.email, u.name, u.role, a.password
+        FROM "user" u
+        LEFT JOIN account a ON a.user_id = u.id
+        WHERE u.email = ${email}
+        LIMIT 1
+      `
+    );
 
-    // Authenticate user with BetterAuth
-    const response = await auth.api.signInEmail({
-      email,
-      password,
-      dontCreateUser: false,
-    });
-
-    // Check if authentication succeeded
-    if (!response || response.status !== 200) {
-      console.error(`[LOGIN] Auth failed for ${email}:`, response?.status);
+    if (!result.rows || result.rows.length === 0) {
+      console.log(`[LOGIN] ❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Extract session from response
-    const session = response.data;
-    if (!session || !session.user) {
-      return res.status(401).json({ error: 'Login failed' });
+    const userRecord = result.rows[0] as any;
+    const storedHash = userRecord.password;
+
+    if (!storedHash) {
+      console.log(`[LOGIN] ❌ No password set for ${email}`);
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Verify password using bcrypt
+    let passwordValid = false;
+    try {
+      passwordValid = await verify({ hash: storedHash, password });
+    } catch (verifyError) {
+      console.error(`[LOGIN] Password verification error for ${email}:`,
+        verifyError instanceof Error ? verifyError.message : verifyError);
+      // Continue to invalid password response
+    }
+
+    if (!passwordValid) {
+      console.log(`[LOGIN] ❌ Invalid password for ${email}`);
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     console.log(`[LOGIN] ✅ User logged in: ${email}`);
@@ -44,12 +65,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       success: true,
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        role: (session.user as any).role || 'candidate',
+        id: userRecord.id,
+        email: userRecord.email,
+        name: userRecord.name,
+        role: userRecord.role || 'candidate',
       },
-      session: session.session?.token,
     });
   } catch (error) {
     console.error(`[LOGIN] ❌ Error:`, error instanceof Error ? error.message : error);

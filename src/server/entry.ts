@@ -24,6 +24,7 @@ import alerts_subscribe_post_15 from "./api/alerts/subscribe/POST";
 import alerts_unsubscribe_delete_16 from "./api/alerts/unsubscribe/DELETE";
 import analytics_config_get_17 from "./api/analytics/config/GET";
 import auth_welcome_post_18 from "./api/auth/welcome/POST";
+import auth_login_post_18b from "./api/auth/login";
 import auth_action_get_19 from "./api/auth/[action]/GET";
 import auth_action_post_20 from "./api/auth/[action]/POST";
 import auth_action_detail_get_21 from "./api/auth/[action]/[detail]/GET";
@@ -280,6 +281,7 @@ app.post("/api/auth/set-role-after-signup", set_role_post_157);
 
 app.post("/api/logging/error", logs_error_post_158);
 app.post("/api/admin/resend-verification-emails", admin_resend_verification_emails_post_159);
+app.post("/api/auth/login", auth_login_post_18b);
 app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);

@@ -1,12 +1,11 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { AlertCircle, Loader2, Mail, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth/auth-client';
 
 export default function ForgotPasswordPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,10 +17,16 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       // Use Better Auth's requestPasswordReset() method
-      await authClient.requestPasswordReset({
-        email,
-        redirectURL: `${window.location.origin}/reset-password`,
+      const result = await authClient.requestPasswordReset({
+        email: email.trim().toLowerCase(),
+        redirectTo: `${window.location.origin}/reset-password`,
       });
+
+      if (result.error) {
+        setError(result.error.message || 'Unable to send reset link.');
+        return;
+      }
+
       setSent(true);
     } catch (err) {
       setError('Failed to send reset email. Please check the email address and try again.');

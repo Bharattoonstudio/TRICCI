@@ -7,7 +7,7 @@ import { signIn, signUp } from '@/lib/auth/auth-client';
 import { trackSignup } from '@/lib/analytics';
 import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput, validateSignupForm } from '@/lib/validation';
 
-type Role = 'employer' | 'consultant' | 'candidate' | 'admin';
+type Role = 'employer' | 'consultant' | 'candidate';
 type Step = 'role' | 'details';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
@@ -31,13 +31,6 @@ const ROLES: { id: Role; label: string; description: string; icon: React.Element
     description: 'Get discovered by top consultants for your next role',
     icon: User,
     color: '#ffd035',
-  },
-  {
-    id: 'admin',
-    label: 'Admin',
-    description: 'Manage platform, users, and operations',
-    icon: Shield,
-    color: '#7c3aed',
   },
 ];
 
@@ -146,16 +139,21 @@ export default function SignupPage() {
             role: selectedRole,
             phone: sanitizedPhone
           }),
+          credentials: 'include',
         });
 
         if (!roleResponse.ok) {
           const errorData = await roleResponse.json().catch(() => ({})) as { error?: string };
-          console.error('Failed to set role:', errorData.error || 'Unknown error');
-          // Continue anyway - role can be set later
+          const errorMsg = errorData.error || 'Failed to set role. Please try again.';
+          setError(errorMsg);
+          console.error('Failed to set role:', errorMsg);
+          return;
         }
       } catch (roleError) {
+        const errorMsg = roleError instanceof Error ? roleError.message : 'Error setting role';
+        setError(errorMsg);
         console.error('Error setting role:', roleError);
-        // Continue anyway - role can be set later
+        return;
       }
 
       trackSignup(selectedRole, 'email');
@@ -165,8 +163,6 @@ export default function SignupPage() {
         ? '/employer/dashboard'
         : selectedRole === 'consultant'
           ? '/consultant/dashboard'
-          : selectedRole === 'admin'
-          ? '/admin'
           : '/candidate/profile';
 
       navigate(dest, { replace: true });
@@ -290,12 +286,6 @@ export default function SignupPage() {
                         <div className="w-5 h-5 rounded-full border-2 border-border group-hover:border-primary transition-colors" />
                       </button>
                     ))}
-                  </div>
-
-                  {/* Admin note */}
-                  <div className="mt-4 flex items-start gap-2 p-3 rounded-xl bg-muted/40 border border-border">
-                    <Shield size={13} className="text-muted-foreground shrink-0 mt-0.5" />
-                    <p className="text-xs text-muted-foreground">Admin accounts are provisioned internally and cannot be self-registered.</p>
                   </div>
                 </motion.div>
               )}

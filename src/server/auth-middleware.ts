@@ -18,6 +18,7 @@ export async function authHandler(req: Request, res: Response) {
     await sendWebResponse(webResponse, res);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : '';
 
     if (message.includes('BETTER_AUTH_SECRET')) {
       console.error(JSON.stringify({ event: 'auth.error', reason: 'missing_secret' }));
@@ -43,7 +44,14 @@ export async function authHandler(req: Request, res: Response) {
       return;
     }
 
-    console.error(JSON.stringify({ event: 'auth.middleware.error', path: req.path, error: message }));
+    // Log full error details for debugging
+    console.error(JSON.stringify({
+      event: 'auth.middleware.error',
+      path: req.path,
+      method: req.method,
+      error: message,
+      stack: stack.split('\n').slice(0, 5).join(' | '),
+    }));
     res.status(500).json({ error: 'Authentication request failed' });
   }
 }

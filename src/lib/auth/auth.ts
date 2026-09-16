@@ -33,173 +33,177 @@ import { sendEmail } from '@/server/email';
 let _auth: ReturnType<typeof betterAuth> | null = null;
 
 export function getAuth() {
-  if (_auth) return _auth;
+    if (_auth) return _auth;
 
   const authSecret = process.env.BETTER_AUTH_SECRET;
-  if (!authSecret || typeof authSecret !== 'string') {
-    throw new Error('BETTER_AUTH_SECRET is not set. Add it to your environment variables.');
-  }
+    if (!authSecret || typeof authSecret !== 'string') {
+          throw new Error('BETTER_AUTH_SECRET is not set. Add it to your environment variables.');
+    }
 
   if (!db) {
-    throw new Error('Database not configured. Set DATABASE_URL first, then configure auth.');
+        throw new Error('Database not configured. Set DATABASE_URL first, then configure auth.');
   }
 
   const auth = betterAuth({
-    // Explicit base URL so BetterAuth can build verification/reset links correctly.
-    // Use process.env.BETTER_AUTH_URL if set, otherwise default to tricci.in
-    baseURL: process.env.BETTER_AUTH_URL || 'https://tricci.in',
+        // Explicit base URL so BetterAuth can build verification/reset links correctly.
+                              // Use process.env.BETTER_AUTH_URL if set, otherwise default to tricci.in
+                              baseURL: process.env.BETTER_AUTH_URL || 'https://tricci.in',
 
-    // Schema passed explicitly — avoids BetterAuth's runtime schema inference.
-    database: drizzleAdapter(db, {
-      provider: 'pg',
-      schema: { user, session, account, verification },
-    }),
+        // Schema passed explicitly — avoids BetterAuth's runtime schema inference.
+        database: drizzleAdapter(db, {
+                provider: 'pg',
+                schema: { user, session, account, verification },
+        }),
 
-    secret: authSecret,
+        secret: authSecret,
 
-    // Protect admin status field from user input
-    user: {
-      additionalFields: {
-        role: {
-          type: 'string',
-          defaultValue: 'candidate',
-          input: true,  // Allow setting role during signup
-          returned: true,
+        // Protect admin status field from user input
+        user: {
+                additionalFields: {
+                          role: {
+                                      type: 'string',
+                                      defaultValue: 'candidate',
+                                      input: true,  // Allow setting role during signup
+                                      returned: true,
+                          },
+                          // NOTE: no `phone` field here. There is no `phone` column on the
+                          // `user` table (schema.ts or the live Postgres table) — phone
+                          // numbers live on the role-specific profile tables instead
+                          // (candidateProfile.phone, etc.). Declaring `phone` as a BetterAuth
+                          // additionalField with no matching column makes the Drizzle
+                          // adapter reference an undefined column on EVERY query that
+                          // touches `user` (sign-in, sign-up, session lookup), which is what
+                          // was crashing sign-in with a 500 on every attempt. If phone ever
+                          // needs to live on `user` itself, add a real `phone` column to the
+                          // `user` table in schema.ts + a migration first, then restore this.
+                          isAdmin: {
+                                      type: 'boolean',
+                                      defaultValue: false,
+                                      input: false,
+                                      returned: true,
+                          },
+                },
         },
-        phone: {
-          type: 'string',
-          defaultValue: '',
-          input: true,  // Allow setting phone during signup
-          returned: true,
+
+        // Auto-create role-specific profile row when a new user is created
+        databaseHooks: {
+                user: {
+                          create: {
+                                      after: async (newUser) => {
+                                                    try {
+                                                                    const role = (newUser as { role?: string }).role ?? 'candidate';
+                                                                    if (role === 'candidate') {
+                                                                                      await db.insert(candidateProfile).values({ userId: newUser.id })
+                                                                                        .onConflictDoUpdate({ target: candidateProfile.userId, set: { userId: newUser.id } });
+                                                                    } else if (role === 'employer') {
+                                                                                      await db.insert(employerProfile).values({ userId: newUser.id })
+                                                                                        .onConflictDoUpdate({ target: employerProfile.userId, set: { userId: newUser.id } });
+                                                                    } else if (role === 'consultant') {
+                                                                                      await db.insert(consultantProfile).values({ userId: newUser.id })
+                                                                                        .onConflictDoUpdate({ target: consultantProfile.userId, set: { userId: newUser.id } });
+                                                                                      // Send welcome email (non-blocking — don't fail signup if email fails)
+                                                                      import('@/server/emails/consultant-onboarding.js')
+                                                                                        .then(m => m.sendConsultantWelcomeEmail(newUser.email, newUser.name))
+                                                                                        .catch(err => console.error('consultant.welcome_email.error', err));
+                                                                    }
+                                                    } catch (err) {
+                                                                    // Non-fatal — profile can be created later on first login
+                                                      console.error('profile.autocreate.error', err);
+                                                    }
+                                      },
+                          },
+                },
         },
-        isAdmin: {
-          type: 'boolean',
-          defaultValue: false,
-          input: false,
-          returned: true,
+
+        // CORS: Trusts localhost and the custom domain.
+        trustedOrigins: (request?: Request) => {
+                if (!request) return [];
+
+          const origin = request.headers.get('origin');
+                if (!origin) return [];
+
+          try {
+                    const originUrl = new URL(origin);
+                    const hostname = originUrl.hostname;
+
+                  // Trust localhost for development
+                  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+                              return [origin];
+                  }
+
+                  // Trust the custom domain and any www subdomain
+                  if (hostname === 'tricci.in' || hostname === 'www.tricci.in') {
+                              return [origin];
+                  }
+
+                  // Trust any Railway internal hostname
+                  if (hostname.includes('railway.app') || hostname.includes('railway.internal')) {
+                              return [origin];
+                  }
+
+                  return [];
+          } catch {
+                    return [];
+          }
         },
-      },
-    },
 
-    // Auto-create role-specific profile row when a new user is created
-    databaseHooks: {
-      user: {
-        create: {
-          after: async (newUser) => {
-            try {
-              const role = (newUser as { role?: string }).role ?? 'candidate';
-              if (role === 'candidate') {
-                await db.insert(candidateProfile).values({ userId: newUser.id })
-                  .onConflictDoUpdate({ target: candidateProfile.userId, set: { userId: newUser.id } });
-              } else if (role === 'employer') {
-                await db.insert(employerProfile).values({ userId: newUser.id })
-                  .onConflictDoUpdate({ target: employerProfile.userId, set: { userId: newUser.id } });
-              } else if (role === 'consultant') {
-                await db.insert(consultantProfile).values({ userId: newUser.id })
-                  .onConflictDoUpdate({ target: consultantProfile.userId, set: { userId: newUser.id } });
-                // Send welcome email (non-blocking — don't fail signup if email fails)
-                import('@/server/emails/consultant-onboarding.js')
-                  .then(m => m.sendConsultantWelcomeEmail(newUser.email, newUser.name))
-                  .catch(err => console.error('consultant.welcome_email.error', err));
-              }
-            } catch (err) {
-              // Non-fatal — profile can be created later on first login
-              console.error('profile.autocreate.error', err);
-            }
-          },
+        emailAndPassword: {
+                enabled: true,
+                requireEmailVerification: false,   // ← disabled: mobile OTP at signup is the verification gate
+                sendResetPassword: async ({ user: u, url }) => {
+                          try {
+                                      console.log(`[PASSWORD RESET EMAIL] Attempting to send to ${u.email}`);
+                                      console.log(`[PASSWORD RESET EMAIL] BREVO_SENDER_EMAIL=${process.env.BREVO_SENDER_EMAIL}`);
+                                      console.log(`[PASSWORD RESET EMAIL] BREVO_API_KEY exists=${!!process.env.BREVO_API_KEY}`);
+
+                            await sendEmail({
+                                          to: u.email,
+                                          subject: 'Reset your TRICCI password',
+                                          html: `
+                                                        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#1A0A00;color:#F5F5F5;border-radius:12px;">
+                                                                        <h1 style="color:#FF6B35;font-size:24px;margin:0 0 8px;">Reset your password</h1>
+                                                                                        <p style="color:#aaa;margin:0 0 24px;">Hi ${u.name}, click the button below to set a new password for your TRICCI account.</p>
+                                                                                                        <a href="${url}" style="display:inline-block;background:#FF6B35;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;">Reset Password</a>
+                                                                                                                        <p style="color:#666;font-size:12px;margin-top:24px;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+                                                                                                                                      </div>
+                                                                                                                                                  `,
+                                          text: `Reset your TRICCI password: ${url}`,
+                            });
+
+                            console.log(`[PASSWORD RESET EMAIL] ✅ Successfully sent to ${u.email}`);
+                          } catch (error) {
+                                      console.error(`[PASSWORD RESET EMAIL] ❌ Failed to send to ${u.email}:`, error instanceof Error ? error.message : error);
+                                      throw error;
+                          }
+                },
         },
-      },
-    },
 
-    // CORS: Trusts localhost and the custom domain.
-    trustedOrigins: (request?: Request) => {
-      if (!request) return [];
-
-      const origin = request.headers.get('origin');
-      if (!origin) return [];
-
-      try {
-        const originUrl = new URL(origin);
-        const hostname = originUrl.hostname;
-
-        // Trust localhost for development
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
-          return [origin];
-        }
-
-        // Trust the custom domain and any www subdomain
-        if (hostname === 'tricci.in' || hostname === 'www.tricci.in') {
-          return [origin];
-        }
-
-        // Trust any Railway internal hostname
-        if (hostname.includes('railway.app') || hostname.includes('railway.internal')) {
-          return [origin];
-        }
-
-        return [];
-      } catch {
-        return [];
-      }
-    },
-
-    emailAndPassword: {
-      enabled: true,
-      requireEmailVerification: false,   // ← disabled: mobile OTP at signup is the verification gate
-      sendResetPassword: async ({ user: u, url }) => {
-        try {
-          console.log(`[PASSWORD RESET EMAIL] Attempting to send to ${u.email}`);
-          console.log(`[PASSWORD RESET EMAIL] BREVO_SENDER_EMAIL=${process.env.BREVO_SENDER_EMAIL}`);
-          console.log(`[PASSWORD RESET EMAIL] BREVO_API_KEY exists=${!!process.env.BREVO_API_KEY}`);
-          
-          await sendEmail({
-            to: u.email,
-            subject: 'Reset your TRICCI password',
-            html: `
-              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#1A0A00;color:#F5F5F5;border-radius:12px;">
-                <h1 style="color:#FF6B35;font-size:24px;margin:0 0 8px;">Reset your password</h1>
-                <p style="color:#aaa;margin:0 0 24px;">Hi ${u.name}, click the button below to set a new password for your TRICCI account.</p>
-                <a href="${url}" style="display:inline-block;background:#FF6B35;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;">Reset Password</a>
-                <p style="color:#666;font-size:12px;margin-top:24px;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
-              </div>
-            `,
-            text: `Reset your TRICCI password: ${url}`,
-          });
-          
-          console.log(`[PASSWORD RESET EMAIL] ✅ Successfully sent to ${u.email}`);
-        } catch (error) {
-          console.error(`[PASSWORD RESET EMAIL] ❌ Failed to send to ${u.email}:`, error instanceof Error ? error.message : error);
-          throw error;
-        }
-      },
-    },
-
-    // Social login providers (optional)
-    socialProviders: {
-      ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        // Social login providers (optional)
+        socialProviders: {
+                ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? {
+                          google: {
+                                      clientId: process.env.GOOGLE_CLIENT_ID,
+                                      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                          },
+                } : {}),
+                ...(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET ? {
+                          linkedin: {
+                                      clientId: process.env.LINKEDIN_CLIENT_ID,
+                                      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+                          },
+                } : {}),
         },
-      } : {}),
-      ...(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET ? {
-        linkedin: {
-          clientId: process.env.LINKEDIN_CLIENT_ID,
-          clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-        },
-      } : {}),
-    },
 
-    // Rate limiting for auth endpoints
-    rateLimit: {
-      enabled: true,
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 10, // 10 requests per window
-    },
+        // Rate limiting for auth endpoints
+        rateLimit: {
+                enabled: true,
+                windowMs: 15 * 60 * 1000, // 15 minutes
+                max: 10, // 10 requests per window
+        },
   });
 
   _auth = auth as unknown as ReturnType<typeof betterAuth>;
-  return auth;
+    return auth;
 }
 
 export type Session = ReturnType<typeof getAuth>['$Infer']['Session'];

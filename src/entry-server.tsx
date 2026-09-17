@@ -14,6 +14,7 @@ import {
 import RootLayout from './layouts/RootLayout';
 import Spinner from './components/Spinner';
 import { routes } from './routes';
+import ErrorBoundary from './lib/error-boundary';
 
 export interface RenderResult {
   html: string;
@@ -80,11 +81,13 @@ export async function render(url: string): Promise<RenderResult> {
 
   const html = renderToString(
     <StrictMode>
+              <ErrorBoundary>
       <HelmetProvider context={helmetContext}>
         <QueryClientProvider client={queryClient}>
           <StaticRouterProvider router={router} context={context} />
         </QueryClientProvider>
       </HelmetProvider>
+              </ErrorBoundary>
     </StrictMode>
   );
 

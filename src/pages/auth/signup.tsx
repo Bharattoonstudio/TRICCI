@@ -123,7 +123,13 @@ export default function SignupPage() {
       if (result.error) {
         const errorMsg = result.error.message ?? 'Could not create account. Please try again.';
         setError(errorMsg);
-        console.error('Signup error:', result.error);
+        // Enhanced logging for debugging
+                console.error('❌ Signup error details:', {
+                            message: result.error.message,
+                            code: (result.error as any).code,
+                            status: (result.error as any).status,
+                            fullError: result.error,
+                });
         return;
       }
 

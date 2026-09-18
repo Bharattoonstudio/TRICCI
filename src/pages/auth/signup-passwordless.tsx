@@ -27,10 +27,10 @@ export default function SignupPasswordlessPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/signup-send-otp', {
+      const response = await fetch('/api/otp/send-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, role }),
+        body: JSON.stringify({ email, name, role, type: 'signup' }),
       });
 
       if (!response.ok) {
@@ -52,10 +52,10 @@ export default function SignupPasswordlessPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/signup-verify-otp', {
+      const response = await fetch('/api/otp/verify-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, name, role }),
+        body: JSON.stringify({ email, otp, name, role, type: 'signup' }),
       });
 
       if (!response.ok) {

@@ -18,10 +18,10 @@ export default function LoginPasswordlessPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login-send-otp', {
+      const response = await fetch('/api/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, type: 'login' }),
       });
 
       if (!response.ok) {
@@ -43,10 +43,10 @@ export default function LoginPasswordlessPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login-verify-otp', {
+      const response = await fetch('/api/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
+        body: JSON.stringify({ email, otp, type: 'login' }),
       });
 
       if (!response.ok) {

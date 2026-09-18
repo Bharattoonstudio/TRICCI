@@ -3,13 +3,13 @@
  * Public endpoint — no session required.
  * Used during signup to verify email+mobile before account creation.
  *
- * Body: { phone: string, email: string, purpose?: string }
- * Rate-limited: 3 OTPs per phone per hour (brute-force protection via auth-rate-limit.ts).
- * OTP is delivered to BOTH email inbox AND SMS (via Fast2SMS if key is set).
+ * Body: { phone: string, email: string, name: string, role: string }
+ * Rate-limited: 5 OTPs per identifier per 10 minutes (via auth-rate-limit.ts).
+ * OTP is delivered to email inbox.
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { otpStore } from '@/server/db/schema.js';
+import { otpStore, user } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { sendEmail } from '@/server/email.js';
 import { randomInt } from 'crypto';
@@ -47,10 +47,15 @@ async function sendSmsOtp(phone: string, otp: string) {
 export default async function otp_send_public_post_53(req: Request, res: Response) {
 	try {
 		// Validate request body
-		const { phone, email, purpose } = req.body as { phone?: string; email?: string; purpose?: string };
+		const { phone, email, name, role } = req.body as {
+			phone?: string;
+			email?: string;
+			name?: string;
+			role?: string;
+		};
 
-		if (!phone || !email) {
-			return res.status(400).json({ error: 'Phone and email are required' });
+		if (!phone || !email || !name || !role) {
+			return res.status(400).json({ error: 'Phone, email, name, and role are required' });
 		}
 
 		// Sanitize phone number
@@ -68,21 +73,19 @@ export default async function otp_send_public_post_53(req: Request, res: Respons
 			return res.status(400).json({ error: 'Invalid email address' });
 		}
 
-		// Check if email already exists (only in production)
-		if (purpose === 'signup') {
-			const existingUser = await db.query.user.findFirst({
-				where: (fields, { eq }) => eq(fields.email, email),
-			});
+		// Check if email already exists (signup flow)
+		const existingUser = await db.query.user.findFirst({
+			where: (fields, { eq }) => eq(fields.email, email),
+		});
 
-			if (existingUser) {
-				return res.status(400).json({ error: 'Email already registered' });
-			}
+		if (existingUser) {
+			return res.status(400).json({ error: 'Email already registered' });
 		}
 
 		// Generate OTP
 		const otp = randomInt(100000, 999999).toString();
 
-		// identifier must match exactly what verify-public expects: email:xxx or phone:xxx
+		// identifier must match exactly what verify-public expects
 		const identifier = `email:${email.toLowerCase().trim()}`;
 
 		// Store OTP with expiry (10 minutes)
@@ -91,7 +94,7 @@ export default async function otp_send_public_post_53(req: Request, res: Respons
 			identifier,
 			otp,
 			expiresAt,
-			purpose: purpose || 'signup',
+			purpose: 'signup_mobile',
 			verified: false,
 		});
 
@@ -106,10 +109,8 @@ export default async function otp_send_public_post_53(req: Request, res: Respons
 
 		// Email + SMS run after the response — fire-and-forget, but logged
 		// loudly so real failures show up clearly in Railway logs. Doing
-		// this BEFORE responding (the previous behaviour) meant every
-		// signup waited on Brevo's full round-trip before the user even
-		// saw "OTP sent" — that's the actual cause of the OTP feeling slow,
-		// not delivery itself.
+		// this BEFORE responding meant every signup waited on Brevo's full
+		// round-trip before the user even saw "OTP sent".
 		sendEmail({
 			to: email,
 			subject: 'Your TRICCI Verification Code',

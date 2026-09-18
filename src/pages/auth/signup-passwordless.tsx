@@ -2,29 +2,23 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './auth.module.css';
 
-type SignupStep = 'role' | 'details' | 'otp';
+type Step = 'role' | 'details' | 'otp';
+type Role = 'employer' | 'consultant' | 'candidate';
 
-interface SignupData {
-  role: 'Employer' | 'Consultant' | 'Candidate';
-  name: string;
-  email: string;
-}
-
-export function SignupPasswordlessPage() {
-  const [step, setStep] = useState<SignupStep>('role');
-  const [data, setData] = useState<SignupData>({
-    role: 'Candidate',
-    name: '',
-    email: '',
-  });
-  const [otp, setOtp] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+export default function SignupPasswordlessPage() {
   const navigate = useNavigate();
+  const [step, setStep] = useState<Step>('role');
+  const [role, setRole] = useState<Role | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleRoleSelect = (role: SignupData['role']) => {
-    setData({ ...data, role });
+  const handleRoleSelect = (selectedRole: Role) => {
+    setRole(selectedRole);
     setStep('details');
+    setError('');
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -36,23 +30,17 @@ export function SignupPasswordlessPage() {
       const response = await fetch('/api/auth/signup-send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.email,
-          name: data.name,
-          role: data.role,
-        }),
+        body: JSON.stringify({ email, name, role }),
       });
 
-      const responseData = await response.json();
-
       if (!response.ok) {
-        setError(responseData.error || 'Failed to send OTP');
-        return;
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send OTP');
       }
 
       setStep('otp');
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -67,29 +55,26 @@ export function SignupPasswordlessPage() {
       const response = await fetch('/api/auth/signup-verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.email,
-          otp,
-        }),
+        body: JSON.stringify({ email, otp, name, role }),
       });
 
-      const responseData = await response.json();
-
       if (!response.ok) {
-        setError(responseData.error || 'Failed to verify OTP');
-        return;
+        const data = await response.json();
+        throw new Error(data.error || 'Invalid OTP');
       }
 
       // Redirect based on role
-      const dashboardMap: Record<string, string> = {
-        Employer: '/employer/dashboard',
-        Consultant: '/consultant/dashboard',
-        Candidate: '/candidate/profile',
-      };
-
-      navigate(dashboardMap[data.role] || '/dashboard');
+      if (role === 'employer') {
+        navigate('/employer/dashboard');
+      } else if (role === 'consultant') {
+        navigate('/consultant/dashboard');
+      } else if (role === 'candidate') {
+        navigate('/candidate/profile');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -99,116 +84,114 @@ export function SignupPasswordlessPage() {
     <div className={styles.pageContainer}>
       <div className={styles.authContainer}>
         <div className={styles.authCard}>
-          {step === 'role' && (
+          {step === 'role' ? (
             <>
               <h1>Join TRICCI</h1>
-              <p>Select your role to get started</p>
+              <p>Select your role</p>
               <div className={styles.roleGrid}>
-                <button
+                <div
                   className={styles.roleCard}
-                  onClick={() => handleRoleSelect('Employer')}
+                  onClick={() => handleRoleSelect('employer')}
                 >
                   <h3>Employer</h3>
-                  <p>Hire talent for your business</p>
-                </button>
-                <button
+                  <p>Post jobs and hire talent</p>
+                </div>
+                <div
                   className={styles.roleCard}
-                  onClick={() => handleRoleSelect('Consultant')}
+                  onClick={() => handleRoleSelect('consultant')}
                 >
                   <h3>Consultant</h3>
-                  <p>Source and place candidates</p>
-                </button>
-                <button
+                  <p>Submit candidates and earn</p>
+                </div>
+                <div
                   className={styles.roleCard}
-                  onClick={() => handleRoleSelect('Candidate')}
+                  onClick={() => handleRoleSelect('candidate')}
                 >
                   <h3>Candidate</h3>
-                  <p>Find your next opportunity</p>
-                </button>
+                  <p>Apply for jobs</p>
+                </div>
               </div>
-              <p className={styles.switchAuth}>
-                Already have an account? <a href="/login">Login here</a>
-              </p>
             </>
-          )}
-
-          {step === 'details' && (
+          ) : step === 'details' ? (
             <>
               <h1>Create Account</h1>
-              <p>As {data.role}</p>
-
+              <p>As {role}</p>
               {error && <div className={styles.error}>{error}</div>}
-
               <form onSubmit={handleSendOtp}>
                 <div className={styles.formGroup}>
-                  <label>Full Name</label>
+                  <label htmlFor="name">Full Name</label>
                   <input
+                    id="name"
                     type="text"
-                    value={data.name}
-                    onChange={(e) => setData({ ...data, name: e.target.value })}
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
-                    placeholder="Enter your full name"
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Email Address</label>
+                  <label htmlFor="email">Email Address</label>
                   <input
+                    id="email"
                     type="email"
-                    value={data.email}
-                    onChange={(e) => setData({ ...data, email: e.target.value })}
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="Enter your email"
                   />
                 </div>
                 <button type="submit" disabled={loading}>
                   {loading ? 'Sending...' : 'Send OTP'}
                 </button>
-                <button
-                  type="button"
-                  className={styles.backButton}
-                  onClick={() => setStep('role')}
-                >
-                  Back
-                </button>
               </form>
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={() => {
+                  setStep('role');
+                  setError('');
+                }}
+              >
+                Back
+              </button>
+              <div className={styles.switchAuth}>
+                Already have an account? <a href="/login">Login</a>
+              </div>
             </>
-          )}
-
-          {step === 'otp' && (
+          ) : (
             <>
               <h1>Verify Email</h1>
-              <p>Enter the 6-digit code sent to {data.email}</p>
-
+              <p>Enter the 6-digit code sent to {email}</p>
               {error && <div className={styles.error}>{error}</div>}
-
               <form onSubmit={handleVerifyOtp}>
                 <div className={styles.formGroup}>
-                  <label>OTP Code</label>
+                  <label htmlFor="otp">OTP Code</label>
                   <input
+                    id="otp"
                     type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.slice(0, 6))}
-                    maxLength={6}
                     placeholder="000000"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
                     required
                   />
-                  <small>Expires in 10 minutes</small>
+                  <small>Valid for 10 minutes</small>
                 </div>
                 <button type="submit" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Verify & Create Account'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.backButton}
-                  onClick={() => {
-                    setStep('details');
-                    setOtp('');
-                    setError('');
-                  }}
-                >
-                  Back
+                  {loading ? 'Verifying...' : 'Verify OTP'}
                 </button>
               </form>
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={() => {
+                  setStep('details');
+                  setOtp('');
+                  setError('');
+                }}
+              >
+                Back
+              </button>
             </>
           )}
         </div>

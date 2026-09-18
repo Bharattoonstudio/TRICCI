@@ -25,6 +25,8 @@ const AdminLoginPage = lazy(() => import('./pages/admin/login'));
 const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
 const LoginPage = lazy(() => import('./pages/auth/login'));
 const SignupPage = lazy(() => import('./pages/auth/signup'));
+const LoginPasswordlessPage = lazy(() => import('./pages/auth/login-passwordless'));
+const SignupPasswordlessPage = lazy(() => import('./pages/auth/signup-passwordless'));
 const VerifyEmailPage = lazy(() => import('./pages/auth/verify-email'));
 const ForgotPasswordOtpPage = lazy(() => import('./pages/auth/forgot-password-otp'));
 const VerifyOtpPage = lazy(() => import('./pages/auth/verify-otp'));
@@ -52,13 +54,14 @@ export const routes: RouteObject[] = [
   { path: '/candidate', element: <CandidateInfoPage /> },
 
   // Auth routes (public)
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <LoginPasswordlessPage /> }, 
+  { path: '/login-legacy', element: <LoginPage /> },
+  { path: '/signup', element: <SignupPasswordlessPage /> },
   { path: '/forgot-password-otp', element: <ForgotPasswordOtpPage /> },
   { path: '/verify-otp', element: <VerifyOtpPage /> },
   { path: '/set-password', element: <SetPasswordPage /> },
-  { path: '/signup', element: <SignupPage /> },
+  { path: '/signup-legacy', element: <SignupPage /> },
   { path: '/verify-email', element: <VerifyEmailPage /> },
-
   // Protected: Job listings — all logged-in roles can browse
   {
     path: '/jobs',

@@ -1,4 +1,5 @@
-import { createOtp, sendOtpEmail } from '@/server/lib/otp';
+27
+  import { createOtp, sendOtpEmail } from '@/server/lib/otp';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {

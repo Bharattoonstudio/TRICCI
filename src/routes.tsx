@@ -23,14 +23,8 @@ const AdminQuickAccessPage = lazy(() => import('./pages/admin/quick-access'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
 const AdminLoginPage = lazy(() => import('./pages/admin/login'));
 const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
-const LoginPage = lazy(() => import('./pages/auth/login'));
-const SignupPage = lazy(() => import('./pages/auth/signup'));
 const LoginPasswordlessPage = lazy(() => import('./pages/auth/login-passwordless'));
 const SignupPasswordlessPage = lazy(() => import('./pages/auth/signup-passwordless'));
-const VerifyEmailPage = lazy(() => import('./pages/auth/verify-email'));
-const ForgotPasswordOtpPage = lazy(() => import('./pages/auth/forgot-password-otp'));
-const VerifyOtpPage = lazy(() => import('./pages/auth/verify-otp'));
-const SetPasswordPage = lazy(() => import('./pages/auth/set-password'));
 const JobsPage = lazy(() => import('./pages/jobs/index'));
 const JobDetailPage = lazy(() => import('./pages/jobs/[id]'));
 const AboutPage = lazy(() => import('./pages/about'));
@@ -53,15 +47,10 @@ export const routes: RouteObject[] = [
   { path: '/consultant', element: <ConsultantInfoPage /> },
   { path: '/candidate', element: <CandidateInfoPage /> },
 
-  // Auth routes (public)
-  { path: '/login', element: <LoginPasswordlessPage /> }, 
-  { path: '/login-legacy', element: <LoginPage /> },
+  // Auth routes (public) - Passwordless
+  { path: '/login', element: <LoginPasswordlessPage /> },
   { path: '/signup', element: <SignupPasswordlessPage /> },
-  { path: '/forgot-password-otp', element: <ForgotPasswordOtpPage /> },
-  { path: '/verify-otp', element: <VerifyOtpPage /> },
-  { path: '/set-password', element: <SetPasswordPage /> },
-  { path: '/signup-legacy', element: <SignupPage /> },
-  { path: '/verify-email', element: <VerifyEmailPage /> },
+
   // Protected: Job listings — all logged-in roles can browse
   {
     path: '/jobs',
@@ -231,11 +220,7 @@ export type Path =
   | '/consultant'
   | '/candidate'
   | '/login'
-  | '/forgot-password-otp'
-  | '/verify-otp'
-  | '/set-password'
   | '/signup'
-  | '/verify-email'
   | '/jobs'
   | '/about'
   | '/blog'

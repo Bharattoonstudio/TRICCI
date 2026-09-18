@@ -11,6 +11,7 @@ export default function SignupPasswordlessPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,13 +25,24 @@ export default function SignupPasswordlessPage() {
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (!name || !email || !phone) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await fetch('/api/otp/send-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, role, type: 'signup' }),
+        body: JSON.stringify({
+          email,
+          name,
+          phone,
+          role,
+          type: 'signup'
+        })
       });
 
       if (!response.ok) {
@@ -49,29 +61,45 @@ export default function SignupPasswordlessPage() {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await fetch('/api/otp/verify-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, name, role, type: 'signup' }),
+        body: JSON.stringify({
+          email,
+          otp,
+          name,
+          phone,
+          role,
+          type: 'signup'
+        })
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Invalid OTP');
+        throw new Error(data.error || 'Failed to verify OTP');
       }
 
-      // Redirect based on role
-      if (role === 'employer') {
-        navigate('/employer/dashboard');
-      } else if (role === 'consultant') {
-        navigate('/consultant/dashboard');
-      } else if (role === 'candidate') {
-        navigate('/candidate/profile');
-      } else {
-        navigate('/');
+      const data = await response.json();
+
+      // Store session and redirect based on role
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        const roleRoutes: Record<Role, string> = {
+          employer: '/employer/dashboard',
+          consultant: '/consultant/dashboard',
+          candidate: '/candidate/dashboard'
+        };
+
+        navigate(roleRoutes[role as Role] || '/');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -80,120 +108,183 @@ export default function SignupPasswordlessPage() {
     }
   };
 
+  if (step === 'role') {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.authContainer}>
+          <div className={styles.authCard}>
+            <h1>Create Account on TRICCI</h1>
+            <p>Choose your role to get started</p>
+
+            <div className={styles.roleGrid}>
+              <div
+                className={styles.roleCard}
+                onClick={() => handleRoleSelect('employer')}
+              >
+                <h3>Employer</h3>
+                <p>Post jobs and hire talent</p>
+              </div>
+
+              <div
+                className={styles.roleCard}
+                onClick={() => handleRoleSelect('consultant')}
+              >
+                <h3>Consultant</h3>
+                <p>Submit candidates and earn</p>
+              </div>
+
+              <div
+                className={styles.roleCard}
+                onClick={() => handleRoleSelect('candidate')}
+              >
+                <h3>Candidate</h3>
+                <p>Apply for jobs</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'details') {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.authContainer}>
+          <div className={styles.authCard}>
+            <h1>Create Account</h1>
+            <p>Enter your details</p>
+
+            {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+
+            <form onSubmit={handleSendOtp}>
+              <div className={styles.formGroup}>
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  marginTop: '1rem',
+                  backgroundColor: '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: loading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {loading ? 'Sending...' : 'Send OTP'}
+              </button>
+            </form>
+
+            <button
+              onClick={() => setStep('role')}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                marginTop: '0.5rem',
+                backgroundColor: 'transparent',
+                color: '#667eea',
+                border: '1px solid #667eea',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageContainer}>
       <div className={styles.authContainer}>
         <div className={styles.authCard}>
-          {step === 'role' ? (
-            <>
-              <h1>Join TRICCI</h1>
-              <p>Select your role</p>
-              <div className={styles.roleGrid}>
-                <div
-                  className={styles.roleCard}
-                  onClick={() => handleRoleSelect('employer')}
-                >
-                  <h3>Employer</h3>
-                  <p>Post jobs and hire talent</p>
-                </div>
-                <div
-                  className={styles.roleCard}
-                  onClick={() => handleRoleSelect('consultant')}
-                >
-                  <h3>Consultant</h3>
-                  <p>Submit candidates and earn</p>
-                </div>
-                <div
-                  className={styles.roleCard}
-                  onClick={() => handleRoleSelect('candidate')}
-                >
-                  <h3>Candidate</h3>
-                  <p>Apply for jobs</p>
-                </div>
-              </div>
-            </>
-          ) : step === 'details' ? (
-            <>
-              <h1>Create Account</h1>
-              <p>As {role}</p>
-              {error && <div className={styles.error}>{error}</div>}
-              <form onSubmit={handleSendOtp}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="name">Full Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="email">Email Address</label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send OTP'}
-                </button>
-              </form>
-              <button
-                type="button"
-                className={styles.backButton}
-                onClick={() => {
-                  setStep('role');
-                  setError('');
-                }}
-              >
-                Back
-              </button>
-              <div className={styles.switchAuth}>
-                Already have an account? <a href="/login">Login</a>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1>Verify Email</h1>
-              <p>Enter the 6-digit code sent to {email}</p>
-              {error && <div className={styles.error}>{error}</div>}
-              <form onSubmit={handleVerifyOtp}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="otp">OTP Code</label>
-                  <input
-                    id="otp"
-                    type="text"
-                    placeholder="000000"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    required
-                  />
-                  <small>Valid for 10 minutes</small>
-                </div>
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Verify OTP'}
-                </button>
-              </form>
-              <button
-                type="button"
-                className={styles.backButton}
-                onClick={() => {
-                  setStep('details');
-                  setOtp('');
-                  setError('');
-                }}
-              >
-                Back
-              </button>
-            </>
-          )}
+          <h1>Verify Email</h1>
+          <p>Enter the 6-digit OTP sent to {email}</p>
+
+          {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+
+          <form onSubmit={handleVerifyOtp}>
+            <div className={styles.formGroup}>
+              <label>OTP Code</label>
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                marginTop: '1rem',
+                backgroundColor: '#667eea',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: loading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {loading ? 'Verifying...' : 'Verify & Create Account'}
+            </button>
+          </form>
+
+          <button
+            onClick={() => setStep('details')}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              marginTop: '0.5rem',
+              backgroundColor: 'transparent',
+              color: '#667eea',
+              border: '1px solid #667eea',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Back
+          </button>
         </div>
       </div>
     </div>

@@ -23,8 +23,9 @@ const AdminQuickAccessPage = lazy(() => import('./pages/admin/quick-access'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
 const AdminLoginPage = lazy(() => import('./pages/admin/login'));
 const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
-const LoginPasswordlessPage = lazy(() => import('./pages/auth/login-passwordless'));
-const SignupPasswordlessPage = lazy(() => import('./pages/auth/signup-passwordless'));
+const LoginFreshPage = lazy(() => import('./pages/auth/login-fresh'));
+const SignupFreshPage = lazy(() => import('./pages/auth/signup-fresh'));
+const ResetPasswordFreshPage = lazy(() => import('./pages/auth/reset-password-fresh'));
 const JobsPage = lazy(() => import('./pages/jobs/index'));
 const JobDetailPage = lazy(() => import('./pages/jobs/[id]'));
 const AboutPage = lazy(() => import('./pages/about'));
@@ -47,9 +48,10 @@ export const routes: RouteObject[] = [
   { path: '/consultant', element: <ConsultantInfoPage /> },
   { path: '/candidate', element: <CandidateInfoPage /> },
 
-  // Auth routes (public) - Passwordless
-  { path: '/login', element: <LoginPasswordlessPage /> },
-  { path: '/signup', element: <SignupPasswordlessPage /> },
+  // Auth routes (public) - Password-based
+  { path: '/login', element: <LoginFreshPage /> },
+  { path: '/signup', element: <SignupFreshPage /> },
+  { path: '/auth/reset-password', element: <ResetPasswordFreshPage /> },
 
   // Protected: Job listings — all logged-in roles can browse
   {

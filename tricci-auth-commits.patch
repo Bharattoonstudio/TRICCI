@@ -1,0 +1,1166 @@
+From 817bb40f22848f409a34661704ca3d272b4cda73 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 20 Sep 2026 13:09:45 +0000
+Subject: [PATCH 1/3] wire fresh password-based auth pages into routes
+
+- Update /login route to use login-fresh page (password-based)
+- Update /signup route to use signup-fresh page (password-based)
+- Remove deprecated login-passwordless and signup-passwordless imports
+- Fresh pages provide complete password-based authentication without OTP/Brevo dependency
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01449me6xVEj7VafquSPEnhA
+---
+ src/routes.tsx | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/routes.tsx b/src/routes.tsx
+index 22d394c..3bbaf2b 100644
+--- a/src/routes.tsx
++++ b/src/routes.tsx
+@@ -23,8 +23,8 @@ const AdminQuickAccessPage = lazy(() => import('./pages/admin/quick-access'));
+ const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
+ const AdminLoginPage = lazy(() => import('./pages/admin/login'));
+ const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
+-const LoginPasswordlessPage = lazy(() => import('./pages/auth/login-passwordless'));
+-const SignupPasswordlessPage = lazy(() => import('./pages/auth/signup-passwordless'));
++const LoginFreshPage = lazy(() => import('./pages/auth/login-fresh'));
++const SignupFreshPage = lazy(() => import('./pages/auth/signup-fresh'));
+ const JobsPage = lazy(() => import('./pages/jobs/index'));
+ const JobDetailPage = lazy(() => import('./pages/jobs/[id]'));
+ const AboutPage = lazy(() => import('./pages/about'));
+@@ -47,9 +47,9 @@ export const routes: RouteObject[] = [
+   { path: '/consultant', element: <ConsultantInfoPage /> },
+   { path: '/candidate', element: <CandidateInfoPage /> },
+ 
+-  // Auth routes (public) - Passwordless
+-  { path: '/login', element: <LoginPasswordlessPage /> },
+-  { path: '/signup', element: <SignupPasswordlessPage /> },
++  // Auth routes (public) - Password-based
++  { path: '/login', element: <LoginFreshPage /> },
++  { path: '/signup', element: <SignupFreshPage /> },
+ 
+   // Protected: Job listings — all logged-in roles can browse
+   {
+-- 
+2.43.0
+
+
+From 5d577f47109bcf4825e966440e101095672718ad Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 20 Sep 2026 13:10:53 +0000
+Subject: [PATCH 2/3] implement complete password reset flow (forgot + reset
+ endpoints + UI)
+
+Added components:
+- create /api/auth/forgot-password endpoint: generates reset token and sends email
+- create /api/auth/reset-password endpoint: validates token and updates password
+- create reset-password-fresh.tsx page: allows user to enter new password
+- add /auth/reset-password route to routes.tsx
+
+Password Reset Flow:
+1. User clicks 'Forgot password?' on login page
+2. Enters email and submits to /api/auth/forgot-password
+3. Backend generates reset token and sends email with reset link
+4. User clicks link in email (token + email in URL)
+5. User arrives at /auth/reset-password page
+6. Enters new password and submits to /api/auth/reset-password
+7. Backend validates token, hashes password, updates account
+8. User redirected to login with success message
+
+Security Features:
+- Reset tokens expire after 24 hours
+- Tokens are SHA256 hashed before storage
+- Email enumeration protection (don't reveal if email exists)
+- Password hashing with bcrypt (cost: 12)
+- Tokens invalidated after successful reset
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01449me6xVEj7VafquSPEnhA
+---
+ src/pages/auth/login-fresh.tsx              | 264 +++++++++++++++++
+ src/pages/auth/reset-password-fresh.tsx     | 196 ++++++++++++
+ src/pages/auth/signup-fresh.tsx             | 313 ++++++++++++++++++++
+ src/routes.tsx                              |   2 +
+ src/server/api/auth/forgot-password/POST.ts | 108 +++++++
+ src/server/api/auth/reset-password/POST.ts  | 108 +++++++
+ 6 files changed, 991 insertions(+)
+ create mode 100644 src/pages/auth/login-fresh.tsx
+ create mode 100644 src/pages/auth/reset-password-fresh.tsx
+ create mode 100644 src/pages/auth/signup-fresh.tsx
+ create mode 100644 src/server/api/auth/forgot-password/POST.ts
+ create mode 100644 src/server/api/auth/reset-password/POST.ts
+
+diff --git a/src/pages/auth/login-fresh.tsx b/src/pages/auth/login-fresh.tsx
+new file mode 100644
+index 0000000..4d6e745
+--- /dev/null
++++ b/src/pages/auth/login-fresh.tsx
+@@ -0,0 +1,264 @@
++import { Helmet } from '@dr.pogodin/react-helmet';
++import { useState } from 'react';
++import { Link, useNavigate, useLocation } from 'react-router-dom';
++import { motion } from 'motion/react';
++import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
++import { signIn } from '@/lib/auth/auth-client';
++import { validateEmail } from '@/lib/validation';
++
++export default function LoginFreshPage() {
++  const navigate = useNavigate();
++  const location = useLocation();
++
++  const [email, setEmail] = useState('');
++  const [password, setPassword] = useState('');
++  const [showPassword, setShowPassword] = useState(false);
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState('');
++  const [showForgotPassword, setShowForgotPassword] = useState(false);
++  const [forgotEmail, setForgotEmail] = useState('');
++  const [forgotLoading, setForgotLoading] = useState(false);
++  const [forgotMessage, setForgotMessage] = useState('');
++
++  async function handleSubmit(e: React.FormEvent) {
++    e.preventDefault();
++    setError('');
++
++    if (!validateEmail(email)) {
++      setError('Valid email is required');
++      return;
++    }
++
++    if (!password) {
++      setError('Password is required');
++      return;
++    }
++
++    setLoading(true);
++    try {
++      await signIn.email(
++        { email: email.toLowerCase(), password },
++        {
++          onSuccess: () => {
++            const from = (location.state as any)?.from?.pathname || '/employer/dashboard';
++            navigate(from, { replace: true });
++          },
++          onError: (error) => {
++            setError(error.message || 'Invalid email or password');
++            setLoading(false);
++          },
++        }
++      );
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'An error occurred');
++      setLoading(false);
++    }
++  }
++
++  async function handleForgotPassword(e: React.FormEvent) {
++    e.preventDefault();
++    setForgotMessage('');
++
++    if (!validateEmail(forgotEmail)) {
++      setForgotMessage('Valid email is required');
++      return;
++    }
++
++    setForgotLoading(true);
++    try {
++      // Call forgot password endpoint
++      const response = await fetch('/api/auth/forgot-password', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ email: forgotEmail.toLowerCase() }),
++        credentials: 'include',
++      });
++
++      if (!response.ok) {
++        throw new Error('Failed to send reset email');
++      }
++
++      setForgotMessage('✅ Password reset link sent! Check your email.');
++      setForgotEmail('');
++      setTimeout(() => {
++        setShowForgotPassword(false);
++        setForgotMessage('');
++      }, 3000);
++    } catch (err) {
++      setForgotMessage('❌ ' + (err instanceof Error ? err.message : 'An error occurred'));
++    } finally {
++      setForgotLoading(false);
++    }
++  }
++
++  return (
++    <>
++      <Helmet>
++        <title>Sign In - TRICCI</title>
++      </Helmet>
++
++      <div className="min-h-screen bg-gradient-to-b from-[#1A0A00] to-[#2D1810] flex items-center justify-center p-4">
++        <div className="w-full max-w-md">
++          <motion.div
++            initial={{ opacity: 0, y: 20 }}
++            animate={{ opacity: 1, y: 0 }}
++            className="space-y-6"
++          >
++            <div className="text-center mb-8">
++              <h1 className="text-3xl font-bold text-[#FF6B35] mb-2">Welcome Back</h1>
++              <p className="text-gray-300">Sign in to your TRICCI account</p>
++            </div>
++
++            {!showForgotPassword ? (
++              <>
++                {error && (
++                  <motion.div
++                    initial={{ opacity: 0, y: -10 }}
++                    animate={{ opacity: 1, y: 0 }}
++                    className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2 items-start"
++                  >
++                    <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
++                    <p className="text-red-200 text-sm">{error}</p>
++                  </motion.div>
++                )}
++
++                <form onSubmit={handleSubmit} className="space-y-4">
++                  {/* Email */}
++                  <div>
++                    <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
++                    <input
++                      type="email"
++                      value={email}
++                      onChange={(e) => setEmail(e.target.value)}
++                      placeholder="Enter your email"
++                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
++                      disabled={loading}
++                    />
++                  </div>
++
++                  {/* Password */}
++                  <div>
++                    <div className="flex justify-between items-center mb-2">
++                      <label className="block text-sm font-medium text-gray-300">Password</label>
++                      <button
++                        type="button"
++                        onClick={() => setShowForgotPassword(true)}
++                        className="text-xs text-[#FF6B35] hover:text-[#FF8A5B] transition-colors"
++                      >
++                        Forgot password?
++                      </button>
++                    </div>
++                    <div className="relative">
++                      <input
++                        type={showPassword ? 'text' : 'password'}
++                        value={password}
++                        onChange={(e) => setPassword(e.target.value)}
++                        placeholder="Enter your password"
++                        className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
++                        disabled={loading}
++                      />
++                      <button
++                        type="button"
++                        onClick={() => setShowPassword(!showPassword)}
++                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
++                      >
++                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
++                      </button>
++                    </div>
++                  </div>
++
++                  {/* Submit Button */}
++                  <motion.button
++                    type="submit"
++                    disabled={loading}
++                    whileHover={{ scale: 1.02 }}
++                    whileTap={{ scale: 0.98 }}
++                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
++                  >
++                    {loading ? (
++                      <>
++                        <Loader2 size={18} className="animate-spin" />
++                        Signing in...
++                      </>
++                    ) : (
++                      'Sign In'
++                    )}
++                  </motion.button>
++
++                  {/* Sign Up Link */}
++                  <div className="text-center text-sm mt-4">
++                    <span className="text-gray-400">Don't have an account? </span>
++                    <Link to="/signup" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
++                      Sign up
++                    </Link>
++                  </div>
++                </form>
++              </>
++            ) : (
++              <>
++                {/* Forgot Password Form */}
++                <button
++                  onClick={() => setShowForgotPassword(false)}
++                  className="text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors"
++                >
++                  ← Back to login
++                </button>
++
++                <form onSubmit={handleForgotPassword} className="space-y-4">
++                  <div>
++                    <p className="text-gray-300 text-sm mb-4">
++                      Enter your email address and we'll send you a link to reset your password.
++                    </p>
++                  </div>
++
++                  {forgotMessage && (
++                    <motion.div
++                      initial={{ opacity: 0, y: -10 }}
++                      animate={{ opacity: 1, y: 0 }}
++                      className={`rounded-lg p-3 text-sm ${
++                        forgotMessage.startsWith('✅')
++                          ? 'bg-green-500/10 border border-green-500/30 text-green-200'
++                          : 'bg-red-500/10 border border-red-500/30 text-red-200'
++                      }`}
++                    >
++                      {forgotMessage}
++                    </motion.div>
++                  )}
++
++                  <div>
++                    <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
++                    <input
++                      type="email"
++                      value={forgotEmail}
++                      onChange={(e) => setForgotEmail(e.target.value)}
++                      placeholder="Enter your email"
++                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
++                      disabled={forgotLoading}
++                    />
++                  </div>
++
++                  <motion.button
++                    type="submit"
++                    disabled={forgotLoading}
++                    whileHover={{ scale: 1.02 }}
++                    whileTap={{ scale: 0.98 }}
++                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
++                  >
++                    {forgotLoading ? (
++                      <>
++                        <Loader2 size={18} className="animate-spin" />
++                        Sending...
++                      </>
++                    ) : (
++                      'Send Reset Link'
++                    )}
++                  </motion.button>
++                </form>
++              </>
++            )}
++          </motion.div>
++        </div>
++      </div>
++    </>
++  );
++}
+diff --git a/src/pages/auth/reset-password-fresh.tsx b/src/pages/auth/reset-password-fresh.tsx
+new file mode 100644
+index 0000000..50081ec
+--- /dev/null
++++ b/src/pages/auth/reset-password-fresh.tsx
+@@ -0,0 +1,196 @@
++import { Helmet } from '@dr.pogodin/react-helmet';
++import { useState, useEffect } from 'react';
++import { useNavigate, useSearchParams } from 'react-router-dom';
++import { motion } from 'motion/react';
++import { Eye, EyeOff, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
++import { validatePassword } from '@/lib/validation';
++
++export default function ResetPasswordFreshPage() {
++  const navigate = useNavigate();
++  const [searchParams] = useSearchParams();
++
++  const token = searchParams.get('token');
++  const email = searchParams.get('email');
++
++  const [password, setPassword] = useState('');
++  const [confirmPassword, setConfirmPassword] = useState('');
++  const [showPassword, setShowPassword] = useState(false);
++  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState('');
++  const [success, setSuccess] = useState(false);
++
++  useEffect(() => {
++    if (!token || !email) {
++      setError('Invalid reset link. Please request a new password reset email.');
++    }
++  }, [token, email]);
++
++  async function handleSubmit(e: React.FormEvent) {
++    e.preventDefault();
++    setError('');
++
++    if (!token || !email) {
++      setError('Invalid reset link. Please request a new password reset email.');
++      return;
++    }
++
++    if (!validatePassword(password)) {
++      setError('Password must be at least 8 characters with uppercase, lowercase, number, and symbol');
++      return;
++    }
++
++    if (password !== confirmPassword) {
++      setError('Passwords do not match');
++      return;
++    }
++
++    setLoading(true);
++    try {
++      const response = await fetch('/api/auth/reset-password', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({
++          token,
++          email,
++          password,
++        }),
++        credentials: 'include',
++      });
++
++      if (!response.ok) {
++        const data = await response.json();
++        throw new Error(data.error || 'Failed to reset password');
++      }
++
++      setSuccess(true);
++      setTimeout(() => {
++        navigate('/login', { replace: true });
++      }, 2000);
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'Failed to reset password');
++      setLoading(false);
++    }
++  }
++
++  return (
++    <>
++      <Helmet>
++        <title>Reset Password - TRICCI</title>
++      </Helmet>
++
++      <div className="min-h-screen bg-gradient-to-b from-[#1A0A00] to-[#2D1810] flex items-center justify-center p-4">
++        <div className="w-full max-w-md">
++          <motion.div
++            initial={{ opacity: 0, y: 20 }}
++            animate={{ opacity: 1, y: 0 }}
++            className="space-y-6"
++          >
++            <div className="text-center mb-8">
++              <h1 className="text-3xl font-bold text-[#FF6B35] mb-2">Reset Your Password</h1>
++              <p className="text-gray-300">Enter your new password below</p>
++            </div>
++
++            {error && (
++              <motion.div
++                initial={{ opacity: 0, y: -10 }}
++                animate={{ opacity: 1, y: 0 }}
++                className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2 items-start"
++              >
++                <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
++                <p className="text-red-200 text-sm">{error}</p>
++              </motion.div>
++            )}
++
++            {success ? (
++              <motion.div
++                initial={{ opacity: 0, y: -10 }}
++                animate={{ opacity: 1, y: 0 }}
++                className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex gap-3 items-center text-center"
++              >
++                <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
++                <div>
++                  <p className="text-green-200 font-semibold">Password reset successfully!</p>
++                  <p className="text-green-100 text-sm">Redirecting to login...</p>
++                </div>
++              </motion.div>
++            ) : (
++              <form onSubmit={handleSubmit} className="space-y-4">
++                {/* New Password */}
++                <div>
++                  <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
++                  <div className="relative">
++                    <input
++                      type={showPassword ? 'text' : 'password'}
++                      value={password}
++                      onChange={(e) => setPassword(e.target.value)}
++                      placeholder="Enter new password"
++                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
++                      disabled={loading}
++                    />
++                    <button
++                      type="button"
++                      onClick={() => setShowPassword(!showPassword)}
++                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
++                    >
++                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
++                    </button>
++                  </div>
++                  <p className="text-xs text-gray-500 mt-1">At least 8 characters with uppercase, lowercase, number, and symbol</p>
++                </div>
++
++                {/* Confirm Password */}
++                <div>
++                  <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
++                  <div className="relative">
++                    <input
++                      type={showConfirmPassword ? 'text' : 'password'}
++                      value={confirmPassword}
++                      onChange={(e) => setConfirmPassword(e.target.value)}
++                      placeholder="Confirm new password"
++                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
++                      disabled={loading}
++                    />
++                    <button
++                      type="button"
++                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
++                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
++                    >
++                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
++                    </button>
++                  </div>
++                </div>
++
++                {/* Submit Button */}
++                <motion.button
++                  type="submit"
++                  disabled={loading}
++                  whileHover={{ scale: 1.02 }}
++                  whileTap={{ scale: 0.98 }}
++                  className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
++                >
++                  {loading ? (
++                    <>
++                      <Loader2 size={18} className="animate-spin" />
++                      Resetting password...
++                    </>
++                  ) : (
++                    'Reset Password'
++                  )}
++                </motion.button>
++
++                {/* Back to Login */}
++                <div className="text-center text-sm">
++                  <span className="text-gray-400">Remember your password? </span>
++                  <a href="/login" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
++                    Sign in
++                  </a>
++                </div>
++              </form>
++            )}
++          </motion.div>
++        </div>
++      </div>
++    </>
++  );
++}
+diff --git a/src/pages/auth/signup-fresh.tsx b/src/pages/auth/signup-fresh.tsx
+new file mode 100644
+index 0000000..743140e
+--- /dev/null
++++ b/src/pages/auth/signup-fresh.tsx
+@@ -0,0 +1,313 @@
++import { Helmet } from '@dr.pogodin/react-helmet';
++import { useState } from 'react';
++import { Link, useNavigate } from 'react-router-dom';
++import { motion, AnimatePresence } from 'motion/react';
++import { Eye, EyeOff, AlertCircle, Loader2, Building2, Star, User } from 'lucide-react';
++import { signUp } from '@/lib/auth/auth-client';
++import { trackSignup } from '@/lib/analytics';
++import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput } from '@/lib/validation';
++
++type Role = 'employer' | 'consultant' | 'candidate';
++type Step = 'role' | 'details';
++
++const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
++  {
++    id: 'employer',
++    label: 'Employer',
++    description: 'Post jobs and hire through our consultant network',
++    icon: Building2,
++    color: '#35c9ff',
++  },
++  {
++    id: 'consultant',
++    label: 'Consultant',
++    description: 'Submit candidates and earn % of placement fees',
++    icon: Star,
++    color: '#FF6B35',
++  },
++  {
++    id: 'candidate',
++    label: 'Candidate',
++    description: 'Get discovered by top consultants for your next role',
++    icon: User,
++    color: '#ffd035',
++  },
++];
++
++export default function SignupFreshPage() {
++  const navigate = useNavigate();
++
++  const [step, setStep] = useState<Step>('role');
++  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
++  const [name, setName] = useState('');
++  const [email, setEmail] = useState('');
++  const [password, setPassword] = useState('');
++  const [confirmPassword, setConfirmPassword] = useState('');
++  const [showPassword, setShowPassword] = useState(false);
++  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState('');
++
++  function handleRoleSelect(role: Role) {
++    setSelectedRole(role);
++    setStep('details');
++  }
++
++  function handleBackToRole() {
++    setStep('role');
++    setSelectedRole(null);
++  }
++
++  async function handleSubmit(e: React.FormEvent) {
++    e.preventDefault();
++    if (!selectedRole) return;
++
++    setError('');
++
++    // Sanitize inputs
++    const sanitizedName = sanitizeInput(name);
++    const sanitizedEmail = sanitizeInput(email).toLowerCase();
++    const sanitizedPassword = password;
++
++    // Validate
++    if (!sanitizedName.trim()) {
++      setError('Name is required');
++      return;
++    }
++
++    if (!validateEmail(sanitizedEmail)) {
++      setError('Valid email is required');
++      return;
++    }
++
++    if (!validatePassword(sanitizedPassword)) {
++      setError('Password must be at least 8 characters with uppercase, lowercase, number, and symbol');
++      return;
++    }
++
++    if (sanitizedPassword !== confirmPassword) {
++      setError('Passwords do not match');
++      return;
++    }
++
++    setLoading(true);
++    try {
++      trackSignup(selectedRole, 'email');
++      await signUp.email(
++        {
++          email: sanitizedEmail,
++          password: sanitizedPassword,
++          name: sanitizedName,
++          role: selectedRole,
++        },
++        {
++          onSuccess: () => {
++            navigate('/employer/dashboard', { replace: true });
++          },
++          onError: (error) => {
++            setError(error.message || 'Signup failed. Please try again.');
++            setLoading(false);
++          },
++        }
++      );
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'An error occurred');
++      setLoading(false);
++    }
++  }
++
++  return (
++    <>
++      <Helmet>
++        <title>Sign Up - TRICCI</title>
++      </Helmet>
++
++      <div className="min-h-screen bg-gradient-to-b from-[#1A0A00] to-[#2D1810] flex items-center justify-center p-4">
++        <div className="w-full max-w-md">
++          <AnimatePresence mode="wait">
++            {step === 'role' && (
++              <motion.div
++                key="role-selection"
++                initial={{ opacity: 0, y: 20 }}
++                animate={{ opacity: 1, y: 0 }}
++                exit={{ opacity: 0, y: -20 }}
++                className="space-y-6"
++              >
++                <div className="text-center mb-8">
++                  <h1 className="text-3xl font-bold text-[#FF6B35] mb-2">Join TRICCI</h1>
++                  <p className="text-gray-300">Select your role to get started</p>
++                </div>
++
++                <div className="space-y-3">
++                  {ROLES.map((role) => (
++                    <motion.button
++                      key={role.id}
++                      onClick={() => handleRoleSelect(role.id)}
++                      whileHover={{ scale: 1.02 }}
++                      whileTap={{ scale: 0.98 }}
++                      className="w-full p-4 bg-[#2D1810] border-2 border-[#FF6B35]/30 rounded-lg hover:border-[#FF6B35] hover:bg-[#3D2810] transition-all text-left group"
++                    >
++                      <div className="flex items-start gap-3">
++                        <role.icon
++                          size={24}
++                          className="text-[#FF6B35] group-hover:text-[#FF8A5B] transition-colors mt-1"
++                        />
++                        <div>
++                          <h3 className="font-semibold text-white">{role.label}</h3>
++                          <p className="text-sm text-gray-400">{role.description}</p>
++                        </div>
++                      </div>
++                    </motion.button>
++                  ))}
++                </div>
++
++                <div className="text-center text-sm">
++                  <span className="text-gray-400">Already have an account? </span>
++                  <Link to="/login" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
++                    Sign in
++                  </Link>
++                </div>
++              </motion.div>
++            )}
++
++            {step === 'details' && (
++              <motion.div
++                key="details"
++                initial={{ opacity: 0, y: 20 }}
++                animate={{ opacity: 1, y: 0 }}
++                exit={{ opacity: 0, y: -20 }}
++                className="space-y-6"
++              >
++                <div>
++                  <button
++                    onClick={handleBackToRole}
++                    className="text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors"
++                  >
++                    ← Back
++                  </button>
++
++                  <div className="text-center mb-6">
++                    <h2 className="text-2xl font-bold text-[#FF6B35]">Create Account</h2>
++                    <p className="text-gray-400 text-sm mt-1">
++                      As {selectedRole && ROLES.find((r) => r.id === selectedRole)?.label}
++                    </p>
++                  </div>
++                </div>
++
++                <form onSubmit={handleSubmit} className="space-y-4">
++                  {error && (
++                    <motion.div
++                      initial={{ opacity: 0, y: -10 }}
++                      animate={{ opacity: 1, y: 0 }}
++                      className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2 items-start"
++                    >
++                      <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
++                      <p className="text-red-200 text-sm">{error}</p>
++                    </motion.div>
++                  )}
++
++                  {/* Name */}
++                  <div>
++                    <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
++                    <input
++                      type="text"
++                      value={name}
++                      onChange={(e) => setName(e.target.value)}
++                      placeholder="Enter your full name"
++                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
++                      disabled={loading}
++                    />
++                  </div>
++
++                  {/* Email */}
++                  <div>
++                    <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
++                    <input
++                      type="email"
++                      value={email}
++                      onChange={(e) => setEmail(e.target.value)}
++                      placeholder="Enter your email"
++                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
++                      disabled={loading}
++                    />
++                  </div>
++
++                  {/* Password */}
++                  <div>
++                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
++                    <div className="relative">
++                      <input
++                        type={showPassword ? 'text' : 'password'}
++                        value={password}
++                        onChange={(e) => setPassword(e.target.value)}
++                        placeholder="Enter password (min 8 chars)"
++                        className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
++                        disabled={loading}
++                      />
++                      <button
++                        type="button"
++                        onClick={() => setShowPassword(!showPassword)}
++                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
++                      >
++                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
++                      </button>
++                    </div>
++                    <p className="text-xs text-gray-500 mt-1">At least 8 characters with uppercase, lowercase, number, and symbol</p>
++                  </div>
++
++                  {/* Confirm Password */}
++                  <div>
++                    <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
++                    <div className="relative">
++                      <input
++                        type={showConfirmPassword ? 'text' : 'password'}
++                        value={confirmPassword}
++                        onChange={(e) => setConfirmPassword(e.target.value)}
++                        placeholder="Confirm password"
++                        className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
++                        disabled={loading}
++                      />
++                      <button
++                        type="button"
++                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
++                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
++                      >
++                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
++                      </button>
++                    </div>
++                  </div>
++
++                  {/* Submit Button */}
++                  <motion.button
++                    type="submit"
++                    disabled={loading}
++                    whileHover={{ scale: 1.02 }}
++                    whileTap={{ scale: 0.98 }}
++                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
++                  >
++                    {loading ? (
++                      <>
++                        <Loader2 size={18} className="animate-spin" />
++                        Creating account...
++                      </>
++                    ) : (
++                      'Create Account'
++                    )}
++                  </motion.button>
++
++                  {/* Sign In Link */}
++                  <div className="text-center text-sm mt-4">
++                    <span className="text-gray-400">Already have an account? </span>
++                    <Link to="/login" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
++                      Sign in
++                    </Link>
++                  </div>
++                </form>
++              </motion.div>
++            )}
++          </AnimatePresence>
++        </div>
++      </div>
++    </>
++  );
++}
+diff --git a/src/routes.tsx b/src/routes.tsx
+index 3bbaf2b..9fe5c82 100644
+--- a/src/routes.tsx
++++ b/src/routes.tsx
+@@ -25,6 +25,7 @@ const AdminLoginPage = lazy(() => import('./pages/admin/login'));
+ const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
+ const LoginFreshPage = lazy(() => import('./pages/auth/login-fresh'));
+ const SignupFreshPage = lazy(() => import('./pages/auth/signup-fresh'));
++const ResetPasswordFreshPage = lazy(() => import('./pages/auth/reset-password-fresh'));
+ const JobsPage = lazy(() => import('./pages/jobs/index'));
+ const JobDetailPage = lazy(() => import('./pages/jobs/[id]'));
+ const AboutPage = lazy(() => import('./pages/about'));
+@@ -50,6 +51,7 @@ export const routes: RouteObject[] = [
+   // Auth routes (public) - Password-based
+   { path: '/login', element: <LoginFreshPage /> },
+   { path: '/signup', element: <SignupFreshPage /> },
++  { path: '/auth/reset-password', element: <ResetPasswordFreshPage /> },
+ 
+   // Protected: Job listings — all logged-in roles can browse
+   {
+diff --git a/src/server/api/auth/forgot-password/POST.ts b/src/server/api/auth/forgot-password/POST.ts
+new file mode 100644
+index 0000000..442050d
+--- /dev/null
++++ b/src/server/api/auth/forgot-password/POST.ts
+@@ -0,0 +1,108 @@
++/**
++ * POST /api/auth/forgot-password
++ *
++ * Forgot password endpoint for email-based password reset.
++ *
++ * This endpoint:
++ * 1. Receives user email
++ * 2. Generates reset token
++ * 3. Sends email with reset link
++ * 4. Returns success message (doesn't reveal if email exists)
++ */
++import type { Request, Response } from 'express';
++import { db } from '@/server/db/client';
++import { user, verification } from '@/server/db/schema';
++import { eq } from 'drizzle-orm';
++import { sendEmail } from '@/server/email';
++import crypto from 'crypto';
++
++export default async function handler(req: Request, res: Response) {
++  try {
++    if (req.method !== 'POST') {
++      return res.status(405).json({ error: 'Method not allowed' });
++    }
++
++    const { email } = req.body;
++
++    if (!email || typeof email !== 'string') {
++      return res.status(400).json({ error: 'Email is required' });
++    }
++
++    const normalizedEmail = email.toLowerCase().trim();
++
++    // Security: Don't reveal whether email exists
++    // Generate response regardless
++    try {
++      // Find user by email
++      const foundUser = await db.query.user.findFirst({
++        where: eq(user.email, normalizedEmail),
++      });
++
++      if (foundUser) {
++        // Generate reset token
++        const resetToken = crypto.randomBytes(32).toString('hex');
++        const resetTokenHash = crypto
++          .createHash('sha256')
++          .update(resetToken)
++          .digest('hex');
++        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
++
++        // Store verification record
++        await db
++          .insert(verification)
++          .values({
++            id: resetToken, // For lookup
++            identifier: normalizedEmail,
++            token: resetTokenHash,
++            expiresAt,
++          })
++          .onConflictDoUpdate({
++            target: verification.identifier,
++            set: {
++              token: resetTokenHash,
++              expiresAt,
++            },
++          });
++
++        // Build reset link
++        const baseURL = process.env.BETTER_AUTH_URL || 'https://tricci.in';
++        const resetLink = `${baseURL}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
++
++        // Send email with reset link
++        await sendEmail({
++          to: normalizedEmail,
++          subject: 'Reset your TRICCI password',
++          html: `
++            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#1A0A00;color:#F5F5F5;border-radius:12px;">
++              <h1 style="color:#FF6B35;font-size:24px;margin:0 0 8px;">Reset your password</h1>
++              <p style="color:#aaa;margin:0 0 24px;">Hi ${foundUser.name}, click the button below to set a new password for your TRICCI account.</p>
++              <a href="${resetLink}" style="display:inline-block;background:#FF6B35;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;">Reset Password</a>
++              <p style="color:#666;font-size:12px;margin-top:24px;">This link expires in 24 hours. If you didn't request this, you can safely ignore this email.</p>
++            </div>
++          `,
++          text: `Reset your TRICCI password: ${resetLink}`,
++        });
++
++        console.log(`[FORGOT_PASSWORD] ✅ Reset email sent to: ${normalizedEmail}`);
++      } else {
++        console.log(`[FORGOT_PASSWORD] ⚠️ No user found for: ${normalizedEmail}`);
++      }
++    } catch (innerError) {
++      const errorMsg = innerError instanceof Error ? errorMsg.message : 'Unknown error';
++      console.error(`[FORGOT_PASSWORD] Error processing ${normalizedEmail}: ${errorMsg}`);
++    }
++
++    // Always return success to prevent email enumeration attacks
++    return res.status(200).json({
++      success: true,
++      message: 'If an account with that email exists, a password reset link has been sent to your email',
++    });
++  } catch (error) {
++    const message = error instanceof Error ? error.message : 'Unknown error';
++    console.error(`[FORGOT_PASSWORD_ERROR] ${message}`);
++
++    return res.status(500).json({
++      error: 'Failed to process password reset request',
++    });
++  }
++}
+diff --git a/src/server/api/auth/reset-password/POST.ts b/src/server/api/auth/reset-password/POST.ts
+new file mode 100644
+index 0000000..8635372
+--- /dev/null
++++ b/src/server/api/auth/reset-password/POST.ts
+@@ -0,0 +1,108 @@
++/**
++ * POST /api/auth/reset-password
++ *
++ * Reset password endpoint - validates reset token and updates user password.
++ *
++ * This endpoint:
++ * 1. Validates reset token and email
++ * 2. Checks token expiration
++ * 3. Hashes new password with bcrypt
++ * 4. Updates account record with new password
++ * 5. Invalidates token after use
++ */
++import type { Request, Response } from 'express';
++import { db } from '@/server/db/client';
++import { user, account, verification } from '@/server/db/schema';
++import { eq, and } from 'drizzle-orm';
++import bcrypt from 'bcrypt';
++import crypto from 'crypto';
++
++export default async function handler(req: Request, res: Response) {
++  try {
++    if (req.method !== 'POST') {
++      return res.status(405).json({ error: 'Method not allowed' });
++    }
++
++    const { token, email, password } = req.body;
++
++    // Validate inputs
++    if (!token || typeof token !== 'string') {
++      return res.status(400).json({ error: 'Reset token is required' });
++    }
++
++    if (!email || typeof email !== 'string') {
++      return res.status(400).json({ error: 'Email is required' });
++    }
++
++    if (!password || typeof password !== 'string') {
++      return res.status(400).json({ error: 'New password is required' });
++    }
++
++    const normalizedEmail = email.toLowerCase().trim();
++
++    // Hash token for comparison
++    const tokenHash = crypto
++      .createHash('sha256')
++      .update(token)
++      .digest('hex');
++
++    // Find verification record
++    const verificationRecord = await db.query.verification.findFirst({
++      where: and(
++        eq(verification.identifier, normalizedEmail),
++        eq(verification.token, tokenHash)
++      ),
++    });
++
++    if (!verificationRecord) {
++      return res.status(401).json({ error: 'Invalid or expired reset token' });
++    }
++
++    // Check expiration
++    if (new Date() > verificationRecord.expiresAt) {
++      return res.status(401).json({ error: 'Reset token has expired. Please request a new one.' });
++    }
++
++    // Find user
++    const foundUser = await db.query.user.findFirst({
++      where: eq(user.email, normalizedEmail),
++    });
++
++    if (!foundUser) {
++      return res.status(404).json({ error: 'User not found' });
++    }
++
++    // Hash new password
++    const hashedPassword = await bcrypt.hash(password, 12);
++
++    // Update account with new password
++    await db
++      .update(account)
++      .set({
++        password: hashedPassword,
++      })
++      .where(and(
++        eq(account.userId, foundUser.id),
++        eq(account.provider, 'credential')
++      ));
++
++    // Invalidate token by deleting verification record
++    await db
++      .delete(verification)
++      .where(eq(verification.identifier, normalizedEmail));
++
++    console.log(`[RESET_PASSWORD] ✅ Password reset successful for: ${normalizedEmail}`);
++
++    return res.status(200).json({
++      success: true,
++      message: 'Password reset successfully. You can now sign in with your new password.',
++    });
++  } catch (error) {
++    const message = error instanceof Error ? error.message : 'Unknown error';
++    console.error(`[RESET_PASSWORD_ERROR] ${message}`);
++
++    return res.status(500).json({
++      error: 'Failed to reset password',
++    });
++  }
++}
+-- 
+2.43.0
+
+
+From e5661741b43d01c8fcec4eda506b75199c5bfd10 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 20 Sep 2026 13:11:02 +0000
+Subject: [PATCH 3/3] fix: correct error message variable in forgot-password
+ endpoint
+
+innerError.message, not errorMsg.message (which was undefined)
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01449me6xVEj7VafquSPEnhA
+---
+ src/server/api/auth/forgot-password/POST.ts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/server/api/auth/forgot-password/POST.ts b/src/server/api/auth/forgot-password/POST.ts
+index 442050d..be389c7 100644
+--- a/src/server/api/auth/forgot-password/POST.ts
++++ b/src/server/api/auth/forgot-password/POST.ts
+@@ -88,7 +88,7 @@ export default async function handler(req: Request, res: Response) {
+         console.log(`[FORGOT_PASSWORD] ⚠️ No user found for: ${normalizedEmail}`);
+       }
+     } catch (innerError) {
+-      const errorMsg = innerError instanceof Error ? errorMsg.message : 'Unknown error';
++      const errorMsg = innerError instanceof Error ? innerError.message : 'Unknown error';
+       console.error(`[FORGOT_PASSWORD] Error processing ${normalizedEmail}: ${errorMsg}`);
+     }
+ 
+-- 
+2.43.0
+

@@ -2,13 +2,12 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, EyeOff, AlertCircle, Loader2, Building2, Star, User } from 'lucide-react';
-import { signUp } from '@/lib/auth/auth-client';
+import { AlertCircle, Loader2, Building2, Star, User, CheckCircle } from 'lucide-react';
 import { trackSignup } from '@/lib/analytics';
-import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput } from '@/lib/validation';
+import { validateEmail, sanitizeInput } from '@/lib/validation';
 
 type Role = 'employer' | 'consultant' | 'candidate';
-type Step = 'role' | 'details';
+type Step = 'role' | 'details' | 'success';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
   {
@@ -41,12 +40,9 @@ export default function SignupFreshPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState('');
 
   function handleRoleSelect(role: Role) {
     setSelectedRole(role);
@@ -67,7 +63,6 @@ export default function SignupFreshPage() {
     // Sanitize inputs
     const sanitizedName = sanitizeInput(name);
     const sanitizedEmail = sanitizeInput(email).toLowerCase();
-    const sanitizedPassword = password;
 
     // Validate
     if (!sanitizedName.trim()) {
@@ -80,36 +75,39 @@ export default function SignupFreshPage() {
       return;
     }
 
-    if (!validatePassword(sanitizedPassword)) {
-      setError('Password must be at least 8 characters with uppercase, lowercase, number, and symbol');
-      return;
-    }
-
-    if (sanitizedPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setLoading(true);
     try {
       trackSignup(selectedRole, 'email');
-      await signUp.email(
-        {
+
+      // Generate default password: FirstName@1234
+      const firstName = sanitizedName.split(' ')[0];
+      const autoPassword = `${firstName}@1234`;
+
+      // Call signup endpoint with auto-generated password
+      const response = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email: sanitizedEmail,
-          password: sanitizedPassword,
+          password: autoPassword,
           name: sanitizedName,
           role: selectedRole,
-        },
-        {
-          onSuccess: () => {
-            navigate('/employer/dashboard', { replace: true });
-          },
-          onError: (error) => {
-            setError(error.message || 'Signup failed. Please try again.');
-            setLoading(false);
-          },
-        }
-      );
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Signup failed');
+      }
+
+      setGeneratedPassword(autoPassword);
+      setStep('success');
+
+      // Redirect to login after 5 seconds
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 5000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
@@ -232,50 +230,6 @@ export default function SignupFreshPage() {
                     />
                   </div>
 
-                  {/* Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password (min 8 chars)"
-                        className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
-                        disabled={loading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">At least 8 characters with uppercase, lowercase, number, and symbol</p>
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm password"
-                        className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
-                        disabled={loading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                      >
-                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
 
                   {/* Submit Button */}
                   <motion.button
@@ -303,6 +257,50 @@ export default function SignupFreshPage() {
                     </Link>
                   </div>
                 </form>
+              </motion.div>
+            )}
+
+            {step === 'success' && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-6"
+              >
+                <div className="text-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex justify-center mb-4"
+                  >
+                    <CheckCircle size={64} className="text-green-500" />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold text-[#FF6B35] mb-2">Account Created!</h2>
+                  <p className="text-gray-300 mb-6">Your account is ready. Use your default password to login.</p>
+                </div>
+
+                <div className="bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Email</p>
+                    <p className="text-white font-mono text-sm">{email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Default Password</p>
+                    <p className="text-[#FF6B35] font-mono font-bold text-sm">{generatedPassword}</p>
+                  </div>
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                  <p className="text-blue-200 text-sm">Redirecting to login in a few seconds...</p>
+                </div>
+
+                <Link
+                  to="/login"
+                  className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] text-white font-bold py-2 px-4 rounded-lg transition-all text-center block"
+                >
+                  Go to Login
+                </Link>
               </motion.div>
             )}
           </AnimatePresence>

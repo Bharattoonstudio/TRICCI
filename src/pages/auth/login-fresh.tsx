@@ -78,7 +78,7 @@ export default function LoginFreshPage() {
         throw new Error('Failed to send reset email');
       }
 
-      setForgotMessage('✅ Password reset link sent! Check your email.');
+      setForgotMessage('✅ Password reset to FirstName@1234. You can now login.');
       setForgotEmail('');
       setTimeout(() => {
         setShowForgotPassword(false);
@@ -207,7 +207,7 @@ export default function LoginFreshPage() {
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Enter your email address and we'll send you a link to reset your password.
+                      Enter your email address to reset your password to FirstName@1234.
                     </p>
                   </div>
 
@@ -250,7 +250,7 @@ export default function LoginFreshPage() {
                         Sending...
                       </>
                     ) : (
-                      'Send Reset Link'
+                      'Reset Password'
                     )}
                   </motion.button>
                 </form>

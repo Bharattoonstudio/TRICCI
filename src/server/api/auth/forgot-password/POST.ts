@@ -1,20 +1,19 @@
 /**
  * POST /api/auth/forgot-password
  *
- * Forgot password endpoint for email-based password reset.
+ * Forgot password endpoint - resets user password to default: FirstName@1234
  *
  * This endpoint:
  * 1. Receives user email
- * 2. Generates reset token
- * 3. Sends email with reset link
- * 4. Returns success message (doesn't reveal if email exists)
+ * 2. Finds user by email
+ * 3. Resets password to FirstName@1234
+ * 4. Returns success message (no email sent, no Brevo dependency)
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client';
-import { user, verification } from '@/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { sendEmail } from '@/server/email';
-import crypto from 'crypto';
+import { user, account } from '@/server/db/schema';
+import { eq, and } from 'drizzle-orm';
+import bcrypt from 'bcrypt';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -30,8 +29,6 @@ export default async function handler(req: Request, res: Response) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Security: Don't reveal whether email exists
-    // Generate response regardless
     try {
       // Find user by email
       const foundUser = await db.query.user.findFirst({
@@ -39,51 +36,27 @@ export default async function handler(req: Request, res: Response) {
       });
 
       if (foundUser) {
-        // Generate reset token
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenHash = crypto
-          .createHash('sha256')
-          .update(resetToken)
-          .digest('hex');
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        // Extract first name from user.name
+        const firstName = foundUser.name.split(' ')[0];
 
-        // Store verification record
+        // Generate default password: FirstName@1234
+        const defaultPassword = `${firstName}@1234`;
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+
+        // Update account with new password
         await db
-          .insert(verification)
-          .values({
-            id: resetToken, // For lookup
-            identifier: normalizedEmail,
-            token: resetTokenHash,
-            expiresAt,
+          .update(account)
+          .set({
+            password: hashedPassword,
           })
-          .onConflictDoUpdate({
-            target: verification.identifier,
-            set: {
-              token: resetTokenHash,
-              expiresAt,
-            },
-          });
+          .where(and(
+            eq(account.userId, foundUser.id),
+            eq(account.provider, 'credential')
+          ));
 
-        // Build reset link
-        const baseURL = process.env.BETTER_AUTH_URL || 'https://tricci.in';
-        const resetLink = `${baseURL}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
-
-        // Send email with reset link
-        await sendEmail({
-          to: normalizedEmail,
-          subject: 'Reset your TRICCI password',
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#1A0A00;color:#F5F5F5;border-radius:12px;">
-              <h1 style="color:#FF6B35;font-size:24px;margin:0 0 8px;">Reset your password</h1>
-              <p style="color:#aaa;margin:0 0 24px;">Hi ${foundUser.name}, click the button below to set a new password for your TRICCI account.</p>
-              <a href="${resetLink}" style="display:inline-block;background:#FF6B35;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;">Reset Password</a>
-              <p style="color:#666;font-size:12px;margin-top:24px;">This link expires in 24 hours. If you didn't request this, you can safely ignore this email.</p>
-            </div>
-          `,
-          text: `Reset your TRICCI password: ${resetLink}`,
-        });
-
-        console.log(`[FORGOT_PASSWORD] ✅ Reset email sent to: ${normalizedEmail}`);
+        console.log(`[FORGOT_PASSWORD] ✅ Password reset to default for: ${normalizedEmail}`);
       } else {
         console.log(`[FORGOT_PASSWORD] ⚠️ No user found for: ${normalizedEmail}`);
       }
@@ -95,7 +68,7 @@ export default async function handler(req: Request, res: Response) {
     // Always return success to prevent email enumeration attacks
     return res.status(200).json({
       success: true,
-      message: 'If an account with that email exists, a password reset link has been sent to your email',
+      message: 'If an account with that email exists, your password has been reset to FirstName@1234',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

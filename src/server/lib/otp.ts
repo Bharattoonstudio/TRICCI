@@ -48,21 +48,34 @@ export async function sendOtpEmail(email: string, otp: string): Promise<boolean>
  */
 export async function createOtp(email: string): Promise<string | null> {
   try {
+    console.log(`[OTP CREATE] Starting OTP creation for ${email}`);
+
     // Delete expired OTPs for this email
-    await db.execute(
+    console.log(`[OTP CREATE] Step 1: Deleting expired OTPs...`);
+    const deleteResult = await db.execute(
       sql`DELETE FROM password_reset_otp WHERE email = ${email} AND expires_at < NOW()`
     );
+    console.log(`[OTP CREATE] Step 1 OK: Deleted ${deleteResult.rowCount} expired OTPs`);
 
     const otp = generateOtpCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    await db.execute(
+    console.log(`[OTP CREATE] Step 2: Generated OTP: ${otp}, expires at ${expiresAt.toISOString()}`);
+
+    console.log(`[OTP CREATE] Step 3: Inserting into database...`);
+    const insertResult = await db.execute(
       sql`INSERT INTO password_reset_otp (email, otp_code, expires_at) VALUES (${email}, ${otp}, ${expiresAt})`
     );
+    console.log(`[OTP CREATE] Step 3 OK: Inserted ${insertResult.rowCount} rows`);
 
+    console.log(`[OTP CREATE] ✅ Successfully created OTP for ${email}`);
     return otp;
   } catch (error) {
-    console.error('Failed to create OTP:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[OTP CREATE] ❌ FAILED to create OTP for ${email}`);
+    console.error(`[OTP CREATE] Error type:`, error?.constructor?.name);
+    console.error(`[OTP CREATE] Error message:`, errorMsg);
+    console.error(`[OTP CREATE] Full error:`, error);
     return null;
   }
 }

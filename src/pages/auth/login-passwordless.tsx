@@ -18,17 +18,10 @@ export default function LoginPasswordlessPage() {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
-      const response = await fetch('/api/otp/login/send', {
+const response = await fetch('/api/otp/login/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-=======
-      const response = await fetch('/api/otp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, type: 'login' }),
->>>>>>> d8512beb0fbf7338117a4266d514256bdc053a90
       });
 
       if (!response.ok) {
@@ -50,17 +43,10 @@ export default function LoginPasswordlessPage() {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
-      const response = await fetch('/api/otp/login/verify', {
+const response = await fetch('/api/otp/login/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
-=======
-      const response = await fetch('/api/otp/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, type: 'login' }),
->>>>>>> d8512beb0fbf7338117a4266d514256bdc053a90
       });
 
       if (!response.ok) {
@@ -70,12 +56,8 @@ export default function LoginPasswordlessPage() {
 
       const data = await response.json();
 
-<<<<<<< HEAD
-      // Backend sets session cookie
+// Backend sets session cookie
       // Redirect based on user's role
-=======
-      // Redirect based on role
->>>>>>> d8512beb0fbf7338117a4266d514256bdc053a90
       if (data.role === 'employer') {
         navigate('/employer/dashboard');
       } else if (data.role === 'consultant') {

@@ -1,4 +1,4 @@
-﻿import express, { type NextFunction, type Request, type Response } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, extname, join } from "node:path";
 import { readFileSync } from "node:fs";
@@ -164,7 +164,7 @@ function normalizeCommerceApiBaseUrlEnv() {
 normalizeCommerceApiBaseUrlEnv();
 
 import multer from "multer";
-// Shared multer instance â€” used by file-upload routes (CV, PDF, etc.)
+// Shared multer instance — used by file-upload routes (CV, PDF, etc.)
 export const multerMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const app = express();
@@ -175,7 +175,7 @@ const app = express();
 // the sitemap origin in robots.txt.
 app.set("trust proxy", true);
 
-// â”€â”€ COMPREHENSIVE SECURITY HEADERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── COMPREHENSIVE SECURITY HEADERS ────────────────────────────────────────────
 // Applied to every response before any route handler runs.
 app.use((_req, res, next) => {
 	// Prevent MIME type sniffing
@@ -219,7 +219,7 @@ app.use((_req, res, next) => {
 	
 	next();
 });
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -647,7 +647,7 @@ if (import.meta.env.PROD) {
 			// level for the observability pipeline to alert on.
 			console.error("ssr.render.failed", {
 				url: req.url,
-				// Log the full stack â€” React's renderToString annotates it with
+				// Log the full stack — React's renderToString annotates it with
 				// the failing component's call tree, which the message alone
 				// discards.
 				error: err instanceof Error ? err.stack : String(err),
@@ -721,7 +721,7 @@ if (import.meta.env.PROD) {
 
 export default app;
 
-// â”€â”€ Exported helpers (used by entry.test.ts) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Exported helpers (used by entry.test.ts) ──────────────────────────────────
 
 export function renderSsrDocument(
   template: string,

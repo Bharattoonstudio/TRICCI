@@ -13,6 +13,11 @@ import auth_action_get_19 from "./api/auth/[action]/GET";
 import auth_action_post_20 from "./api/auth/[action]/POST";
 import auth_action_detail_get_21 from "./api/auth/[action]/[detail]/GET";
 import auth_action_detail_post_22 from "./api/auth/[action]/[detail]/POST";
+import auth_verify_otp_post from "./api/auth/verify-otp/POST";
+import auth_login_post from "./api/auth/login/POST";
+import auth_forgot_password_post from "./api/auth/forgot-password/POST";
+import auth_reset_password_post from "./api/auth/reset-password/POST";
+import auth_resend_otp_post from "./api/auth/resend-otp/POST";
 import candidate_applications_get_23 from "./api/candidate/applications/GET";
 import candidate_cv_parse_post_24, { multerMiddleware as candidate_cv_parse_post_24_upload } from "./api/candidate/cv-parse/POST";
 import candidate_cv_enhance_post from "./api/candidate/cv-enhance/POST";
@@ -180,22 +185,22 @@ app.set("trust proxy", true);
 app.use((_req, res, next) => {
 	// Prevent MIME type sniffing
 	res.set("X-Content-Type-Options", "nosniff");
-	
+
 	// Prevent clickjacking attacks
 	res.set("X-Frame-Options", "DENY");
-	
+
 	// Prevent XSS attacks (legacy header, modern browsers use CSP)
 	res.set("X-XSS-Protection", "1; mode=block");
-	
+
 	// Control referrer policy
 	res.set("Referrer-Policy", "strict-origin-when-cross-origin");
-	
+
 	// Disable dangerous APIs
 	res.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
-	
+
 	// Force HTTPS (HSTS)
 	res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-	
+
 	// Content Security Policy - prevents XSS and injection attacks
 	res.set(
 		"Content-Security-Policy",
@@ -209,14 +214,14 @@ app.use((_req, res, next) => {
 		"base-uri 'self'; " +
 		"form-action 'self'"
 	);
-	
+
 	// Remove server identification headers (prevent fingerprinting)
 	res.removeHeader("Server");
 	res.removeHeader("X-Powered-By");
-	
+
 	// Add request ID for security monitoring
 	res.set("X-Request-ID", `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
-	
+
 	next();
 });
 // ─────────────────────────────────────────────────────────────────────────────
@@ -235,6 +240,11 @@ app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);
 app.post("/api/auth/:action/:detail", auth_action_detail_post_22);
+app.post("/api/auth/verify-otp", auth_verify_otp_post);
+app.post("/api/auth/login", auth_login_post);
+app.post("/api/auth/forgot-password", auth_forgot_password_post);
+app.post("/api/auth/reset-password", auth_reset_password_post);
+app.post("/api/auth/resend-otp", auth_resend_otp_post);
 app.get("/api/candidate/applications", candidate_applications_get_23);
 app.post("/api/candidate/cv-parse", candidate_cv_parse_post_24_upload, candidate_cv_parse_post_24);
 app.post("/api/candidate/cv-enhance", candidate_cv_enhance_post);
@@ -757,4 +767,3 @@ export function registerAdSenseTextRoutes(
     }
   });
 }
-

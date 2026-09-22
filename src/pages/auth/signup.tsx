@@ -3,12 +3,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Eye, EyeOff, AlertCircle, Loader2, Building2, Star, User, Shield, CheckCircle } from 'lucide-react';
-import { signIn, signUp } from '@/lib/auth/auth-client';
 import { trackSignup } from '@/lib/analytics';
 import { validateEmail, validatePassword, validatePhoneNumber, sanitizeInput, validateSignupForm } from '@/lib/validation';
 
 type Role = 'employer' | 'consultant' | 'candidate';
-type Step = 'role' | 'details';
+type Step = 'role' | 'details' | 'otp-verification';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
   {
@@ -58,8 +57,11 @@ function LinkedInIcon() {
 export default function SignupPage() {
   const navigate = useNavigate();
 
+  // Step 1: Role Selection
   const [step, setStep] = useState<Step>('role');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+
+  // Step 2: Account Details
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +70,13 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'linkedin' | null>(null);
   const [error, setError] = useState('');
+
+  // Step 3: OTP Verification
+  const [userId, setUserId] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
   function handleRoleSelect(role: Role) {
     setSelectedRole(role);
@@ -79,7 +88,9 @@ export default function SignupPage() {
     setSocialLoading(provider);
     try {
       trackSignup(selectedRole ?? 'unknown', provider);
-      await signIn.social({ provider, callbackURL: '/' });
+      // TODO: Implement social signup (will need to update after OAuth integration)
+      setError('Social signup coming soon. Use email signup for now.');
+      setSocialLoading(null);
     } catch {
       setError(`Could not sign up with ${provider === 'google' ? 'Google' : 'LinkedIn'}. Please try again.`);
       setSocialLoading(null);
@@ -113,58 +124,93 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      // Use Better Auth's signUp.email() to create account
-      const result = await signUp.email({
-        name: sanitizedName,
-        email: sanitizedEmail,
-        password: password,
+      // Call NEW OTP-based signup endpoint
+      const signupResponse = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: sanitizedName,
+          email: sanitizedEmail,
+          mobile: `+91${sanitizedPhone}`,
+          password: password,
+          role: selectedRole,
+        }),
+        credentials: 'include',
       });
 
-      if (result.error) {
-        const errorMsg = result.error.message ?? 'Could not create account. Please try again.';
+      if (!signupResponse.ok) {
+        const errorData = await signupResponse.json().catch(() => ({})) as { error?: string };
+        const errorMsg = errorData.error || 'Failed to create account. Please try again.';
         setError(errorMsg);
-        // Enhanced logging for debugging
-        console.error('❌ Signup error details:', {
-          message: result.error.message,
-          code: (result.error as any).code,
-          status: (result.error as any).status,
-          fullError: result.error,
-        });
+        console.error('Signup error:', errorMsg);
+        setLoading(false);
         return;
       }
 
-      console.log('Account created successfully, setting role...');
+      const signupData = await signupResponse.json();
+      console.log('✅ Signup successful:', signupData);
 
-      // Set the role and phone after signup
-      try {
-        const roleResponse = await fetch('/api/auth/set-role-after-signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: sanitizedEmail,
-            role: selectedRole,
-            phone: sanitizedPhone
-          }),
-          credentials: 'include',
-        });
-
-        if (!roleResponse.ok) {
-          const errorData = await roleResponse.json().catch(() => ({})) as { error?: string };
-          const errorMsg = errorData.error || 'Failed to set role. Please try again.';
-          setError(errorMsg);
-          console.error('Failed to set role:', errorMsg);
-          return;
-        }
-      } catch (roleError) {
-        const errorMsg = roleError instanceof Error ? roleError.message : 'Error setting role';
-        setError(errorMsg);
-        console.error('Error setting role:', roleError);
+      if (!signupData.userId) {
+        setError('Failed to get user ID. Please try again.');
+        setLoading(false);
         return;
       }
 
+      // Store userId and move to OTP verification step
+      setUserId(signupData.userId);
+      setOtpSent(true);
+      setStep('otp-verification');
       trackSignup(selectedRole, 'email');
+      setLoading(false);
+    } catch (error) {
+      console.error('Signup exception:', error);
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
+  }
 
-      // Redirect straight to the role dashboard
+  async function handleOtpSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError('');
+
+    if (otp.length !== 6 || !/^\d+$/.test(otp)) {
+      setOtpError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      // Verify OTP
+      const verifyResponse = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          otp: otp,
+          verifyChannel: 'both',
+        }),
+        credentials: 'include',
+      });
+
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json().catch(() => ({})) as { error?: string };
+        const errorMsg = errorData.error || 'Failed to verify OTP. Please try again.';
+        setOtpError(errorMsg);
+        console.error('OTP verification error:', errorMsg);
+        setOtpLoading(false);
+        return;
+      }
+
+      const verifyData = await verifyResponse.json();
+      console.log('✅ OTP verified:', verifyData);
+
+      if (!verifyData.allVerified) {
+        setOtpError('Email and mobile verification incomplete. Please try again.');
+        setOtpLoading(false);
+        return;
+      }
+
+      // All verified - redirect to dashboard
       const dest = selectedRole === 'employer'
         ? '/employer/dashboard'
         : selectedRole === 'consultant'
@@ -173,10 +219,40 @@ export default function SignupPage() {
 
       navigate(dest, { replace: true });
     } catch (error) {
-      console.error('Signup exception:', error);
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('OTP verification exception:', error);
+      setOtpError('Something went wrong. Please try again.');
+      setOtpLoading(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    setOtpError('');
+    setOtpLoading(true);
+    try {
+      const resendResponse = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          otpType: 'signup',
+        }),
+        credentials: 'include',
+      });
+
+      if (!resendResponse.ok) {
+        const errorData = await resendResponse.json().catch(() => ({})) as { error?: string };
+        const errorMsg = errorData.error || 'Failed to resend OTP. Please try again.';
+        setOtpError(errorMsg);
+        setOtpLoading(false);
+        return;
+      }
+
+      setOtpError('OTP resent successfully. Check your email and SMS.');
+      setOtpLoading(false);
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      setOtpError('Failed to resend OTP. Please try again.');
+      setOtpLoading(false);
     }
   }
 
@@ -226,6 +302,7 @@ export default function SignupPage() {
 
           <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl shadow-black/30">
             <AnimatePresence mode="wait">
+              {/* ── Step 1: Role Selection ── */}
               {step === 'role' && (
                 <motion.div key="role" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
                   <h1 className="text-2xl font-black text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -367,7 +444,7 @@ export default function SignupPage() {
                           className="flex-1 bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">You can update this later in your profile</p>
+                      <p className="text-xs text-muted-foreground mt-1">You'll verify this via OTP</p>
                     </div>
 
                     <div>
@@ -379,7 +456,7 @@ export default function SignupPage() {
                           onChange={e => setPassword(e.target.value)}
                           required
                           minLength={8}
-                          placeholder="Min. 8 characters"
+                          placeholder="Min. 8 characters, 1 uppercase, 1 number, 1 special char"
                           className="w-full bg-muted border border-border rounded-xl px-4 py-3 pr-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                         />
                         <button type="button" onClick={() => setShowPassword(v => !v)}
@@ -417,14 +494,77 @@ export default function SignupPage() {
                   </form>
                 </motion.div>
               )}
+
+              {/* ── Step 3: OTP Verification ── */}
+              {step === 'otp-verification' && (
+                <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
+                  <button onClick={() => setStep('details')} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5">
+                    ← Back
+                  </button>
+
+                  <div className="mb-6">
+                    <h1 className="text-xl font-black text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
+                      Verify Your Account
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      We've sent a 6-digit OTP to your email and mobile number. Enter it below.
+                    </p>
+                  </div>
+
+                  {otpError && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
+                      <AlertCircle size={15} className="shrink-0" />
+                      {otpError}
+                    </motion.div>
+                  )}
+
+                  <form onSubmit={handleOtpSubmit} className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold text-foreground mb-1.5 block">6-Digit OTP</label>
+                      <input
+                        type="text"
+                        value={otp}
+                        onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                        placeholder="000000"
+                        maxLength={6}
+                        className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">Valid for 6 minutes. Check email and SMS.</p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={otpLoading || otp.length !== 6}
+                      className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                      {otpLoading
+                        ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
+                        : <><CheckCircle size={16} /> Verify OTP</>}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={otpLoading}
+                      className="w-full py-2 text-xs text-primary hover:underline transition-all disabled:opacity-60"
+                    >
+                      Didn't receive OTP? Resend
+                    </button>
+                  </form>
+                </motion.div>
+              )}
             </AnimatePresence>
 
-            <div className="mt-6 pt-6 border-t border-border text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
-              </p>
-            </div>
+            {step !== 'otp-verification' && (
+              <div className="mt-6 pt-6 border-t border-border text-center">
+                <p className="text-sm text-muted-foreground">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

@@ -7,7 +7,7 @@ import { trackSignup } from '@/lib/analytics';
 import { validateEmail, sanitizeInput } from '@/lib/validation';
 
 type Role = 'employer' | 'consultant' | 'candidate';
-type Step = 'role' | 'details' | 'success';
+type Step = 'role' | 'details' | 'otp' | 'success';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
   {
@@ -40,9 +40,10 @@ export default function SignupFreshPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   function handleRoleSelect(role: Role) {
     setSelectedRole(role);
@@ -79,37 +80,77 @@ export default function SignupFreshPage() {
     try {
       trackSignup(selectedRole, 'email');
 
-      // Generate default password: FirstName@1234
-      const firstName = sanitizedName.split(' ')[0];
-      const autoPassword = `${firstName}@1234`;
-
-      // Call signup endpoint with auto-generated password
-      const response = await fetch('/api/auth/sign-up', {
+      // Call OTP-based signup endpoint
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: sanitizedEmail,
-          password: autoPassword,
           name: sanitizedName,
           role: selectedRole,
         }),
         credentials: 'include',
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Signup failed');
+        throw new Error(data.message || 'Signup failed');
       }
 
-      setGeneratedPassword(autoPassword);
-      setStep('success');
-
-      // Redirect to login after 5 seconds
-      setTimeout(() => {
-        navigate('/login', { replace: true });
-      }, 5000);
+      setUserId(data.userId);
+      setStep('otp');
+      setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyOTP(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    if (!userId) {
+      setError('Invalid signup session');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          otp: otp.toUpperCase(),
+          type: 'signup',
+        }),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Invalid or expired code');
+        setLoading(false);
+        return;
+      }
+
+      setStep('success');
+      setLoading(false);
+
+      // Redirect to login after 3 seconds
+      setTimeout(() => {
+        navigate('/auth/login-fresh', { replace: true });
+      }, 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify code');
       setLoading(false);
     }
   }
@@ -260,6 +301,89 @@ export default function SignupFreshPage() {
               </motion.div>
             )}
 
+            {step === 'otp' && (
+              <motion.div
+                key="otp"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <button
+                    onClick={() => setStep('details')}
+                    className="text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors"
+                  >
+                    ← Back
+                  </button>
+
+                  <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold text-[#FF6B35]">Verify Your Email</h2>
+                    <p className="text-gray-400 text-sm mt-1">We've sent a 6-digit code to {email}</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleVerifyOTP} className="space-y-4">
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2 items-start"
+                    >
+                      <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-red-200 text-sm">{error}</p>
+                    </motion.div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Verification Code</label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.toUpperCase().replace(/[^0-9]/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors text-center text-2xl tracking-widest font-mono"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={loading || otp.length !== 6}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify Code'
+                    )}
+                  </motion.button>
+
+                  <div className="text-center text-sm">
+                    <span className="text-gray-400">Didn't get the code? </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (userId) {
+                          // Could call resend-otp endpoint here
+                          setError('Check your email and SMS for the verification code');
+                        }
+                      }}
+                      className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold"
+                    >
+                      Resend
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
             {step === 'success' && (
               <motion.div
                 key="success"
@@ -276,8 +400,8 @@ export default function SignupFreshPage() {
                   >
                     <CheckCircle size={64} className="text-green-500" />
                   </motion.div>
-                  <h2 className="text-2xl font-bold text-[#FF6B35] mb-2">Account Created!</h2>
-                  <p className="text-gray-300 mb-6">Your account is ready. Use your default password to login.</p>
+                  <h2 className="text-2xl font-bold text-[#FF6B35] mb-2">Account Verified!</h2>
+                  <p className="text-gray-300 mb-6">Your account has been successfully created and verified.</p>
                 </div>
 
                 <div className="bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg p-4 space-y-3">
@@ -286,8 +410,8 @@ export default function SignupFreshPage() {
                     <p className="text-white font-mono text-sm">{email}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Default Password</p>
-                    <p className="text-[#FF6B35] font-mono font-bold text-sm">{generatedPassword}</p>
+                    <p className="text-xs text-gray-400 mb-1">Role</p>
+                    <p className="text-[#FF6B35] font-semibold capitalize text-sm">{selectedRole}</p>
                   </div>
                 </div>
 
@@ -296,7 +420,7 @@ export default function SignupFreshPage() {
                 </div>
 
                 <Link
-                  to="/login"
+                  to="/auth/login-fresh"
                   className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] text-white font-bold py-2 px-4 rounded-lg transition-all text-center block"
                 >
                   Go to Login

@@ -1,14 +1,12 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
-import { signIn } from '@/lib/auth/auth-client';
 import { validateEmail } from '@/lib/validation';
 
 export default function LoginFreshPage() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,19 +34,34 @@ export default function LoginFreshPage() {
 
     setLoading(true);
     try {
-      await signIn.email(
-        { email: email.toLowerCase(), password },
-        {
-          onSuccess: () => {
-            const from = (location.state as any)?.from?.pathname || '/employer/dashboard';
-            navigate(from, { replace: true });
-          },
-          onError: (error) => {
-            setError(error.message || 'Invalid email or password');
-            setLoading(false);
-          },
-        }
-      );
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Invalid email or password');
+        setLoading(false);
+        return;
+      }
+
+      // Store session token
+      localStorage.setItem('sessionToken', data.sessionToken);
+      localStorage.setItem('userId', data.userId);
+
+      // Redirect based on role
+      const dashboardRoutes: Record<string, string> = {
+        employer: '/employer/dashboard',
+        consultant: '/consultant/dashboard',
+        candidate: '/candidate/profile',
+      };
+
+      const redirectPath = dashboardRoutes[data.user.role] || '/employer/dashboard';
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
@@ -75,15 +88,23 @@ export default function LoginFreshPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send reset email');
+        throw new Error('Failed to send password reset code');
       }
 
-      setForgotMessage('✅ Password reset to FirstName@1234. You can now login.');
+      const data = await response.json();
+
+      // Store userId for OTP verification next
+      localStorage.setItem('resetUserId', data.userId);
+
+      setForgotMessage('✅ Password reset code sent! Check your email and SMS for a 6-digit code.');
       setForgotEmail('');
+
+      // Navigate to OTP verification page
       setTimeout(() => {
-        setShowForgotPassword(false);
-        setForgotMessage('');
-      }, 3000);
+        navigate('/auth/reset-password-fresh', {
+          state: { userId: data.userId, fromForgot: true }
+        });
+      }, 2000);
     } catch (err) {
       setForgotMessage('❌ ' + (err instanceof Error ? err.message : 'An error occurred'));
     } finally {
@@ -207,7 +228,7 @@ export default function LoginFreshPage() {
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Enter your email address to reset your password to FirstName@1234.
+                      Enter your email address. We'll send you a verification code via email and SMS to reset your password.
                     </p>
                   </div>
 

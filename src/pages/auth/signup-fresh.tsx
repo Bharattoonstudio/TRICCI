@@ -7,7 +7,7 @@ import { trackSignup } from '@/lib/analytics';
 import { validateEmail, sanitizeInput } from '@/lib/validation';
 
 type Role = 'employer' | 'consultant' | 'candidate';
-type Step = 'role' | 'details' | 'otp' | 'success';
+type Step = 'role' | 'details' | 'success';
 
 const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
   {
@@ -40,10 +40,9 @@ export default function SignupFreshPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
 
   function handleRoleSelect(role: Role) {
     setSelectedRole(role);
@@ -53,6 +52,7 @@ export default function SignupFreshPage() {
   function handleBackToRole() {
     setStep('role');
     setSelectedRole(null);
+    setError('');
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -64,6 +64,7 @@ export default function SignupFreshPage() {
     // Sanitize inputs
     const sanitizedName = sanitizeInput(name);
     const sanitizedEmail = sanitizeInput(email).toLowerCase();
+    const sanitizedPassword = sanitizeInput(password);
 
     // Validate
     if (!sanitizedName.trim()) {
@@ -76,16 +77,22 @@ export default function SignupFreshPage() {
       return;
     }
 
+    if (sanitizedPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setLoading(true);
     try {
       trackSignup(selectedRole, 'email');
 
-      // Call OTP-based signup endpoint
-      const response = await fetch('/api/auth/signup', {
+      // FIXED: Call BetterAuth sign-up endpoint with password
+      const response = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: sanitizedEmail,
+          password: sanitizedPassword,
           name: sanitizedName,
           role: selectedRole,
         }),
@@ -95,62 +102,29 @@ export default function SignupFreshPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
+        throw new Error(data.error || data.message || 'Signup failed');
       }
 
-      setUserId(data.userId);
-      setStep('otp');
-      setLoading(false);
+      // BetterAuth returns user and session
+      if (data.user && data.session) {
+        // Store session data
+        localStorage.setItem('sessionToken', data.session.token || '');
+        localStorage.setItem('userId', data.user.id);
+
+        setStep('success');
+
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          const dashboardRoutes: Record<Role, string> = {
+            employer: '/employer/dashboard',
+            consultant: '/consultant/dashboard',
+            candidate: '/candidate/profile',
+          };
+          navigate(dashboardRoutes[selectedRole], { replace: true });
+        }, 2000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-      setLoading(false);
-    }
-  }
-
-  async function handleVerifyOTP(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-
-    if (!otp || otp.length !== 6) {
-      setError('Please enter a valid 6-digit code');
-      return;
-    }
-
-    if (!userId) {
-      setError('Invalid signup session');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          otp: otp.toUpperCase(),
-          type: 'signup',
-        }),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || 'Invalid or expired code');
-        setLoading(false);
-        return;
-      }
-
-      setStep('success');
-      setLoading(false);
-
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/auth/login-fresh', { replace: true });
-      }, 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to verify code');
       setLoading(false);
     }
   }
@@ -163,34 +137,34 @@ export default function SignupFreshPage() {
 
       <div className="min-h-screen bg-gradient-to-b from-[#1A0A00] to-[#2D1810] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <AnimatePresence mode="wait">
-            {step === 'role' && (
-              <motion.div
-                key="role-selection"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <h1 className="text-3xl font-bold text-[#FF6B35] mb-2">Join TRICCI</h1>
-                  <p className="text-gray-300">Select your role to get started</p>
-                </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-[#FF6B35] mb-2">
+                {step === 'success' ? 'Welcome to TRICCI!' : 'Join TRICCI'}
+              </h1>
+              <p className="text-gray-300">
+                {step === 'role' && 'Choose your role to get started'}
+                {step === 'details' && 'Create your account'}
+                {step === 'success' && 'Your account is ready'}
+              </p>
+            </div>
 
-                <div className="space-y-3">
+            <AnimatePresence mode="wait">
+              {step === 'role' && (
+                <motion.div key="role" initial={{ opacity: 0 }} exit={{ opacity: 0 }} className="space-y-3">
                   {ROLES.map((role) => (
                     <motion.button
                       key={role.id}
                       onClick={() => handleRoleSelect(role.id)}
                       whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full p-4 bg-[#2D1810] border-2 border-[#FF6B35]/30 rounded-lg hover:border-[#FF6B35] hover:bg-[#3D2810] transition-all text-left group"
+                      className="w-full p-4 border border-white/10 rounded-lg hover:border-[#FF6B35]/50 bg-white/5 hover:bg-white/10 transition text-left"
                     >
                       <div className="flex items-start gap-3">
-                        <role.icon
-                          size={24}
-                          className="text-[#FF6B35] group-hover:text-[#FF8A5B] transition-colors mt-1"
-                        />
+                        <role.icon size={24} style={{ color: role.color }} className="flex-shrink-0 mt-1" />
                         <div>
                           <h3 className="font-semibold text-white">{role.label}</h3>
                           <p className="text-sm text-gray-400">{role.description}</p>
@@ -198,42 +172,11 @@ export default function SignupFreshPage() {
                       </div>
                     </motion.button>
                   ))}
-                </div>
+                </motion.div>
+              )}
 
-                <div className="text-center text-sm">
-                  <span className="text-gray-400">Already have an account? </span>
-                  <Link to="/login" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
-                    Sign in
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 'details' && (
-              <motion.div
-                key="details"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <div>
-                  <button
-                    onClick={handleBackToRole}
-                    className="text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors"
-                  >
-                    ← Back
-                  </button>
-
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-[#FF6B35]">Create Account</h2>
-                    <p className="text-gray-400 text-sm mt-1">
-                      As {selectedRole && ROLES.find((r) => r.id === selectedRole)?.label}
-                    </p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
+              {step === 'details' && (
+                <motion.form key="details" onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0 }} exit={{ opacity: 0 }}>
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
@@ -245,189 +188,77 @@ export default function SignupFreshPage() {
                     </motion.div>
                   )}
 
-                  {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your full name"
-                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
-                      disabled={loading}
+                      placeholder="John Doe"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                     />
                   </div>
 
-                  {/* Email */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
-                      disabled={loading}
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
+                  </div>
 
-                  {/* Submit Button */}
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
+                    className="w-full py-2 bg-[#FF6B35] hover:bg-[#ff5a1a] disabled:opacity-50 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Creating account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </motion.button>
-
-                  {/* Sign In Link */}
-                  <div className="text-center text-sm mt-4">
-                    <span className="text-gray-400">Already have an account? </span>
-                    <Link to="/login" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
-                      Sign in
-                    </Link>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
-            {step === 'otp' && (
-              <motion.div
-                key="otp"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <div>
-                  <button
-                    onClick={() => setStep('details')}
-                    className="text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors"
-                  >
-                    ← Back
+                    {loading && <Loader2 size={18} className="animate-spin" />}
+                    {loading ? 'Creating Account...' : 'Create Account'}
                   </button>
 
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-[#FF6B35]">Verify Your Email</h2>
-                    <p className="text-gray-400 text-sm mt-1">We've sent a 6-digit code to {email}</p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2 items-start"
-                    >
-                      <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-red-200 text-sm">{error}</p>
-                    </motion.div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Verification Code</label>
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.toUpperCase().replace(/[^0-9]/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      maxLength={6}
-                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors text-center text-2xl tracking-widest font-mono"
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <motion.button
-                    type="submit"
-                    disabled={loading || otp.length !== 6}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
+                  <button
+                    type="button"
+                    onClick={handleBackToRole}
+                    className="w-full text-center text-[#FF6B35] hover:text-[#ff5a1a] text-sm font-medium"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      'Verify Code'
-                    )}
-                  </motion.button>
+                    Back
+                  </button>
+                </motion.form>
+              )}
 
-                  <div className="text-center text-sm">
-                    <span className="text-gray-400">Didn't get the code? </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (userId) {
-                          // Could call resend-otp endpoint here
-                          setError('Check your email and SMS for the verification code');
-                        }
-                      }}
-                      className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold"
-                    >
-                      Resend
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
+              {step === 'success' && (
+                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
+                  <CheckCircle size={48} className="text-green-400 mx-auto mb-4" />
+                  <p className="text-gray-300 mb-6">Your account has been created successfully!</p>
+                  <p className="text-gray-400 text-sm">Redirecting to dashboard...</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {step === 'success' && (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="flex justify-center mb-4"
-                  >
-                    <CheckCircle size={64} className="text-green-500" />
-                  </motion.div>
-                  <h2 className="text-2xl font-bold text-[#FF6B35] mb-2">Account Verified!</h2>
-                  <p className="text-gray-300 mb-6">Your account has been successfully created and verified.</p>
-                </div>
-
-                <div className="bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg p-4 space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Email</p>
-                    <p className="text-white font-mono text-sm">{email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Role</p>
-                    <p className="text-[#FF6B35] font-semibold capitalize text-sm">{selectedRole}</p>
-                  </div>
-                </div>
-
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-                  <p className="text-blue-200 text-sm">Redirecting to login in a few seconds...</p>
-                </div>
-
-                <Link
-                  to="/auth/login-fresh"
-                  className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] text-white font-bold py-2 px-4 rounded-lg transition-all text-center block"
-                >
-                  Go to Login
+            {step === 'role' && (
+              <p className="text-center text-gray-400 text-sm">
+                Already have an account?{' '}
+                <Link to="/login" className="text-[#FF6B35] hover:text-[#ff5a1a] font-semibold">
+                  Sign In
                 </Link>
-              </motion.div>
+              </p>
             )}
-          </AnimatePresence>
+          </motion.div>
         </div>
       </div>
     </>

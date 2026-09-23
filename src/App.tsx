@@ -1,98 +1,33 @@
-import { lazy, Suspense, useEffect } from 'react';
-import {
-  Outlet,
-  RouterProvider,
-  createBrowserRouter,
-  useLocation,
-  type RouteObject,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 
-import CookieBannerErrorBoundary from '@/components/CookieBannerErrorBoundary';
-import RootLayout from './layouts/RootLayout';
-import Spinner from './components/Spinner';
-import { routes } from './routes';
-import { initAnalytics, trackPageView } from './lib/analytics';
-import { getAnalyticsConsent, onConsentChange } from './lib/analytics-consent';
+// Lazy load pages
+const SignupSecure = lazy(() => import('./pages/auth/signup-secure'));
+const LoginFresh = lazy(() => import('./pages/auth/login-fresh'));
+const ResetPasswordFresh = lazy(() => import('./pages/auth/reset-password-fresh'));
+const Dashboard = lazy(() => import('./pages/dashboard'));
+const Home = lazy(() => import('./pages/home'));
 
-const CookieBanner = lazy(() =>
-  import('@/components/CookieBanner').catch((error) => {
-    console.warn('Failed to load CookieBanner:', error);
-    return { default: () => null };
-  })
-);
-
-const SpinnerFallback = () => (
-  <div className="flex justify-center py-8 h-screen items-center">
-    <Spinner />
-  </div>
-);
-
-// ─── Analytics: init on consent, track page views on navigation ──────────────
-function AnalyticsTracker() {
-  const location = useLocation();
-
-  // Init GA4 if consent already given (returning visitor)
-  useEffect(() => {
-    if (getAnalyticsConsent()) initAnalytics();
-    // Listen for consent being granted/revoked during this session
-    const cleanup = onConsentChange((consented) => {
-      if (consented) initAnalytics();
-    });
-    return cleanup;
-  }, []);
-
-  // Fire page_view on every route change
-  useEffect(() => {
-    if (getAnalyticsConsent()) {
-      trackPageView(location.pathname + location.search);
-    }
-  }, [location]);
-
-  return null;
-}
-
-const rootElement = (
-  <Suspense fallback={<SpinnerFallback />}>
-    <AnalyticsTracker />
-    <RootLayout>
-      <Outlet />
-    </RootLayout>
-  </Suspense>
-);
-
-// Wrap the agent-editable flat `routes` array in a layout route so ScrollRestoration
-// + shared chrome live once above every page. Keeping the wrap here (instead of
-// in routes.tsx) preserves the agent's simple flat-route contract. The dev
-// boundary must live inside the route element so React Router doesn't replace it
-// with its default route error UI before our boundary can catch render errors.
-//
-// `captureGlobalErrors={false}`: the ROOT boundary in main.tsx owns the global
-// window.onerror/unhandledrejection handlers. This inner boundary only catches
-// route render errors via componentDidCatch — installing window handlers here
-// too would double-forward async errors and stack a second overlay.
-const routeTree: RouteObject[] = [
-  {
-    element: rootElement,
-    children: routes,
-  },
-];
-
-const router = createBrowserRouter(routeTree);
-
-export default function App() {
+function App() {
   return (
-    <>
-      <RouterProvider router={router} />
-      {/*
-        CookieBanner reads document.cookie and subscribes to browser events.
-        App.tsx is client-only (entry-server.tsx renders the route tree
-        directly without importing App), so no SSR gate is needed here.
-      */}
-      <CookieBannerErrorBoundary>
-        <Suspense fallback={null}>
-          <CookieBanner />
-        </Suspense>
-      </CookieBannerErrorBoundary>
-    </>
+    <Router>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Routes>
+          {/* Authentication Routes */}
+          <Route path="/signup" element={<SignupSecure />} />
+          <Route path="/login" element={<LoginFresh />} />
+          <Route path="/reset-password" element={<ResetPasswordFresh />} />
+
+          {/* Main Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+
+          {/* Catch all - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </Router>
   );
 }
+
+export default App;

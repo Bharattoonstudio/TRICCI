@@ -34,7 +34,8 @@ export default function LoginFreshPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
+      // FIXED: Call BetterAuth sign-in endpoint
+      const response = await fetch('/api/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase(), password }),
@@ -44,24 +45,29 @@ export default function LoginFreshPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Invalid email or password');
+        setError(data.error || data.message || 'Invalid email or password');
         setLoading(false);
         return;
       }
 
-      // Store session token
-      localStorage.setItem('sessionToken', data.sessionToken);
-      localStorage.setItem('userId', data.userId);
+      // BetterAuth returns session in response
+      if (data.user && data.session) {
+        // Store session data
+        localStorage.setItem('sessionToken', data.session.token || '');
+        localStorage.setItem('userId', data.user.id);
 
-      // Redirect based on role
-      const dashboardRoutes: Record<string, string> = {
-        employer: '/employer/dashboard',
-        consultant: '/consultant/dashboard',
-        candidate: '/candidate/profile',
-      };
+        // Redirect based on role
+        const dashboardRoutes: Record<string, string> = {
+          employer: '/employer/dashboard',
+          consultant: '/consultant/dashboard',
+          candidate: '/candidate/profile',
+        };
 
-      const redirectPath = dashboardRoutes[data.user.role] || '/employer/dashboard';
-      navigate(redirectPath, { replace: true });
+        const redirectPath = dashboardRoutes[data.user.role] || '/employer/dashboard';
+        navigate(redirectPath, { replace: true });
+      } else {
+        setError('Sign in successful but user data missing');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
@@ -79,8 +85,8 @@ export default function LoginFreshPage() {
 
     setForgotLoading(true);
     try {
-      // Call forgot password endpoint
-      const response = await fetch('/api/auth/forgot-password', {
+      // FIXED: Call BetterAuth forget-password endpoint
+      const response = await fetch('/api/auth/forget-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail.toLowerCase() }),
@@ -88,22 +94,17 @@ export default function LoginFreshPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send password reset code');
+        throw new Error('Failed to send password reset email');
       }
 
       const data = await response.json();
 
-      // Store userId for OTP verification next
-      localStorage.setItem('resetUserId', data.userId);
-
-      setForgotMessage('✅ Password reset code sent! Check your email and SMS for a 6-digit code.');
+      setForgotMessage('✅ Password reset email sent! Check your email for a reset link.');
       setForgotEmail('');
 
-      // Navigate to OTP verification page
+      // Clear form after 2 seconds
       setTimeout(() => {
-        navigate('/auth/reset-password-fresh', {
-          state: { userId: data.userId, fromForgot: true }
-        });
+        setShowForgotPassword(false);
       }, 2000);
     } catch (err) {
       setForgotMessage('❌ ' + (err instanceof Error ? err.message : 'An error occurred'));
@@ -151,32 +152,21 @@ export default function LoginFreshPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
-                      disabled={loading}
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                     />
                   </div>
 
                   {/* Password */}
                   <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium text-gray-300">Password</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowForgotPassword(true)}
-                        className="text-xs text-[#FF6B35] hover:text-[#FF8A5B] transition-colors"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
-                        className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors pr-10"
-                        disabled={loading}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                       />
                       <button
                         type="button"
@@ -188,92 +178,80 @@ export default function LoginFreshPage() {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <motion.button
+                  {/* Sign In Button */}
+                  <button
                     type="submit"
                     disabled={loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
+                    className="w-full py-2 bg-[#FF6B35] hover:bg-[#ff5a1a] disabled:opacity-50 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </motion.button>
+                    {loading && <Loader2 size={18} className="animate-spin" />}
+                    {loading ? 'Signing In...' : 'Sign In'}
+                  </button>
 
-                  {/* Sign Up Link */}
-                  <div className="text-center text-sm mt-4">
-                    <span className="text-gray-400">Don't have an account? </span>
-                    <Link to="/signup" className="text-[#FF6B35] hover:text-[#FF8A5B] font-semibold">
-                      Sign up
-                    </Link>
-                  </div>
+                  {/* Forgot Password Link */}
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="w-full text-center text-[#FF6B35] hover:text-[#ff5a1a] text-sm font-medium"
+                  >
+                    Forgot Password?
+                  </button>
                 </form>
+
+                {/* Sign Up Link */}
+                <p className="text-center text-gray-400 text-sm">
+                  Don't have an account?{' '}
+                  <Link to="/signup" className="text-[#FF6B35] hover:text-[#ff5a1a] font-semibold">
+                    Sign Up
+                  </Link>
+                </p>
               </>
             ) : (
               <>
-                {/* Forgot Password Form */}
-                <button
-                  onClick={() => setShowForgotPassword(false)}
-                  className="text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors"
-                >
-                  ← Back to login
-                </button>
+                {forgotMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`border rounded-lg p-3 ${
+                      forgotMessage.startsWith('✅')
+                        ? 'bg-green-500/10 border-green-500/30'
+                        : 'bg-red-500/10 border-red-500/30'
+                    }`}
+                  >
+                    <p className={forgotMessage.startsWith('✅') ? 'text-green-200' : 'text-red-200'} >
+                      {forgotMessage}
+                    </p>
+                  </motion.div>
+                )}
 
                 <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Enter your email address. We'll send you a verification code via email and SMS to reset your password.
-                    </p>
-                  </div>
-
-                  {forgotMessage && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`rounded-lg p-3 text-sm ${
-                        forgotMessage.startsWith('✅')
-                          ? 'bg-green-500/10 border border-green-500/30 text-green-200'
-                          : 'bg-red-500/10 border border-red-500/30 text-red-200'
-                      }`}
-                    >
-                      {forgotMessage}
-                    </motion.div>
-                  )}
-
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                     <input
                       type="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      className="w-full px-4 py-2 bg-[#2D1810] border border-[#FF6B35]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] transition-colors"
-                      disabled={forgotLoading}
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                     />
                   </div>
 
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={forgotLoading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-[#FF6B35] hover:bg-[#FF8A5B] disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 mt-6"
+                    className="w-full py-2 bg-[#FF6B35] hover:bg-[#ff5a1a] disabled:opacity-50 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition"
                   >
-                    {forgotLoading ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      'Reset Password'
-                    )}
-                  </motion.button>
+                    {forgotLoading && <Loader2 size={18} className="animate-spin" />}
+                    {forgotLoading ? 'Sending...' : 'Send Reset Email'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="w-full text-center text-[#FF6B35] hover:text-[#ff5a1a] text-sm font-medium"
+                  >
+                    Back to Sign In
+                  </button>
                 </form>
               </>
             )}

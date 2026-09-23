@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { lazy, Suspense } from 'react';
 
 // Lazy load pages
-const Home = lazy(() => import('./pages/home'));
+const HomePage = lazy(() => import('./pages/index'));
 const SignupFresh = lazy(() => import('./pages/auth/signup-fresh'));
 const LoginFresh = lazy(() => import('./pages/auth/login-fresh'));
 const ResetPasswordFresh = lazy(() => import('./pages/auth/reset-password-fresh'));
@@ -12,8 +12,8 @@ function App() {
     <Router>
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
-          {/* Home page - role selection landing */}
-          <Route path="/" element={<Home />} />
+          {/* Home page - marketing landing page */}
+          <Route path="/" element={<HomePage />} />
 
           {/* Authentication Routes - using new secure password-based auth */}
           <Route path="/signup" element={<SignupFresh />} />

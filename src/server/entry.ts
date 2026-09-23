@@ -13,10 +13,11 @@ import auth_action_get_19 from "./api/auth/[action]/GET";
 import auth_action_post_20 from "./api/auth/[action]/POST";
 import auth_action_detail_get_21 from "./api/auth/[action]/[detail]/GET";
 import auth_action_detail_post_22 from "./api/auth/[action]/[detail]/POST";
-import auth_login_post from "./api/auth/login/POST";
-import auth_forgot_password_post from "./api/auth/forgot-password/POST";
-import auth_reset_password_post from "./api/auth/reset-password/POST";
-import auth_resend_otp_post from "./api/auth/resend-otp/POST";
+// REMOVED: auth_verify_otp_post (line 16 - doesn't exist, not needed for password-based auth)
+// REMOVED: auth_login_post (line 17 - BetterAuth handles via [action] route)
+// REMOVED: auth_forgot_password_post (line 18 - BetterAuth handles via [action] route)
+// REMOVED: auth_reset_password_post (line 19 - BetterAuth handles via [action] route)
+// REMOVED: auth_resend_otp_post (line 20 - OTP not part of password-based auth)
 import candidate_applications_get_23 from "./api/candidate/applications/GET";
 import candidate_cv_parse_post_24, { multerMiddleware as candidate_cv_parse_post_24_upload } from "./api/candidate/cv-parse/POST";
 import candidate_cv_enhance_post from "./api/candidate/cv-enhance/POST";
@@ -239,10 +240,11 @@ app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);
 app.post("/api/auth/:action/:detail", auth_action_detail_post_22);
-app.post("/api/auth/login", auth_login_post);
-app.post("/api/auth/forgot-password", auth_forgot_password_post);
-app.post("/api/auth/reset-password", auth_reset_password_post);
-app.post("/api/auth/resend-otp", auth_resend_otp_post);
+// REMOVED: app.post("/api/auth/verify-otp", auth_verify_otp_post); - OTP not needed
+// REMOVED: app.post("/api/auth/login", auth_login_post); - BetterAuth handles via [action]
+// REMOVED: app.post("/api/auth/forgot-password", auth_forgot_password_post); - BetterAuth handles
+// REMOVED: app.post("/api/auth/reset-password", auth_reset_password_post); - BetterAuth handles (custom route also at line 247+)
+// REMOVED: app.post("/api/auth/resend-otp", auth_resend_otp_post); - OTP not needed
 app.get("/api/candidate/applications", candidate_applications_get_23);
 app.post("/api/candidate/cv-parse", candidate_cv_parse_post_24_upload, candidate_cv_parse_post_24);
 app.post("/api/candidate/cv-enhance", candidate_cv_enhance_post);
@@ -728,40 +730,3 @@ if (import.meta.env.PROD) {
 }
 
 export default app;
-
-// ── Exported helpers (used by entry.test.ts) ──────────────────────────────────
-
-export function renderSsrDocument(
-  template: string,
-  result: { head: string; html: string },
-  opts: { scriptHtml: string },
-): string {
-  const headContent = opts.scriptHtml
-    ? result.head + '\n' + opts.scriptHtml
-    : result.head;
-  return template
-    .replace('<!--app-head-->', () => headContent)
-    .replace('<!--app-html-->', () => result.html);
-}
-
-export function registerAdSenseTextRoutes(
-  expressApp: import('express').Express,
-  opts: { publisherId: string | null; scriptHtml: string; adsTxt: string | null; appAdsTxt: string | null },
-): void {
-  expressApp.get('/ads.txt', (_req, res) => {
-    res.type('text/plain').set('Cache-Control', 'no-cache');
-    if (opts.adsTxt) {
-      res.status(200).send(opts.adsTxt);
-    } else {
-      res.status(404).send('');
-    }
-  });
-  expressApp.get('/app-ads.txt', (_req, res) => {
-    res.type('text/plain').set('Cache-Control', 'no-cache');
-    if (opts.appAdsTxt) {
-      res.status(200).send(opts.appAdsTxt);
-    } else {
-      res.status(404).send('');
-    }
-  });
-}

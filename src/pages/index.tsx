@@ -1,9 +1,8 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link } from 'react-router-dom';
+import Header from '@/layouts/parts/Header';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { useRef, useState, useEffect } from 'react';
-import Header from '@/layouts/parts/Header';
-import LiveStatsCounters from '@/components/marketing/LiveStatsCounters';
 import {
   Building2, Star, User, ArrowRight, CheckCircle,
   Briefcase, TrendingUp, Shield, IndianRupee, Zap,
@@ -122,7 +121,7 @@ const AUDIENCES = [
 
   href: '/company',
   cta: 'See how it works',
-  img: '/assets/hero-main.png'
+  img: '/airo-assets/images/pages/home/hero'
 },
 {
   id: 'consultant',
@@ -238,20 +237,19 @@ function HeroAudienceSwitcher() {
 
   return (
     <>
-    <Header />
     <motion.div
       className="relative z-20 text-center px-5 max-w-4xl mx-auto w-full"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.15 }}>
-      
+
       {/* ── universal eyebrow ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
         className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/8 backdrop-blur-md text-white/70 text-xs font-bold tracking-widest uppercase mb-5">
-        
+
         <Sparkles size={10} className="text-orange-400" />
         India&rsquo;s Recruitment Marketplace
       </motion.div>
@@ -296,7 +294,7 @@ function HeroAudienceSwitcher() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.4 }}
         className="text-base md:text-lg font-semibold text-white/60 mb-6 tracking-wide">
-        
+
         One platform. Three sides. We Make It Easy.
       </motion.p>
 
@@ -306,7 +304,7 @@ function HeroAudienceSwitcher() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
         className="flex justify-center gap-2 mb-5">
-        
+
         {HERO_AUDIENCES.map((a, i) =>
         <button
           key={a.id}
@@ -333,7 +331,7 @@ function HeroAudienceSwitcher() {
           transition={{ duration: 0.3, ease: 'easeOut' as const }}
           className="rounded-2xl border bg-white/6 backdrop-blur-md px-6 py-5 max-w-2xl mx-auto"
           style={{ borderColor: `${aud.color}45` }}>
-          
+
           {/* audience sub-headline */}
           <p className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-3 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             {aud.headline[0]}{' '}
@@ -346,7 +344,7 @@ function HeroAudienceSwitcher() {
             <span
               key={pill}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white/70 border border-white/15 bg-white/6">
-              
+
                 <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: aud.color }} />
                 {pill}
               </span>
@@ -363,13 +361,13 @@ function HeroAudienceSwitcher() {
               to={aud.cta.href}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs text-white transition-all duration-300 hover:scale-105"
               style={{ background: `linear-gradient(135deg, ${aud.color} 0%, ${aud.color}bb 100%)`, boxShadow: `0 6px 18px -4px ${aud.color}50` }}>
-              
+
               {aud.cta.label} <ArrowRight size={13} />
             </Link>
             <Link
               to={aud.ctaSecondary.href}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs text-white/65 border border-white/18 bg-white/5 hover:bg-white/12 transition-all duration-300">
-              
+
               {aud.ctaSecondary.label}
             </Link>
           </div>
@@ -478,7 +476,7 @@ function AudienceCard({ a, i }: {a: typeof AUDIENCES[0];i: number;}) {
       onMouseLeave={() => setHovered(false)}
       className="group flex flex-col md:flex-row overflow-hidden rounded-3xl border border-border bg-card shadow-sm hover:shadow-2xl transition-all duration-500"
       style={{ boxShadow: hovered ? `0 24px 64px -12px ${a.color}20` : undefined }}>
-      
+
       <div className={`relative w-full md:w-[42%] shrink-0 overflow-hidden ${isEven ? '' : 'md:order-2'}`}>
         <div className="absolute top-0 left-0 right-0 h-1 z-10" style={{ backgroundColor: a.color }} />
         <img
@@ -488,12 +486,12 @@ function AudienceCard({ a, i }: {a: typeof AUDIENCES[0];i: number;}) {
           loading="lazy"
           width={480}
           height={360} />
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
         <div
           className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white backdrop-blur-md"
           style={{ backgroundColor: `${a.color}cc` }}>
-          
+
           <a.icon size={12} />
           {a.label}
         </div>
@@ -520,7 +518,7 @@ function AudienceCard({ a, i }: {a: typeof AUDIENCES[0];i: number;}) {
             to={a.href}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ background: `linear-gradient(135deg, ${a.color} 0%, ${a.color}cc 100%)` }}>
-            
+
             {a.cta} <ArrowRight size={14} />
           </Link>
         </div>
@@ -556,13 +554,18 @@ export default function MarketingHomePage() {
         <script type="application/ld+json">{JSON.stringify(JSON_LD)}</script>
       </Helmet>
 
-      {/* ══════════════════════════════════════════════════════════════
+      {/* ═══════════════════════════════════════════════════════════════
+           STICKY HEADER AT TOP
+        ═══════════════════════════════════════════════════════════════ */}
+      <Header />
+
+      {/* ═══════════════════════════════════════════════════════════════
            1. HERO — cinematic video + audience switcher
-        ══════════════════════════════════════════════════════════════ */}
+        ═══════════════════════════════════════════════════════════════ */}
       <section ref={heroRef} className="relative h-screen min-h-[680px] max-h-[1000px] overflow-hidden flex items-center justify-center">
         <motion.div className="absolute inset-0 z-0" style={{ scale: videoScale }}>
           <img
-            src="/assets/hero-main.png"
+            src="/airo-assets/images/pages/home/hero"
             alt="TRICCI recruitment platform — India's smartest hiring marketplace"
             className="w-full h-full object-cover"
             fetchPriority="high"
@@ -587,7 +590,7 @@ export default function MarketingHomePage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4, duration: 0.6 }}
           className="absolute bottom-28 md:bottom-32 left-1/2 -translate-x-1/2 z-20">
-          
+
           <motion.div animate={{ y: [0, 7, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' as const }}>
             <ChevronDown size={20} className="text-white/35" />
           </motion.div>
@@ -602,7 +605,7 @@ export default function MarketingHomePage() {
           animate={{ x: ['0%', '-50%'] }}
           transition={{ duration: 24, repeat: Infinity, ease: 'linear' as const }}
           className="flex gap-8 whitespace-nowrap w-max">
-          
+
           {[...TRUST_ITEMS, ...TRUST_ITEMS].map((item, i) =>
           <span key={i} className="flex items-center gap-3 text-xs font-bold text-white/90 uppercase tracking-widest">
               <span className="w-1.5 h-1.5 rounded-full bg-white/50 shrink-0" />
@@ -622,7 +625,7 @@ export default function MarketingHomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            
+
             {[
             { text: 'Right Talent', color: ORANGE },
             { text: 'Right Time', color: VIOLET },
@@ -644,13 +647,6 @@ export default function MarketingHomePage() {
         </div>
       </section>
 
-      {/* ── Live Stats Counters (points 78-79) ── */}
-      <section className="py-16 bg-background border-b border-border">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <LiveStatsCounters />
-        </div>
-      </section>
-
       {/* ══════════════════════════════════════════════════════════════
            4. AUDIENCE CARDS
         ══════════════════════════════════════════════════════════════ */}
@@ -661,7 +657,7 @@ export default function MarketingHomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-14">
-            
+
             <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary mb-3">
               One Platform. Three Sides.
             </span>
@@ -689,7 +685,7 @@ export default function MarketingHomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-12">
-            
+
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary mb-3">
               <Sparkles size={12} /> Powered by AI
             </span>
@@ -713,7 +709,7 @@ export default function MarketingHomePage() {
                 { backgroundColor: tab.color, color: '#fff', borderColor: tab.color, boxShadow: `0 8px 24px -4px ${tab.color}40` } :
                 { backgroundColor: 'transparent', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--border))' }
                 }>
-                
+
                   <tab.icon size={15} />
                   {tab.tag}
                 </button>
@@ -731,7 +727,7 @@ export default function MarketingHomePage() {
                   exit={{ opacity: 0, y: -16 }}
                   transition={{ duration: 0.35, ease: 'easeOut' as const }}
                   className="flex flex-col md:flex-row">
-                  
+
                       <div className="relative w-full md:w-1/2 shrink-0 overflow-hidden">
                         <img
                       src={tab.img}
@@ -740,13 +736,13 @@ export default function MarketingHomePage() {
                       loading="lazy"
                       width={600}
                       height={420} />
-                    
+
                         <div className="absolute inset-0 opacity-25"
                     style={{ background: `radial-gradient(ellipse at top left, ${tab.color} 0%, transparent 60%)` }} />
                         <div
                       className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white backdrop-blur-md"
                       style={{ backgroundColor: `${tab.color}dd` }}>
-                      
+
                           <tab.icon size={12} />
                           {tab.tag}
                         </div>
@@ -755,7 +751,7 @@ export default function MarketingHomePage() {
                         <div
                       className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6 shrink-0 self-start"
                       style={{ background: `${tab.color}12`, border: `1.5px solid ${tab.color}30` }}>
-                      
+
                           <tab.icon size={26} style={{ color: tab.color }} />
                         </div>
                         <h3 className="text-2xl md:text-3xl font-black text-foreground mb-4 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -766,7 +762,7 @@ export default function MarketingHomePage() {
                       to="/signup"
                       className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white self-start transition-all duration-300 hover:scale-105 hover:shadow-lg"
                       style={{ background: `linear-gradient(135deg, ${tab.color} 0%, ${tab.color}cc 100%)` }}>
-                      
+
                           Get started free <ArrowRight size={14} />
                         </Link>
                       </div>
@@ -791,7 +787,7 @@ export default function MarketingHomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 className="mb-10">
-                
+
                 <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary mb-3">Why TRICCI</span>
                 <h2 className="text-3xl md:text-4xl font-black text-foreground mb-3 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                   Built to solve what
@@ -809,11 +805,11 @@ export default function MarketingHomePage() {
                   transition={{ duration: 0.4, delay: i * 0.06, ease: 'easeOut' as const }}
                   whileHover={{ y: -4, transition: { duration: 0.18 } }}
                   className="p-5 rounded-2xl border border-border bg-card hover:border-primary/20 hover:shadow-lg transition-all duration-300 cursor-default">
-                  
+
                     <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
                     style={{ background: `${w.color}10`, border: `1.5px solid ${w.color}25` }}>
-                    
+
                       <w.icon size={18} style={{ color: w.color }} />
                     </div>
                     <h3 className="font-black text-foreground mb-1 text-sm" style={{ fontFamily: 'var(--font-heading)' }}>{w.title}</h3>
@@ -829,7 +825,7 @@ export default function MarketingHomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: 'easeOut' as const }}
               className="w-full lg:w-[380px] shrink-0">
-              
+
               <div className="relative rounded-3xl overflow-hidden shadow-2xl">
                 <img
                   src="/airo-assets/images/pages/home/social-proof-companies"
@@ -838,7 +834,7 @@ export default function MarketingHomePage() {
                   loading="lazy"
                   width={380}
                   height={520} />
-                
+
                 <div className="absolute inset-0 opacity-15"
                 style={{ background: `radial-gradient(ellipse at bottom right, ${ORANGE} 0%, transparent 60%)` }} />
                 <div className="absolute bottom-5 left-5 right-5 p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-white/60 shadow-lg">
@@ -863,7 +859,7 @@ export default function MarketingHomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-16">
-            
+
             <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary mb-3">Simple Process</span>
             <h2 className="text-3xl md:text-5xl font-black text-foreground mb-3 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
               Three steps.
@@ -883,11 +879,11 @@ export default function MarketingHomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.15, ease: 'easeOut' as const }}
               className="flex flex-col items-center text-center">
-              
+
                 <div
                 className="relative w-[104px] h-[104px] rounded-3xl flex flex-col items-center justify-center mb-6 bg-card border-2 z-10 shadow-lg"
                 style={{ borderColor: s.color }}>
-                
+
                   <span className="text-2xl font-black leading-none mb-1" style={{ color: s.color, fontFamily: 'var(--font-heading)' }}>
                     {s.n}
                   </span>
@@ -906,12 +902,12 @@ export default function MarketingHomePage() {
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
             className="mt-14 text-center">
-            
+
             <Link
               to="/signup"
               className="inline-flex items-center gap-2 px-10 py-4 rounded-2xl font-bold text-sm text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/30"
               style={{ background: `linear-gradient(135deg, ${ORANGE} 0%, #c73d09 100%)` }}>
-              
+
               Start for Free &mdash; It&rsquo;s Easy <ArrowRight size={15} />
             </Link>
           </motion.div>
@@ -933,11 +929,11 @@ export default function MarketingHomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}>
-            
+
             <div
               className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 mx-auto"
               style={{ background: `${ORANGE}12`, border: `1.5px solid ${ORANGE}30` }}>
-              
+
               <Sparkles size={28} style={{ color: ORANGE }} />
             </div>
 
@@ -947,7 +943,7 @@ export default function MarketingHomePage() {
             <h2
               className="text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight"
               style={{ fontFamily: 'var(--font-heading)' }}>
-              
+
               Ready to make
               <br />
               recruitment <span style={{ color: ORANGE }}>TRICCI</span>?
@@ -962,13 +958,13 @@ export default function MarketingHomePage() {
                 to="/signup"
                 className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl font-bold text-sm text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/30"
                 style={{ background: `linear-gradient(135deg, ${ORANGE} 0%, #c73d09 100%)` }}>
-                
+
                 Create Free Account <ArrowRight size={15} />
               </Link>
               <Link
                 to="/jobs"
                 className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-muted transition-all duration-300">
-                
+
                 Browse Open Jobs
               </Link>
             </div>

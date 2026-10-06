@@ -239,6 +239,7 @@ function HeroAudienceSwitcher() {
   return (
     <>
     <Header />
+    <div>
     <motion.div
       className="relative z-20 text-center px-5 max-w-4xl mx-auto w-full"
       initial={{ opacity: 0, y: 30 }}

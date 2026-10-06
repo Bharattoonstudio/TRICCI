@@ -60,7 +60,8 @@ export default function SignupFreshPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/sign-up', {
+      // ✅ CORRECTED: Use 'signup' instead of 'sign-up' (BetterAuth camelCase format)
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

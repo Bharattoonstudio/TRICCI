@@ -1,134 +1,145 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { AlertCircle, Loader2, Building2, Star, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { trackSignup } from '@/lib/analytics';
+import { validateEmail, sanitizeInput } from '@/lib/validation';
 
-export default function SignupFresh() {
+type Role = 'employer' | 'consultant' | 'candidate';
+type Step = 'role' | 'details' | 'success';
+
+const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
+  {
+    id: 'employer',
+    label: 'I\'m a Hiring Company',
+    description: 'Post roles and find talent',
+    icon: Building2,
+    color: '#35c9ff',
+  },
+  {
+    id: 'consultant',
+    label: 'I\'m a Recruitment Consultant',
+    description: 'Access mandates and earn commissions',
+    icon: Star,
+    color: '#FF6B35',
+  },
+  {
+    id: 'candidate',
+    label: 'I\'m a Job Seeker',
+    description: 'Upload CV and find opportunities',
+    icon: User,
+    color: '#ffd035',
+  },
+];
+
+const roleRoutes: Record<Role, string> = {
+  employer: '/employer/dashboard',
+  consultant: '/consultant/dashboard',
+  candidate: '/candidate/profile',
+};
+
+export default function SignupFreshPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'role' | 'details'>('role');
-  const [role, setRole] = useState<'employer' | 'consultant' | 'candidate' | ''>('');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+
+  const [step, setStep] = useState<Step>('role');
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleRoleSelect = (selectedRole: 'employer' | 'consultant' | 'candidate') => {
-    setRole(selectedRole);
+  function handleRoleSelect(role: Role) {
+    setSelectedRole(role);
     setStep('details');
+  }
+
+  function handleBackToRole() {
+    setStep('role');
+    setSelectedRole(null);
     setError('');
-  };
+  }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      setError('Name is required');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!selectedRole) return;
+
     setError('');
 
-    if (!validateForm()) {
+    // Sanitize inputs
+    const sanitizedName = sanitizeInput(name);
+    const sanitizedEmail = sanitizeInput(email).toLowerCase();
+
+    // Validate
+    if (!sanitizedName.trim()) {
+      setError('Name is required');
+      return;
+    }
+
+    if (!validateEmail(sanitizedEmail)) {
+      setError('Valid email is required');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
     setLoading(true);
-
     try {
-      // ✅ CORRECT BetterAuth endpoint: /api/auth/sign-up
+      trackSignup(selectedRole, 'email');
+
+      // Call BetterAuth sign-up endpoint
       const response = await fetch('/api/auth/sign-up', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          password: formData.password,
-          role: role,
+          email: sanitizedEmail,
+          password: password,
+          name: sanitizedName,
+          role: selectedRole,
         }),
+        credentials: 'include',
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error?.message || 'Signup failed. Please try again.');
-        return;
+        throw new Error(data.message || data.error || 'Signup failed');
       }
 
-      // Store session token
-      if (data.token) {
-        localStorage.setItem('sessionToken', data.token);
+      // Store session token and user role
+      if (data.session?.token) {
+        localStorage.setItem('sessionToken', data.session.token);
       }
-      if (data.userId) {
-        localStorage.setItem('userId', data.userId);
+      if (data.user?.id) {
+        localStorage.setItem('userId', data.user.id);
       }
-      if (data.user) {
-        localStorage.setItem('userRole', role);
-      }
+      localStorage.setItem('userRole', selectedRole);
 
-      // Redirect based on role
-      if (role === 'employer') {
-        navigate('/employer/dashboard');
-      } else if (role === 'consultant') {
-        navigate('/consultant/dashboard');
-      } else if (role === 'candidate') {
-        navigate('/candidate/profile');
-      } else {
-        navigate('/');
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
-    } finally {
+      // Show success and redirect
+      setStep('success');
+      setLoading(false);
+
+      // Redirect to role-specific dashboard after 2 seconds
+      setTimeout(() => {
+        navigate(roleRoutes[selectedRole], { replace: true });
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
     }
-  };
-
-  const roleOptions = [
-    {
-      value: 'employer' as const,
-      label: 'I\'m a Hiring Company',
-      description: 'Post roles and find talent',
-    },
-    {
-      value: 'consultant' as const,
-      label: 'I\'m a Recruitment Consultant',
-      description: 'Access mandates and earn commissions',
-    },
-    {
-      value: 'candidate' as const,
-      label: 'I\'m a Job Seeker',
-      description: 'Upload CV and find opportunities',
-    },
-  ];
+  }
 
   return (
     <>
@@ -137,169 +148,211 @@ export default function SignupFresh() {
         <meta name="description" content="Create your TRICCI account" />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-        <div className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <motion.div
+          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Join TRICCI</h1>
+            <h1 className="text-4xl font-bold text-white mb-2">Join TRICCI</h1>
             <p className="text-gray-400">Get started in minutes</p>
           </div>
 
-          {/* Error Alert */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Role Selection */}
-          {step === 'role' ? (
-            <div className="space-y-3">
-              {roleOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleRoleSelect(option.value)}
-                  className="w-full p-4 text-left border border-slate-600 hover:border-orange-500 hover:bg-slate-700/50 rounded-lg transition-all duration-200"
-                >
-                  <p className="font-semibold text-white">{option.label}</p>
-                  <p className="text-sm text-gray-400">{option.description}</p>
-                </button>
-              ))}
-            </div>
-          ) : (
-            // Signup Form
-            <form onSubmit={handleSignup} className="space-y-4">
-              {/* Back Button */}
-              <button
-                type="button"
-                onClick={() => setStep('role')}
-                className="text-orange-400 hover:text-orange-300 text-sm font-medium mb-4"
+          {/* Content */}
+          <AnimatePresence mode="wait">
+            {step === 'role' && (
+              <motion.div
+                key="role"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-4"
               >
-                ← Back to role selection
-              </button>
+                {ROLES.map((role) => (
+                  <motion.button
+                    key={role.id}
+                    onClick={() => handleRoleSelect(role.id)}
+                    className="w-full p-4 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-800/50 transition text-left"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <role.icon className="w-6 h-6 mt-1" style={{ color: role.color }} />
+                      <div>
+                        <p className="font-semibold text-white">{role.label}</p>
+                        <p className="text-sm text-gray-400">{role.description}</p>
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
 
-              {/* Selected Role */}
-              <div className="p-3 bg-slate-700 rounded-lg">
-                <p className="text-sm text-gray-300">
-                  Selected: <span className="font-semibold text-orange-400 capitalize">{role}</span>
+                <p className="text-center text-gray-400 mt-6">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-orange-500 hover:text-orange-400">
+                    Sign In
+                  </Link>
                 </p>
-              </div>
+              </motion.div>
+            )}
 
-              {/* Name */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                  Full Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="John Doe"
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  required
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                  Email Address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="you@example.com"
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                  required
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    type={showConfirm ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                  >
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {formData.password === formData.confirmPassword && formData.password && (
-                  <div className="flex items-center gap-1 mt-1 text-green-400 text-xs">
-                    <CheckCircle size={14} /> Passwords match
-                  </div>
-                )}
-              </div>
-
-              {/* Sign Up Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold py-2.5 rounded-lg transition-all duration-200"
+            {step === 'details' && selectedRole && (
+              <motion.form
+                key="details"
+                onSubmit={handleSubmit}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-4"
               >
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </button>
-            </form>
-          )}
+                {/* Back Button */}
+                <button
+                  type="button"
+                  onClick={handleBackToRole}
+                  className="text-orange-500 hover:text-orange-400 text-sm mb-4"
+                >
+                  ← Back to role selection
+                </button>
 
-          {/* Sign In Link */}
-          {step === 'role' && (
-            <div className="mt-8 text-center">
-              <p className="text-gray-400">
-                Already have an account?{' '}
-                <Link to="/login" className="text-orange-400 hover:text-orange-300 font-medium">
-                  Sign In
-                </Link>
-              </p>
-            </div>
-          )}
-        </div>
+                {/* Role Indicator */}
+                <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                  <p className="text-sm text-gray-400">
+                    Selected: <span className="text-orange-500 font-semibold">{ROLES.find(r => r.id === selectedRole)?.label}</span>
+                  </p>
+                </div>
+
+                {/* Full Name */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Email Address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-200"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full px-4 py-3 bg-slate-700 border rounded-lg text-white placeholder-gray-500 focus:outline-none pr-10 ${
+                        confirmPassword && password === confirmPassword
+                          ? 'border-green-500 focus:border-green-400'
+                          : 'border-slate-600 focus:border-blue-400'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-200"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {confirmPassword && password === confirmPassword && (
+                    <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                      <CheckCircle size={14} /> Passwords match
+                    </p>
+                  )}
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-900/30 border border-red-600 rounded-lg p-3 flex gap-3"
+                  >
+                    <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
+                    <p className="text-red-200 text-sm">{error}</p>
+                  </motion.div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !name.trim() || !email.trim() || password.length < 8 || password !== confirmPassword}
+                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 size={20} className="animate-spin" /> : null}
+                  {loading ? 'Creating Account...' : 'Create Account'}
+                </button>
+
+                {/* Sign In Link */}
+                <p className="text-center text-gray-400 text-sm">
+                  Already have an account?{' '}
+                  <Link to="/login-fresh" className="text-orange-500 hover:text-orange-400">
+                    Sign In
+                  </Link>
+                </p>
+              </motion.form>
+            )}
+
+            {step === 'success' && selectedRole && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="text-center space-y-4"
+              >
+                <div className="flex justify-center mb-4">
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 0.6, repeat: Infinity }}
+                  >
+                    <CheckCircle className="w-16 h-16 text-green-500" />
+                  </motion.div>
+                </div>
+                <h2 className="text-2xl font-bold text-white">Account Created!</h2>
+                <p className="text-gray-400">Redirecting to your dashboard...</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </>
   );

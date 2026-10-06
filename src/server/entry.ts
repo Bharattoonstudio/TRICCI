@@ -720,3 +720,40 @@ if (import.meta.env.PROD) {
 }
 
 export default app;
+
+// ── Exported helpers (used by entry.test.ts) ──────────────────────────────────
+
+export function renderSsrDocument(
+  template: string,
+  result: { head: string; html: string },
+  opts: { scriptHtml: string },
+): string {
+  const headContent = opts.scriptHtml
+    ? result.head + '\n' + opts.scriptHtml
+    : result.head;
+  return template
+    .replace('<!--app-head-->', () => headContent)
+    .replace('<!--app-html-->', () => result.html);
+}
+
+export function registerAdSenseTextRoutes(
+  expressApp: import('express').Express,
+  opts: { publisherId: string | null; scriptHtml: string; adsTxt: string | null; appAdsTxt: string | null },
+): void {
+  expressApp.get('/ads.txt', (_req, res) => {
+    res.type('text/plain').set('Cache-Control', 'no-cache');
+    if (opts.adsTxt) {
+      res.status(200).send(opts.adsTxt);
+    } else {
+      res.status(404).send('');
+    }
+  });
+  expressApp.get('/app-ads.txt', (_req, res) => {
+    res.type('text/plain').set('Cache-Control', 'no-cache');
+    if (opts.appAdsTxt) {
+      res.status(200).send(opts.appAdsTxt);
+    } else {
+      res.status(404).send('');
+    }
+  });
+}

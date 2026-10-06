@@ -13,11 +13,6 @@ import auth_action_get_19 from "./api/auth/[action]/GET";
 import auth_action_post_20 from "./api/auth/[action]/POST";
 import auth_action_detail_get_21 from "./api/auth/[action]/[detail]/GET";
 import auth_action_detail_post_22 from "./api/auth/[action]/[detail]/POST";
-// REMOVED: auth_verify_otp_post (line 16 - doesn't exist, not needed for password-based auth)
-// REMOVED: auth_login_post (line 17 - BetterAuth handles via [action] route)
-// REMOVED: auth_forgot_password_post (line 18 - BetterAuth handles via [action] route)
-// REMOVED: auth_reset_password_post (line 19 - BetterAuth handles via [action] route)
-// REMOVED: auth_resend_otp_post (line 20 - OTP not part of password-based auth)
 import candidate_applications_get_23 from "./api/candidate/applications/GET";
 import candidate_cv_parse_post_24, { multerMiddleware as candidate_cv_parse_post_24_upload } from "./api/candidate/cv-parse/POST";
 import candidate_cv_enhance_post from "./api/candidate/cv-enhance/POST";
@@ -240,11 +235,6 @@ app.get("/api/auth/:action", auth_action_get_19);
 app.post("/api/auth/:action", auth_action_post_20);
 app.get("/api/auth/:action/:detail", auth_action_detail_get_21);
 app.post("/api/auth/:action/:detail", auth_action_detail_post_22);
-// REMOVED: app.post("/api/auth/verify-otp", auth_verify_otp_post); - OTP not needed
-// REMOVED: app.post("/api/auth/login", auth_login_post); - BetterAuth handles via [action]
-// REMOVED: app.post("/api/auth/forgot-password", auth_forgot_password_post); - BetterAuth handles
-// REMOVED: app.post("/api/auth/reset-password", auth_reset_password_post); - BetterAuth handles (custom route also at line 247+)
-// REMOVED: app.post("/api/auth/resend-otp", auth_resend_otp_post); - OTP not needed
 app.get("/api/candidate/applications", candidate_applications_get_23);
 app.post("/api/candidate/cv-parse", candidate_cv_parse_post_24_upload, candidate_cv_parse_post_24);
 app.post("/api/candidate/cv-enhance", candidate_cv_enhance_post);

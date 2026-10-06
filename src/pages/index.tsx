@@ -2,6 +2,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { useRef, useState, useEffect } from 'react';
+import Header from '@/layouts/parts/Header';
 import LiveStatsCounters from '@/components/marketing/LiveStatsCounters';
 import {
   Building2, Star, User, ArrowRight, CheckCircle,
@@ -237,6 +238,7 @@ function HeroAudienceSwitcher() {
 
   return (
     <>
+    <Header />
     <motion.div
       className="relative z-20 text-center px-5 max-w-4xl mx-auto w-full"
       initial={{ opacity: 0, y: 30 }}

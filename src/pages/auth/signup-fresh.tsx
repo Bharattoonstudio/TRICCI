@@ -1,264 +1,304 @@
-import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
-import { AlertCircle, Loader2, Building2, Star, User, CheckCircle } from 'lucide-react';
-import { trackSignup } from '@/lib/analytics';
-import { validateEmail, sanitizeInput } from '@/lib/validation';
+import { useNavigate, Link } from 'react-router-dom';
+import { Helmet } from '@dr.pogodin/react-helmet';
+import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 
-type Role = 'employer' | 'consultant' | 'candidate';
-type Step = 'role' | 'details' | 'success';
-
-const ROLES: { id: Role; label: string; description: string; icon: React.ElementType; color: string }[] = [
-  {
-    id: 'employer',
-    label: 'Employer',
-    description: 'Post jobs and hire through our consultant network',
-    icon: Building2,
-    color: '#35c9ff',
-  },
-  {
-    id: 'consultant',
-    label: 'Consultant',
-    description: 'Submit candidates and earn % of placement fees',
-    icon: Star,
-    color: '#FF6B35',
-  },
-  {
-    id: 'candidate',
-    label: 'Candidate',
-    description: 'Get discovered by top consultants for your next role',
-    icon: User,
-    color: '#ffd035',
-  },
-];
-
-export default function SignupFreshPage() {
+export default function SignupFresh() {
   const navigate = useNavigate();
-
-  const [step, setStep] = useState<Step>('role');
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [step, setStep] = useState<'role' | 'details'>('role');
+  const [role, setRole] = useState<'employer' | 'consultant' | 'candidate' | ''>('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  function handleRoleSelect(role: Role) {
-    setSelectedRole(role);
+  const handleRoleSelect = (selectedRole: 'employer' | 'consultant' | 'candidate') => {
+    setRole(selectedRole);
     setStep('details');
-  }
-
-  function handleBackToRole() {
-    setStep('role');
-    setSelectedRole(null);
     setError('');
-  }
+  };
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedRole) return;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-    setError('');
-
-    // Sanitize inputs
-    const sanitizedName = sanitizeInput(name);
-    const sanitizedEmail = sanitizeInput(email).toLowerCase();
-    const sanitizedPassword = sanitizeInput(password);
-
-    // Validate
-    if (!sanitizedName.trim()) {
+  const validateForm = () => {
+    if (!formData.name.trim()) {
       setError('Name is required');
-      return;
+      return false;
     }
-
-    if (!validateEmail(sanitizedEmail)) {
-      setError('Valid email is required');
-      return;
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return false;
     }
-
-    if (sanitizedPassword.length < 8) {
+    if (formData.password.length < 8) {
       setError('Password must be at least 8 characters');
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
-    try {
-      trackSignup(selectedRole, 'email');
 
-      // FIXED: Call BetterAuth sign-up endpoint with password
+    try {
+      // ✅ CORRECT BetterAuth endpoint: /api/auth/sign-up
       const response = await fetch('/api/auth/sign-up', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          email: sanitizedEmail,
-          password: sanitizedPassword,
-          name: sanitizedName,
-          role: selectedRole,
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+          role: role,
         }),
-        credentials: 'include',
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Signup failed');
+        setError(data.error?.message || 'Signup failed. Please try again.');
+        return;
       }
 
-      // BetterAuth returns user and session
-      if (data.user && data.session) {
-        // Store session data
-        localStorage.setItem('sessionToken', data.session.token || '');
-        localStorage.setItem('userId', data.user.id);
-
-        setStep('success');
-
-        // Redirect after 2 seconds
-        setTimeout(() => {
-          const dashboardRoutes: Record<Role, string> = {
-            employer: '/employer/dashboard',
-            consultant: '/consultant/dashboard',
-            candidate: '/candidate/profile',
-          };
-          navigate(dashboardRoutes[selectedRole], { replace: true });
-        }, 2000);
+      // Store session token
+      if (data.token) {
+        localStorage.setItem('sessionToken', data.token);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (data.userId) {
+        localStorage.setItem('userId', data.userId);
+      }
+      if (data.user) {
+        localStorage.setItem('userRole', role);
+      }
+
+      // Redirect based on role
+      if (role === 'employer') {
+        navigate('/employer/dashboard');
+      } else if (role === 'consultant') {
+        navigate('/consultant/dashboard');
+      } else if (role === 'candidate') {
+        navigate('/candidate/profile');
+      } else {
+        navigate('/');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.');
+    } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const roleOptions = [
+    {
+      value: 'employer' as const,
+      label: 'I\'m a Hiring Company',
+      description: 'Post roles and find talent',
+    },
+    {
+      value: 'consultant' as const,
+      label: 'I\'m a Recruitment Consultant',
+      description: 'Access mandates and earn commissions',
+    },
+    {
+      value: 'candidate' as const,
+      label: 'I\'m a Job Seeker',
+      description: 'Upload CV and find opportunities',
+    },
+  ];
 
   return (
     <>
       <Helmet>
         <title>Sign Up - TRICCI</title>
+        <meta name="description" content="Create your TRICCI account" />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-b from-[#1A0A00] to-[#2D1810] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-[#FF6B35] mb-2">
-                {step === 'success' ? 'Welcome to TRICCI!' : 'Join TRICCI'}
-              </h1>
-              <p className="text-gray-300">
-                {step === 'role' && 'Choose your role to get started'}
-                {step === 'details' && 'Create your account'}
-                {step === 'success' && 'Your account is ready'}
-              </p>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Join TRICCI</h1>
+            <p className="text-gray-400">Get started in minutes</p>
+          </div>
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
             </div>
+          )}
 
-            <AnimatePresence mode="wait">
-              {step === 'role' && (
-                <motion.div key="role" initial={{ opacity: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-                  {ROLES.map((role) => (
-                    <motion.button
-                      key={role.id}
-                      onClick={() => handleRoleSelect(role.id)}
-                      whileHover={{ scale: 1.02 }}
-                      className="w-full p-4 border border-white/10 rounded-lg hover:border-[#FF6B35]/50 bg-white/5 hover:bg-white/10 transition text-left"
-                    >
-                      <div className="flex items-start gap-3">
-                        <role.icon size={24} style={{ color: role.color }} className="flex-shrink-0 mt-1" />
-                        <div>
-                          <h3 className="font-semibold text-white">{role.label}</h3>
-                          <p className="text-sm text-gray-400">{role.description}</p>
-                        </div>
-                      </div>
-                    </motion.button>
-                  ))}
-                </motion.div>
-              )}
+          {/* Role Selection */}
+          {step === 'role' ? (
+            <div className="space-y-3">
+              {roleOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleRoleSelect(option.value)}
+                  className="w-full p-4 text-left border border-slate-600 hover:border-orange-500 hover:bg-slate-700/50 rounded-lg transition-all duration-200"
+                >
+                  <p className="font-semibold text-white">{option.label}</p>
+                  <p className="text-sm text-gray-400">{option.description}</p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            // Signup Form
+            <form onSubmit={handleSignup} className="space-y-4">
+              {/* Back Button */}
+              <button
+                type="button"
+                onClick={() => setStep('role')}
+                className="text-orange-400 hover:text-orange-300 text-sm font-medium mb-4"
+              >
+                ← Back to role selection
+              </button>
 
-              {step === 'details' && (
-                <motion.form key="details" onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0 }} exit={{ opacity: 0 }}>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2 items-start"
-                    >
-                      <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-red-200 text-sm">{error}</p>
-                    </motion.div>
-                  )}
+              {/* Selected Role */}
+              <div className="p-3 bg-slate-700 rounded-lg">
+                <p className="text-sm text-gray-300">
+                  Selected: <span className="font-semibold text-orange-400 capitalize">{role}</span>
+                </p>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                    />
-                  </div>
+              {/* Name */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="John Doe"
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  required
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                    />
-                  </div>
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  required
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-2 bg-[#FF6B35] hover:bg-[#ff5a1a] disabled:opacity-50 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition"
-                  >
-                    {loading && <Loader2 size={18} className="animate-spin" />}
-                    {loading ? 'Creating Account...' : 'Create Account'}
-                  </button>
-
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    required
+                  />
                   <button
                     type="button"
-                    onClick={handleBackToRole}
-                    className="w-full text-center text-[#FF6B35] hover:text-[#ff5a1a] text-sm font-medium"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
                   >
-                    Back
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
-                </motion.form>
-              )}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
+              </div>
 
-              {step === 'success' && (
-                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-                  <CheckCircle size={48} className="text-green-400 mx-auto mb-4" />
-                  <p className="text-gray-300 mb-6">Your account has been created successfully!</p>
-                  <p className="text-gray-400 text-sm">Redirecting to dashboard...</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              {/* Confirm Password */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirm ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  >
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {formData.password === formData.confirmPassword && formData.password && (
+                  <div className="flex items-center gap-1 mt-1 text-green-400 text-xs">
+                    <CheckCircle size={14} /> Passwords match
+                  </div>
+                )}
+              </div>
 
-            {step === 'role' && (
-              <p className="text-center text-gray-400 text-sm">
+              {/* Sign Up Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold py-2.5 rounded-lg transition-all duration-200"
+              >
+                {loading ? 'Creating Account...' : 'Create Account'}
+              </button>
+            </form>
+          )}
+
+          {/* Sign In Link */}
+          {step === 'role' && (
+            <div className="mt-8 text-center">
+              <p className="text-gray-400">
                 Already have an account?{' '}
-                <Link to="/login" className="text-[#FF6B35] hover:text-[#ff5a1a] font-semibold">
+                <Link to="/login" className="text-orange-400 hover:text-orange-300 font-medium">
                   Sign In
                 </Link>
               </p>
-            )}
-          </motion.div>
+            </div>
+          )}
         </div>
       </div>
     </>

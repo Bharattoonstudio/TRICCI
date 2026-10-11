@@ -86,6 +86,7 @@ export const verification = pgTable('verification', {
 // ── TRICCI profile extension ──────────────────────────────────────────────────
 
 export const employerProfile = pgTable('employer_profile', {
+  phone: varchar('phone', { length: 20 }),
   id: serial('id').primaryKey(),
   userId: varchar('user_id', { length: 36 })
     .notNull()
@@ -105,6 +106,7 @@ export const employerProfile = pgTable('employer_profile', {
 });
 
 export const consultantProfile = pgTable('consultant_profile', {
+  phone: varchar('phone', { length: 20 }),
   id: serial('id').primaryKey(),
   userId: varchar('user_id', { length: 36 })
     .notNull()

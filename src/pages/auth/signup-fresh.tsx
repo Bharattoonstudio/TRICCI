@@ -16,6 +16,7 @@ export default function SignupFreshPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,11 @@ export default function SignupFreshPage() {
 
     if (!email.trim() || !email.includes('@')) {
       setError('Valid email is required');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(mobile.replace(/\s/g, '').replace(/^\+91/, ''))) {
+      setError('Enter a valid 10-digit mobile number');
       return;
     }
 
@@ -87,10 +93,20 @@ export default function SignupFreshPage() {
       }
       localStorage.setItem('userRole', selectedRole);
 
+      // Save the mobile number on the new account's role profile (session cookie is set above).
+      const mobileRes = await fetch('/api/account/mobile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: mobile }),
+        credentials: 'include',
+      });
+      if (!mobileRes.ok) {
+        const mobileData = await mobileRes.json().catch(() => ({}));
+        throw new Error(mobileData.error || 'Account created, but the mobile number could not be saved. Please try again from your profile.');
+      }
+
       setStep('success');
-      setTimeout(() => {
-        navigate(roleRoutes[selectedRole], { replace: true });
-      }, 2000);
+      navigate(roleRoutes[selectedRole], { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -187,6 +203,20 @@ export default function SignupFreshPage() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-white mb-2">Mobile Number</label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                required
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="10-digit mobile number"
+                maxLength={13}
+                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-white mb-2">Password</label>
               <input
                 type="password"
@@ -224,10 +254,10 @@ export default function SignupFreshPage() {
 
             <button
               type="submit"
-              disabled={loading || !name.trim() || !email.trim() || password.length < 8 || password !== confirmPassword}
+              disabled={loading || !name.trim() || !email.trim() || !mobile.trim() || password.length < 8 || password !== confirmPassword}
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white font-semibold rounded-lg transition"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Signing Up...' : 'Sign Up'}
             </button>
 
             <p className="text-center text-gray-400 text-sm">

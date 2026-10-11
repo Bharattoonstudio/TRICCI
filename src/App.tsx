@@ -16,6 +16,7 @@ const FreeJobsPage = lazy(() => import('./pages/free-jobs'));
 const SignupFresh = lazy(() => import('./pages/auth/signup-fresh'));
 const LoginFresh = lazy(() => import('./pages/auth/login-fresh'));
 const ResetPasswordFresh = lazy(() => import('./pages/auth/reset-password-fresh'));
+const ForgotPasswordFresh = lazy(() => import('./pages/auth/forgot-password-fresh'));
 
 // Employer Routes
 const EmployerDashboard = lazy(() => import('./pages/employer/dashboard'));
@@ -58,6 +59,7 @@ function App() {
           <Route path="/signup" element={<SignupFresh />} />
           <Route path="/signup-fresh" element={<SignupFresh />} />
           <Route path="/login" element={<LoginFresh />} />
+          <Route path="/forgot-password" element={<ForgotPasswordFresh />} />
           <Route path="/reset-password" element={<ResetPasswordFresh />} />
 
           {/* Employer Routes */}

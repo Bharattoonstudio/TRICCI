@@ -100,7 +100,7 @@ export default function LoginFreshPage() {
           </div>
 
           <div className="text-right">
-            <a href="/forgot-password-fresh" className="text-orange-500 hover:text-orange-400 text-sm">
+            <a href="/forgot-password" className="text-orange-500 hover:text-orange-400 text-sm">
               Forgot password?
             </a>
           </div>

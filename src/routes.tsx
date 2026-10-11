@@ -23,6 +23,7 @@ const AdminQuickAccessPage = lazy(() => import('./pages/admin/quick-access'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
 const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
 const LoginFreshPage = lazy(() => import('./pages/auth/login-fresh'));
+const ForgotPasswordFreshPage = lazy(() => import('./pages/auth/forgot-password-fresh'));
 const SignupFreshPage = lazy(() => import('./pages/auth/signup-fresh'));
 const ResetPasswordFreshPage = lazy(() => import('./pages/auth/reset-password-fresh'));
 const JobsPage = lazy(() => import('./pages/jobs/index'));
@@ -49,8 +50,10 @@ export const routes: RouteObject[] = [
 
   // Auth routes (public) - Password-based
   { path: '/login', element: <LoginFreshPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordFreshPage /> },
   { path: '/signup', element: <SignupFreshPage /> },
   { path: '/auth/reset-password', element: <ResetPasswordFreshPage /> },
+  { path: '/reset-password', element: <ResetPasswordFreshPage /> },
 
   // Protected: Job listings — all logged-in roles can browse
   {

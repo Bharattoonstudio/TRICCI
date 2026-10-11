@@ -24,13 +24,13 @@ export default function ForgotPasswordFreshPage() {
 
     setLoading(true);
     try {
-      // ✅ CORRECTED: Use 'forgotPassword' instead of 'forgot-password' (BetterAuth camelCase format)
-      const response = await fetch('/api/auth/forgotPassword', {
+      // BetterAuth 1.6 password reset endpoint
+      const response = await fetch('/api/auth/request-password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.toLowerCase(),
-          redirectUrl: `${window.location.origin}/reset-password-fresh`,
+          redirectTo: `${window.location.origin}/reset-password`,
         }),
         credentials: 'include',
       });
@@ -68,13 +68,13 @@ export default function ForgotPasswordFreshPage() {
 
     setLoading(true);
     try {
-      // ✅ CORRECTED: Use 'resetPassword' instead of 'reset-password' (BetterAuth camelCase format)
-      const response = await fetch('/api/auth/resetPassword', {
+      // BetterAuth 1.6 reset endpoint (body field is newPassword)
+      const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           token: token,
-          password: password,
+          newPassword: password,
         }),
         credentials: 'include',
       });
@@ -87,7 +87,7 @@ export default function ForgotPasswordFreshPage() {
 
       setStep('success');
       setTimeout(() => {
-        navigate('/login-fresh', { replace: true });
+        navigate('/login', { replace: true });
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -132,7 +132,7 @@ export default function ForgotPasswordFreshPage() {
             </button>
 
             <p className="text-center text-gray-400 text-sm">
-              Remember your password? <a href="/login-fresh" className="text-orange-500 hover:text-orange-400">Sign In</a>
+              Remember your password? <a href="/login" className="text-orange-500 hover:text-orange-400">Sign In</a>
             </p>
           </form>
         </div>

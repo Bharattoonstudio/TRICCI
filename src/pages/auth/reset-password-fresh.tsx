@@ -54,7 +54,7 @@ export default function ResetPasswordFresh() {
         },
         body: JSON.stringify({
           token: token,
-          password: password,
+          newPassword: password,
         }),
       });
 

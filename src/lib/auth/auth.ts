@@ -46,8 +46,8 @@ export function getAuth() {
 
   const auth = betterAuth({
         // Explicit base URL so BetterAuth can build verification/reset links correctly.
-                              // Use process.env.BETTER_AUTH_URL if set, otherwise default to tricci.in
-                              baseURL: process.env.BETTER_AUTH_URL || 'https://tricci.in',
+                              // Use process.env.BETTER_AUTH_URL if set, otherwise default to www.tricci.in (apex tricci.in does not serve the app)
+                              baseURL: process.env.BETTER_AUTH_URL || 'https://www.tricci.in',
 
         // Schema passed explicitly — avoids BetterAuth's runtime schema inference.
         database: drizzleAdapter(db, {

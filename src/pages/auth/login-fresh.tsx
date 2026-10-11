@@ -24,8 +24,8 @@ export default function LoginFreshPage() {
 
     setLoading(true);
     try {
-      // ✅ CORRECTED: Use 'signin' instead of 'login' (BetterAuth camelCase format)
-      const response = await fetch('/api/auth/signin', {
+      // ✅ CORRECTED: BetterAuth email sign-in endpoint
+      const response = await fetch('/api/auth/sign-in/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -41,8 +41,8 @@ export default function LoginFreshPage() {
         throw new Error(data.message || data.error || 'Sign in failed');
       }
 
-      if (data.session?.token) {
-        localStorage.setItem('sessionToken', data.session.token);
+      if (data.token) {
+        localStorage.setItem('sessionToken', data.token);
       }
       if (data.user?.id) {
         localStorage.setItem('userId', data.user.id);
@@ -120,7 +120,7 @@ export default function LoginFreshPage() {
           </button>
 
           <p className="text-center text-gray-400 text-sm">
-            Don't have an account? <a href="/signup-fresh" className="text-orange-500 hover:text-orange-400">Sign Up</a>
+            Don't have an account? <a href="/signup" className="text-orange-500 hover:text-orange-400">Sign Up</a>
           </p>
         </form>
       </div>

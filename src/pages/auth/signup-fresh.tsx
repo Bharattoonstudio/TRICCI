@@ -66,8 +66,8 @@ export default function SignupFreshPage() {
 
     setLoading(true);
     try {
-      // ✅ CORRECTED: Use 'signup' instead of 'sign-up' (BetterAuth camelCase format)
-      const response = await fetch('/api/auth/signup', {
+      // BetterAuth email sign-up endpoint
+      const response = await fetch('/api/auth/sign-up/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,8 +85,8 @@ export default function SignupFreshPage() {
         throw new Error(data.message || data.error || 'Signup failed');
       }
 
-      if (data.session?.token) {
-        localStorage.setItem('sessionToken', data.session.token);
+      if (data.token) {
+        localStorage.setItem('sessionToken', data.token);
       }
       if (data.user?.id) {
         localStorage.setItem('userId', data.user.id);
@@ -149,7 +149,7 @@ export default function SignupFreshPage() {
             </button>
 
             <p className="text-center text-gray-400 mt-6">
-              Already have an account? <a href="/login-fresh" className="text-orange-500 hover:text-orange-400">Sign In</a>
+              Already have an account? <a href="/login" className="text-orange-500 hover:text-orange-400">Sign In</a>
             </p>
           </div>
         </div>
@@ -261,7 +261,7 @@ export default function SignupFreshPage() {
             </button>
 
             <p className="text-center text-gray-400 text-sm">
-              Already have an account? <a href="/login-fresh" className="text-orange-500 hover:text-orange-400">Sign In</a>
+              Already have an account? <a href="/login" className="text-orange-500 hover:text-orange-400">Sign In</a>
             </p>
           </form>
         </div>

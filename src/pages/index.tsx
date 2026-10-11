@@ -565,7 +565,7 @@ export default function MarketingHomePage() {
       <section ref={heroRef} className="relative h-screen min-h-[680px] max-h-[1000px] overflow-hidden flex items-center justify-center">
         <motion.div className="absolute inset-0 z-0" style={{ scale: videoScale }}>
           <img
-            src="/airo-assets/images/pages/home/hero"
+            src="/assets/hero-main.png"
             alt="TRICCI recruitment platform — India's smartest hiring marketplace"
             className="w-full h-full object-cover"
             fetchPriority="high"

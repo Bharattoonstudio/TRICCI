@@ -1,7 +1,7 @@
 /**
  * /admin/setup — First-run admin account creation page.
  * Only useful when zero admin accounts exist.
- * After first admin is created, this page redirects to /admin/login.
+ * After first admin is created, this page redirects to /login.
  */
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { useState } from 'react';
@@ -45,7 +45,7 @@ export default function AdminSetupPage() {
         return;
       }
       setSuccess(true);
-      setTimeout(() => navigate('/admin/login', { replace: true }), 3000);
+      setTimeout(() => navigate('/login', { replace: true }), 3000);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -91,7 +91,7 @@ export default function AdminSetupPage() {
                 Admin account created!
               </h2>
               <p className="text-sm text-muted-foreground mb-4">Redirecting you to the admin login page…</p>
-              <Link to="/admin/login" className="text-secondary font-semibold text-sm hover:underline">
+              <Link to="/login" className="text-secondary font-semibold text-sm hover:underline">
                 Go to Admin Login →
               </Link>
             </div>
@@ -202,7 +202,7 @@ export default function AdminSetupPage() {
 
               <p className="text-center text-xs text-muted-foreground mt-5">
                 Already have an admin account?{' '}
-                <Link to="/admin/login" className="text-secondary hover:underline font-semibold">Sign in</Link>
+                <Link to="/login" className="text-secondary hover:underline font-semibold">Sign in</Link>
               </p>
             </div>
           )}

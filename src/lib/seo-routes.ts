@@ -48,6 +48,5 @@ export const seoRoutes: SeoRoute[] = [
   { path: "/free-jobs", changefreq: "monthly", priority: 0.3 },
   { path: "/billing", changefreq: "monthly", priority: 0.3 },
   { path: "/admin", changefreq: "monthly", priority: 0.8 },
-  { path: "/admin/login", changefreq: "monthly", priority: 0.1 },
   { path: "/admin/setup", changefreq: "monthly", priority: 0.1 },
 ];

@@ -4,11 +4,12 @@
  * content, not something Claude drafted — served verbatim to the
  * agreement gate and the account "Documents" section.
  */
-export const EMPLOYER_AGREEMENT_TEXT = `TRICCI EMPLOYER MASTER SERVICE AGREEMENT (MSA)
+const EMPLOYER_AGREEMENT_TEMPLATE = `TRICCI EMPLOYER MASTER SERVICE AGREEMENT (MSA)
 
 Version: 1.0
-Effective Date: [DD/MM/YYYY]
-Last Updated: [DD/MM/YYYY]
+Effective Date: {{EFFECTIVE_DATE}}
+End Date: {{END_DATE}}
+Last Updated: {{LAST_UPDATED}}
 
 ────────────────────────────────────────
 
@@ -267,7 +268,15 @@ This Agreement is executed electronically. Electronic acceptance by clicking "I 
 
 ────────────────────────────────────────
 
-29. EMPLOYER DECLARATION
+29. TERM OF AGREEMENT
+
+29.1 This Agreement takes effect on the Effective Date stated above and remains in force for three (3) years, until the End Date stated above, unless terminated earlier under Clause 25.
+29.2 Upon expiry, this Agreement may be renewed by written agreement between TRICCI and the Employer, or by the Employer accepting a renewed version of this Agreement on the Platform.
+29.3 Clauses that by their nature are intended to survive expiry or termination shall continue in effect as set out in Clause 28.5.
+
+────────────────────────────────────────
+
+30. EMPLOYER DECLARATION
 
 By registering on TRICCI, clicking "I Agree", electronically accepting this Agreement or continuing to use the Platform, the Employer declares:
 
@@ -285,3 +294,26 @@ CONTACT
 TRICCI
 Website: https://tricci.in
 Email: connect@tricci.in`;
+
+// Dates are filled in when the agreement is served: the effective date is today
+// (India time), the end date is three years later, and last updated is today.
+const AGREEMENT_TIME_ZONE = 'Asia/Kolkata';
+const AGREEMENT_TERM_YEARS = 3;
+
+function formatAgreementDate(d: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: AGREEMENT_TIME_ZONE,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(d);
+}
+
+export function getEmployerAgreementText(now: Date = new Date()): string {
+  const end = new Date(now);
+  end.setUTCFullYear(end.getUTCFullYear() + AGREEMENT_TERM_YEARS);
+  return EMPLOYER_AGREEMENT_TEMPLATE
+    .replaceAll('{{EFFECTIVE_DATE}}', formatAgreementDate(now))
+    .replaceAll('{{END_DATE}}', formatAgreementDate(end))
+    .replaceAll('{{LAST_UPDATED}}', formatAgreementDate(now));
+}

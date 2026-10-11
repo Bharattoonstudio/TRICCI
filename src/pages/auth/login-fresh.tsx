@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  AuthShell,
+  ErrorBox,
+  inputClass,
+  labelClass,
+  linkClass,
+  primaryButtonClass,
+  readResponse,
+} from '../../components/auth/authShared';
 
 export default function LoginFreshPage() {
   const navigate = useNavigate();
@@ -16,7 +25,6 @@ export default function LoginFreshPage() {
       setError('Valid email is required');
       return;
     }
-
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
@@ -24,34 +32,20 @@ export default function LoginFreshPage() {
 
     setLoading(true);
     try {
-      // ✅ CORRECTED: BetterAuth email sign-in endpoint
+      // BetterAuth email sign-in endpoint
       const response = await fetch('/api/auth/sign-in/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.toLowerCase(),
-          password: password,
-        }),
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
         credentials: 'include',
       });
+      const { data, error: apiError } = await readResponse(response);
+      if (apiError) throw new Error(apiError);
 
-      const data = await response.json();
+      if (data.token) localStorage.setItem('sessionToken', data.token);
+      if (data.user?.id) localStorage.setItem('userId', data.user.id);
+      if (data.user?.role) localStorage.setItem('userRole', data.user.role);
 
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Sign in failed');
-      }
-
-      if (data.token) {
-        localStorage.setItem('sessionToken', data.token);
-      }
-      if (data.user?.id) {
-        localStorage.setItem('userId', data.user.id);
-      }
-      if (data.user?.role) {
-        localStorage.setItem('userRole', data.user.role);
-      }
-
-      // Redirect based on role
       const role = data.user?.role || localStorage.getItem('userRole');
       const dashboardRoutes: Record<string, string> = {
         employer: '/employer/dashboard',
@@ -59,71 +53,65 @@ export default function LoginFreshPage() {
         candidate: '/candidate/profile',
         admin: '/admin',
       };
-      const redirectTo = dashboardRoutes[role as string] || '/';
-      navigate(redirectTo, { replace: true });
+      navigate(dashboardRoutes[role as string] || '/', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to your TRICCI account</p>
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to your TRICCI account"
+      footer={
+        <>
+          New to TRICCI?{' '}
+          <a href="/signup" className={linkClass}>
+            Create an account
+          </a>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className={labelClass} htmlFor="email">Email address</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className={inputClass}
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-            />
-          </div>
-
-          <div className="text-right">
-            <a href="/forgot-password" className="text-orange-500 hover:text-orange-400 text-sm">
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <label className="text-sm font-medium text-white/80" htmlFor="password">Password</label>
+            <a href="/forgot-password" className="text-xs font-medium text-[#E8470A] hover:text-[#ff6a3d]">
               Forgot password?
             </a>
           </div>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className={inputClass}
+          />
+        </div>
 
-          {error && (
-            <div className="bg-red-900/30 border border-red-600 rounded-lg p-3">
-              <p className="text-red-200 text-sm">{error}</p>
-            </div>
-          )}
+        {error && <ErrorBox message={error} />}
 
-          <button
-            type="submit"
-            disabled={loading || !email.trim() || password.length < 8}
-            className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white font-semibold rounded-lg transition"
-          >
-            {loading ? 'Signing In...' : 'Sign In'}
-          </button>
-
-          <p className="text-center text-gray-400 text-sm">
-            Don't have an account? <a href="/signup" className="text-orange-500 hover:text-orange-400">Sign Up</a>
-          </p>
-        </form>
-      </div>
-    </div>
+        <button type="submit" disabled={loading || !email.trim() || password.length < 8} className={primaryButtonClass}>
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

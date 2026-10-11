@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  AuthShell,
+  ErrorBox,
+  inputClass,
+  labelClass,
+  linkClass,
+  primaryButtonClass,
+  readResponse,
+} from '../../components/auth/authShared';
 
 type Role = 'employer' | 'consultant' | 'candidate';
 type Step = 'role' | 'details' | 'success';
@@ -9,6 +18,12 @@ const roleRoutes: Record<Role, string> = {
   consultant: '/consultant/dashboard',
   candidate: '/candidate/profile',
 };
+
+const roleOptions: { role: Role; title: string; description: string }[] = [
+  { role: 'employer', title: 'Hiring company', description: 'Post roles and find talent' },
+  { role: 'consultant', title: 'Recruitment consultant', description: 'Access mandates and earn commissions' },
+  { role: 'candidate', title: 'Job seeker', description: 'Upload your CV and find opportunities' },
+];
 
 export default function SignupFreshPage() {
   const navigate = useNavigate();
@@ -36,33 +51,15 @@ export default function SignupFreshPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole) return;
-
     setError('');
 
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
-    if (!email.trim() || !email.includes('@')) {
-      setError('Valid email is required');
-      return;
-    }
-
+    if (!name.trim()) return setError('Name is required');
+    if (!email.trim() || !email.includes('@')) return setError('Valid email is required');
     if (!/^\d{10}$/.test(mobile.replace(/\s/g, '').replace(/^\+91/, ''))) {
-      setError('Enter a valid 10-digit mobile number');
-      return;
+      return setError('Enter a valid 10-digit mobile number');
     }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+    if (password.length < 8) return setError('Password must be at least 8 characters');
+    if (password !== confirmPassword) return setError('Passwords do not match');
 
     setLoading(true);
     try {
@@ -72,25 +69,17 @@ export default function SignupFreshPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.toLowerCase(),
-          password: password,
+          password,
           name: name.trim(),
           role: selectedRole,
         }),
         credentials: 'include',
       });
+      const { data, error: apiError } = await readResponse(response);
+      if (apiError) throw new Error(apiError);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Signup failed');
-      }
-
-      if (data.token) {
-        localStorage.setItem('sessionToken', data.token);
-      }
-      if (data.user?.id) {
-        localStorage.setItem('userId', data.user.id);
-      }
+      if (data.token) localStorage.setItem('sessionToken', data.token);
+      if (data.user?.id) localStorage.setItem('userId', data.user.id);
       localStorage.setItem('userRole', selectedRole);
 
       // Save the mobile number on the new account's role profile (session cookie is set above).
@@ -100,182 +89,112 @@ export default function SignupFreshPage() {
         body: JSON.stringify({ phone: mobile }),
         credentials: 'include',
       });
-      if (!mobileRes.ok) {
-        const mobileData = await mobileRes.json().catch(() => ({}));
-        throw new Error(mobileData.error || 'Account created, but the mobile number could not be saved. Please try again from your profile.');
+      const mobileResult = await readResponse(mobileRes);
+      if (mobileResult.error) {
+        throw new Error(
+          'Your account was created, but we could not save your mobile number. Please sign in and try again from your profile.',
+        );
       }
 
       setStep('success');
       navigate(roleRoutes[selectedRole], { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  if (step === 'success') {
+    return (
+      <AuthShell title="Account created" subtitle="Taking you to your dashboard...">
+        <div className="text-center text-5xl">✓</div>
+      </AuthShell>
+    );
+  }
+
   if (step === 'role') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Join TRICCI</h1>
-            <p className="text-gray-400">Get started in minutes</p>
-          </div>
-
-          <div className="space-y-4">
+      <AuthShell
+        title="Join TRICCI"
+        subtitle="Get started in minutes"
+        footer={
+          <>
+            Already have an account?{' '}
+            <a href="/login" className={linkClass}>Sign in</a>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {roleOptions.map((opt) => (
             <button
-              onClick={() => handleRoleSelect('employer')}
-              className="w-full p-4 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-800/50 transition text-left"
-            >
-              <p className="font-semibold text-white">I'm a Hiring Company</p>
-              <p className="text-sm text-gray-400">Post roles and find talent</p>
-            </button>
-
-            <button
-              onClick={() => handleRoleSelect('consultant')}
-              className="w-full p-4 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-800/50 transition text-left"
-            >
-              <p className="font-semibold text-white">I'm a Recruitment Consultant</p>
-              <p className="text-sm text-gray-400">Access mandates and earn commissions</p>
-            </button>
-
-            <button
-              onClick={() => handleRoleSelect('candidate')}
-              className="w-full p-4 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-800/50 transition text-left"
-            >
-              <p className="font-semibold text-white">I'm a Job Seeker</p>
-              <p className="text-sm text-gray-400">Upload CV and find opportunities</p>
-            </button>
-
-            <p className="text-center text-gray-400 mt-6">
-              Already have an account? <a href="/login" className="text-orange-500 hover:text-orange-400">Sign In</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 'details' && selectedRole) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Join TRICCI</h1>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <button
+              key={opt.role}
               type="button"
-              onClick={handleBackToRole}
-              className="text-orange-500 hover:text-orange-400 text-sm mb-4"
+              onClick={() => handleRoleSelect(opt.role)}
+              className="w-full rounded-xl border border-white/10 bg-[#141414] p-4 text-left transition hover:border-[#E8470A] hover:bg-[#1a1a1a]"
             >
-              ← Back to role selection
+              <p className="font-semibold">{opt.title}</p>
+              <p className="mt-0.5 text-sm text-white/60">{opt.description}</p>
             </button>
-
-            <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-              <p className="text-sm text-gray-400">
-                Selected: <span className="text-orange-500 font-semibold">{selectedRole === 'employer' ? 'Hiring Company' : selectedRole === 'consultant' ? 'Recruitment Consultant' : 'Job Seeker'}</span>
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Full Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Mobile Number</label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                required
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="10-digit mobile number"
-                maxLength={13}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-              <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className={`w-full px-4 py-3 bg-slate-700 border rounded-lg text-white placeholder-gray-500 focus:outline-none ${
-                  confirmPassword && password === confirmPassword
-                    ? 'border-green-500 focus:border-green-400'
-                    : 'border-slate-600 focus:border-blue-400'
-                }`}
-              />
-              {confirmPassword && password === confirmPassword && (
-                <p className="text-xs text-green-500 mt-1">✓ Passwords match</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="bg-red-900/30 border border-red-600 rounded-lg p-3">
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !name.trim() || !email.trim() || !mobile.trim() || password.length < 8 || password !== confirmPassword}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white font-semibold rounded-lg transition"
-            >
-              {loading ? 'Signing Up...' : 'Sign Up'}
-            </button>
-
-            <p className="text-center text-gray-400 text-sm">
-              Already have an account? <a href="/login" className="text-orange-500 hover:text-orange-400">Sign In</a>
-            </p>
-          </form>
+          ))}
         </div>
-      </div>
+      </AuthShell>
     );
   }
+
+  const roleLabel = roleOptions.find((o) => o.role === selectedRole)?.title ?? '';
+  const formReady = !!name.trim() && !!email.trim() && !!mobile.trim() && password.length >= 8 && password === confirmPassword;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center space-y-4">
-        <div className="text-6xl mb-4">✓</div>
-        <h2 className="text-2xl font-bold text-white">Account Created!</h2>
-        <p className="text-gray-400">Redirecting to your dashboard...</p>
-      </div>
-    </div>
+    <AuthShell
+      title="Create your account"
+      subtitle={`Signing up as ${roleLabel}`}
+      footer={
+        <>
+          Already have an account?{' '}
+          <a href="/login" className={linkClass}>Sign in</a>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <button type="button" onClick={handleBackToRole} className="text-sm font-medium text-[#E8470A] hover:text-[#ff6a3d]">
+          ← Change account type
+        </button>
+
+        <div>
+          <label className={labelClass} htmlFor="name">Full name</label>
+          <input id="name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" className={inputClass} />
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="email">Email address</label>
+          <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="mobile">Mobile number</label>
+          <input id="mobile" type="tel" inputMode="numeric" autoComplete="tel-national" required value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="10-digit mobile number" maxLength={13} className={inputClass} />
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="password">Password</label>
+          <input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className={inputClass} />
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="confirm">Confirm password</label>
+          <input id="confirm" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" className={inputClass} />
+          {confirmPassword && password === confirmPassword && (
+            <p className="mt-2 text-xs text-[#22c55e]">✓ Passwords match</p>
+          )}
+        </div>
+
+        {error && <ErrorBox message={error} />}
+
+        <button type="submit" disabled={loading || !formReady} className={primaryButtonClass}>
+          {loading ? 'Creating your account...' : 'Sign up'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

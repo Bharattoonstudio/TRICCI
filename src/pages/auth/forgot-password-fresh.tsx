@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  AuthShell,
+  ErrorBox,
+  inputClass,
+  labelClass,
+  linkClass,
+  primaryButtonClass,
+  readResponse,
+} from '../../components/auth/authShared';
 
 type Step = 'email' | 'sent' | 'reset' | 'success';
 
@@ -16,11 +25,7 @@ export default function ForgotPasswordFreshPage() {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!email.trim() || !email.includes('@')) {
-      setError('Valid email is required');
-      return;
-    }
+    if (!email.trim() || !email.includes('@')) return setError('Valid email is required');
 
     setLoading(true);
     try {
@@ -34,19 +39,13 @@ export default function ForgotPasswordFreshPage() {
         }),
         credentials: 'include',
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Failed to send reset email');
-      }
+      const { error: apiError } = await readResponse(response);
+      if (apiError) throw new Error(apiError);
 
       setStep('sent');
-      setTimeout(() => {
-        setStep('reset');
-      }, 3000);
+      setTimeout(() => setStep('reset'), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Could not send the reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -55,16 +54,8 @@ export default function ForgotPasswordFreshPage() {
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+    if (password.length < 8) return setError('Password must be at least 8 characters');
+    if (password !== confirmPassword) return setError('Passwords do not match');
 
     setLoading(true);
     try {
@@ -72,164 +63,84 @@ export default function ForgotPasswordFreshPage() {
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: token,
-          newPassword: password,
-        }),
+        body: JSON.stringify({ token, newPassword: password }),
         credentials: 'include',
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Password reset failed');
-      }
+      const { error: apiError } = await readResponse(response);
+      if (apiError) throw new Error(apiError);
 
       setStep('success');
-      setTimeout(() => {
-        navigate('/login', { replace: true });
-      }, 2000);
+      setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Password reset failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (step === 'email') {
+  const backToLogin = (
+    <>
+      Remember your password?{' '}
+      <a href="/login" className={linkClass}>Sign in</a>
+    </>
+  );
+
+  if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Reset Password</h1>
-            <p className="text-gray-400">We'll send you a link to reset your password</p>
-          </div>
-
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-900/30 border border-red-600 rounded-lg p-3">
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !email.trim()}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white font-semibold rounded-lg transition"
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-
-            <p className="text-center text-gray-400 text-sm">
-              Remember your password? <a href="/login" className="text-orange-500 hover:text-orange-400">Sign In</a>
-            </p>
-          </form>
-        </div>
-      </div>
+      <AuthShell title="Password updated" subtitle="Redirecting you to sign in...">
+        <div className="text-center text-5xl">✓</div>
+      </AuthShell>
     );
   }
 
   if (step === 'sent') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center space-y-4">
-          <div className="text-6xl mb-4">📧</div>
-          <h2 className="text-2xl font-bold text-white">Check Your Email</h2>
-          <p className="text-gray-400">We've sent a password reset link to <span className="font-semibold text-white">{email}</span></p>
-          <p className="text-sm text-gray-500">Redirecting...</p>
-        </div>
-      </div>
+      <AuthShell title="Check your email" subtitle={`We've sent a reset link to ${email}`} footer={backToLogin}>
+        <p className="text-center text-sm text-white/50">The reset link expires in 1 hour. Check your spam folder if it doesn't arrive.</p>
+      </AuthShell>
     );
   }
 
   if (step === 'reset') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Create New Password</h1>
-            <p className="text-gray-400">Enter your reset token and new password</p>
+      <AuthShell title="Create a new password" subtitle="Paste the token from your reset email" footer={backToLogin}>
+        <form onSubmit={handleResetSubmit} className="space-y-5">
+          <div>
+            <label className={labelClass} htmlFor="token">Reset token</label>
+            <input id="token" type="text" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Paste the token from the email link" className={inputClass} />
           </div>
-
-          <form onSubmit={handleResetSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Reset Token</label>
-              <input
-                type="text"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Paste token from email link"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">New Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
-              />
-              <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className={`w-full px-4 py-3 bg-slate-700 border rounded-lg text-white placeholder-gray-500 focus:outline-none ${
-                  confirmPassword && password === confirmPassword
-                    ? 'border-green-500 focus:border-green-400'
-                    : 'border-slate-600 focus:border-blue-400'
-                }`}
-              />
-              {confirmPassword && password === confirmPassword && (
-                <p className="text-xs text-green-500 mt-1">✓ Passwords match</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="bg-red-900/30 border border-red-600 rounded-lg p-3">
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
+          <div>
+            <label className={labelClass} htmlFor="new-password">New password</label>
+            <input id="new-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="confirm-password">Confirm new password</label>
+            <input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your new password" className={inputClass} />
+            {confirmPassword && password === confirmPassword && (
+              <p className="mt-2 text-xs text-[#22c55e]">✓ Passwords match</p>
             )}
-
-            <button
-              type="submit"
-              disabled={loading || !token.trim() || password.length < 8 || password !== confirmPassword}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-white font-semibold rounded-lg transition"
-            >
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </button>
-          </form>
-        </div>
-      </div>
+          </div>
+          {error && <ErrorBox message={error} />}
+          <button type="submit" disabled={loading || !token.trim() || password.length < 8 || password !== confirmPassword} className={primaryButtonClass}>
+            {loading ? 'Updating...' : 'Update password'}
+          </button>
+        </form>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center space-y-4">
-        <div className="text-6xl mb-4">✓</div>
-        <h2 className="text-2xl font-bold text-white">Password Reset!</h2>
-        <p className="text-gray-400">Redirecting to login...</p>
-      </div>
-    </div>
+    <AuthShell title="Reset your password" subtitle="We'll email you a link to set a new password" footer={backToLogin}>
+      <form onSubmit={handleEmailSubmit} className="space-y-5">
+        <div>
+          <label className={labelClass} htmlFor="email">Email address</label>
+          <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
+        </div>
+        {error && <ErrorBox message={error} />}
+        <button type="submit" disabled={loading || !email.trim()} className={primaryButtonClass}>
+          {loading ? 'Sending...' : 'Send reset link'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

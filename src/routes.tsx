@@ -21,7 +21,6 @@ const BillingPage = lazy(() => import('./pages/billing/index'));
 const AdminDashboard = lazy(() => import('./pages/admin/dashboard'));
 const AdminQuickAccessPage = lazy(() => import('./pages/admin/quick-access'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
-const AdminLoginPage = lazy(() => import('./pages/admin/login'));
 const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
 const LoginFreshPage = lazy(() => import('./pages/auth/login-fresh'));
 const SignupFreshPage = lazy(() => import('./pages/auth/signup-fresh'));
@@ -207,7 +206,6 @@ export const routes: RouteObject[] = [
   },
 
   // Admin login & setup (public — no auth required)
-  { path: '/admin/login', element: <AdminLoginPage /> },
   { path: '/admin/quick-access', element: <AdminQuickAccessPage /> },
   { path: '/admin/setup', element: <AdminSetupPage /> },
   { path: '/admin/audit-log', element: <AdminAuditLogPage /> },

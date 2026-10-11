@@ -494,6 +494,45 @@ app.use(
 	}),
 );
 
+// Site image slots (/airo-assets/images/<slot>) are not stored on this server:
+// their files live in the media manifest as remote currentUrl values, so the
+// static handler above 404s them and every slot image on the site breaks.
+// Resolve the slot from airo-media.json and redirect to its remote URL.
+// Real files on disk still win because this runs after express.static.
+let airoMediaManifest: Record<string, { currentUrl?: unknown }> | null = null;
+function loadAiroMediaManifest(): Record<string, { currentUrl?: unknown }> {
+	if (airoMediaManifest) return airoMediaManifest;
+	const candidates = [
+		join(process.cwd(), "public", "airo-media.json"),
+		join(process.cwd(), "dist", "client", "airo-media.json"),
+	];
+	for (const file of candidates) {
+		try {
+			airoMediaManifest = JSON.parse(readFileSync(file, "utf-8"));
+			break;
+		} catch {
+			// try next location
+		}
+	}
+	airoMediaManifest ??= {};
+	return airoMediaManifest;
+}
+
+app.use("/airo-assets/images", (req, res, next) => {
+	let slot: string;
+	try {
+		slot = decodeURIComponent(req.path.replace(/^\/+/, "").split("?")[0]);
+	} catch {
+		return next();
+	}
+	const remote = loadAiroMediaManifest()[slot]?.currentUrl;
+	if (typeof remote === "string" && remote.startsWith("https://")) {
+		res.set("Cache-Control", "public, max-age=3600");
+		return res.redirect(302, remote);
+	}
+	next();
+});
+
 if (import.meta.env.PROD) {
 	const __dirname = dirname(fileURLToPath(import.meta.url));
 	const clientDir = join(__dirname, "client");

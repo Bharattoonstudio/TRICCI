@@ -57,6 +57,7 @@ export default function LoginFreshPage() {
         employer: '/employer/dashboard',
         consultant: '/consultant/dashboard',
         candidate: '/candidate/profile',
+        admin: '/admin',
       };
       const redirectTo = dashboardRoutes[role as string] || '/';
       navigate(redirectTo, { replace: true });

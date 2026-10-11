@@ -106,6 +106,7 @@ import consultant_cv_bank_id_delete_106 from "./api/consultant/cv-bank/[id]/DELE
 import account_documents_get_107 from "./api/account/documents/GET";
 import account_documents_post_108, { multerMiddleware as account_documents_post_108_upload } from "./api/account/documents/POST";
 import account_documents_id_delete_109 from "./api/account/documents/[id]/DELETE";
+import account_mobile_post from "./api/account/mobile/POST";
 import consultant_cv_bank_bulk_post_110 from "./api/consultant/cv-bank/bulk/POST";
 import consultant_cv_bank_parse_post_115, { multerMiddleware as consultant_cv_bank_parse_post_115_upload } from "./api/consultant/cv-bank/parse/POST";
 import consultant_cv_bank_submit_to_job_post_116 from "./api/consultant/cv-bank/submit-to-job/POST";
@@ -328,6 +329,7 @@ app.delete("/api/consultant/cv-bank/:id", consultant_cv_bank_id_delete_106);
 app.get("/api/account/documents", account_documents_get_107);
 app.post("/api/account/documents", account_documents_post_108_upload, account_documents_post_108);
 app.delete("/api/account/documents/:id", account_documents_id_delete_109);
+app.post("/api/account/mobile", account_mobile_post);
 app.post("/api/consultant/cv-bank/bulk", consultant_cv_bank_bulk_post_110);
 app.post("/api/consultant/cv-bank/parse", consultant_cv_bank_parse_post_115_upload, consultant_cv_bank_parse_post_115);
 app.post("/api/consultant/cv-bank/submit-to-job", consultant_cv_bank_submit_to_job_post_116);
@@ -409,6 +411,7 @@ import("./db/migrations/interview_candidate_ack.js").then(m => m.migrateIntervie
 import("./db/migrations/consultant_login_streak.js").then(m => m.migrateConsultantLoginStreak()).catch(console.error);
 import("./db/migrations/placement_joining_tracker.js").then(m => m.migratePlacementJoiningTracker()).catch(console.error);
 import("./db/migrations/cleanup_orphaned_jobs.js").then(m => m.cleanupOrphanedJobs()).catch(console.error);
+import("./db/migrations/add_profile_phone.js").then(m => m.migrateProfilePhone()).catch(console.error);
 
 // Error middleware must be registered AFTER the routes it protects; Express
 // only passes errors to middleware defined later in the stack.
@@ -493,6 +496,45 @@ app.use(
 		},
 	}),
 );
+
+// Site image slots (/airo-assets/images/<slot>) are not stored on this server:
+// their files live in the media manifest as remote currentUrl values, so the
+// static handler above 404s them and every slot image on the site breaks.
+// Resolve the slot from airo-media.json and redirect to its remote URL.
+// Real files on disk still win because this runs after express.static.
+let airoMediaManifest: Record<string, { currentUrl?: unknown }> | null = null;
+function loadAiroMediaManifest(): Record<string, { currentUrl?: unknown }> {
+	if (airoMediaManifest) return airoMediaManifest;
+	const candidates = [
+		join(process.cwd(), "public", "airo-media.json"),
+		join(process.cwd(), "dist", "client", "airo-media.json"),
+	];
+	for (const file of candidates) {
+		try {
+			airoMediaManifest = JSON.parse(readFileSync(file, "utf-8"));
+			break;
+		} catch {
+			// try next location
+		}
+	}
+	airoMediaManifest ??= {};
+	return airoMediaManifest;
+}
+
+app.use("/airo-assets/images", (req, res, next) => {
+	let slot: string;
+	try {
+		slot = decodeURIComponent(req.path.replace(/^\/+/, "").split("?")[0]);
+	} catch {
+		return next();
+	}
+	const remote = loadAiroMediaManifest()[slot]?.currentUrl;
+	if (typeof remote === "string" && remote.startsWith("https://")) {
+		res.set("Cache-Control", "public, max-age=3600");
+		return res.redirect(302, remote);
+	}
+	next();
+});
 
 if (import.meta.env.PROD) {
 	const __dirname = dirname(fileURLToPath(import.meta.url));

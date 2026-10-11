@@ -117,10 +117,13 @@ export function getAuth() {
 
         // CORS: Trusts localhost and the custom domain.
         trustedOrigins: (request?: Request) => {
-                if (!request) return [];
+                // Links opened from email (password reset, verification) carry no Origin
+                // header, so trust the site's own domains for their callbackURL.
+                const siteOrigins = ['https://www.tricci.in', 'https://tricci.in'];
+                if (!request) return siteOrigins;
 
           const origin = request.headers.get('origin');
-                if (!origin) return [];
+                if (!origin) return siteOrigins;
 
           try {
                     const originUrl = new URL(origin);

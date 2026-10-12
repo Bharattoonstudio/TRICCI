@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import InstallAppButton from "@/components/shared/InstallAppButton";
 import {
   Menu,
   X,
@@ -250,6 +251,7 @@ export default function Dashboard({
 
           {/* Header Actions */}
           <div className="ml-auto flex items-center gap-2">
+            <InstallAppButton />
             {headerActions}
 
             {/* Notifications */}

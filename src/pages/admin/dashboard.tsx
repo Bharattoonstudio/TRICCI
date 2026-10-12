@@ -12,12 +12,6 @@ import {
   BarChart3,
   Shield,
   Eye,
-  Trash2,
-  Search,
-  Filter,
-  Download,
-  Plus,
-  Edit,
   LogOut,
   Bell,
   Lock,
@@ -80,7 +74,6 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -198,58 +191,6 @@ export default function AdminDashboard() {
     const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
     return matchesSearch && matchesRole && matchesStatus;
   });
-
-  // User actions
-  const handleSuspendUser = async (userId: string) => {
-    if (window.confirm('Are you sure you want to suspend this user?')) {
-      try {
-        await fetch(`/api/admin/users/${userId}/suspend`, { method: 'POST' });
-        fetchAdminData();
-      } catch (error) {
-        console.error('Error suspending user:', error);
-      }
-    }
-  };
-
-  const handleUnsuspendUser = async (userId: string) => {
-    try {
-      await fetch(`/api/admin/users/${userId}/unsuspend`, { method: 'POST' });
-      fetchAdminData();
-    } catch (error) {
-      console.error('Error unsuspending user:', error);
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (window.confirm('This action cannot be undone. Delete this user?')) {
-      try {
-        await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
-        fetchAdminData();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-      }
-    }
-  };
-
-  const handleBulkAction = async (action: string) => {
-    const userIds = Array.from(selectedUsers);
-    if (userIds.length === 0) {
-      alert('Please select users');
-      return;
-    }
-
-    try {
-      await fetch('/api/admin/users/bulk-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIds, action }),
-      });
-      fetchAdminData();
-      setSelectedUsers(new Set());
-    } catch (error) {
-      console.error('Error performing bulk action:', error);
-    }
-  };
 
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
@@ -514,10 +455,6 @@ export default function AdminDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>User Management</CardTitle>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add User
-                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -551,65 +488,19 @@ export default function AdminDashboard() {
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
-                  <option value="suspended">Suspended</option>
                 </select>
               </div>
-
-              {/* Bulk Actions */}
-              {selectedUsers.size > 0 && (
-                <div className="flex gap-2 p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
-                  <span className="text-sm text-blue-300">
-                    {selectedUsers.size} user(s) selected
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleBulkAction('suspend')}
-                  >
-                    Suspend
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction('activate')}
-                  >
-                    Activate
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleBulkAction('delete')}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              )}
 
               {/* Users Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-600">
-                      <th className="text-left p-3">
-                        <input
-                          type="checkbox"
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedUsers(
-                                new Set(filteredUsers.map((u) => u.id))
-                              );
-                            } else {
-                              setSelectedUsers(new Set());
-                            }
-                          }}
-                        />
-                      </th>
                       <th className="text-left p-3">Name / Email</th>
                       <th className="text-left p-3">Role</th>
                       <th className="text-left p-3">Status</th>
                       <th className="text-left p-3">Joined</th>
                       <th className="text-left p-3">Last Login</th>
-                      <th className="text-left p-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -618,21 +509,6 @@ export default function AdminDashboard() {
                         key={user.id}
                         className="border-b border-slate-600 hover:bg-slate-600 transition"
                       >
-                        <td className="p-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedUsers.has(user.id)}
-                            onChange={(e) => {
-                              const newSelected = new Set(selectedUsers);
-                              if (e.target.checked) {
-                                newSelected.add(user.id);
-                              } else {
-                                newSelected.delete(user.id);
-                              }
-                              setSelectedUsers(newSelected);
-                            }}
-                          />
-                        </td>
                         <td className="p-3">
                           <div>
                             <button type="button" onClick={() => openUserDetail(user.id)} className="font-medium text-white hover:text-blue-400 text-left">{user.name}</button>
@@ -655,37 +531,6 @@ export default function AdminDashboard() {
                         <td className="p-3 text-xs text-gray-400">
                           {new Date(user.lastLogin).toLocaleDateString()}
                         </td>
-                        <td className="p-3">
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="ghost">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            {user.status === 'active' ? (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleSuspendUser(user.id)}
-                              >
-                                <Lock className="w-4 h-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleUnsuspendUser(user.id)}
-                              >
-                                Unlock
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -705,62 +550,8 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Content & Website Control</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-600 rounded-lg border border-slate-500 hover:border-blue-400 cursor-pointer transition">
-                  <h3 className="font-semibold text-white mb-2">Job Postings</h3>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Manage all job listings
-                  </p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Manage Jobs
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg border border-slate-500 hover:border-blue-400 cursor-pointer transition">
-                  <h3 className="font-semibold text-white mb-2">
-                    Featured Content
-                  </h3>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Edit homepage & banners
-                  </p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Edit Content
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg border border-slate-500 hover:border-blue-400 cursor-pointer transition">
-                  <h3 className="font-semibold text-white mb-2">Blog & News</h3>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Publish & manage articles
-                  </p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Manage Posts
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg border border-slate-500 hover:border-blue-400 cursor-pointer transition">
-                  <h3 className="font-semibold text-white mb-2">
-                    Email Templates
-                  </h3>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Customize notifications
-                  </p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Edit Templates
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded-lg">
-                <h3 className="font-semibold text-yellow-300 mb-2">Maintenance Mode</h3>
-                <p className="text-sm text-gray-300 mb-3">
-                  Temporarily take the platform offline for maintenance
-                </p>
-                <Button variant="outline" className="border-yellow-600 text-yellow-300 hover:bg-yellow-900">
-                  Enable Maintenance Mode
-                </Button>
-              </div>
+            <CardContent>
+              <p className="text-sm text-gray-300">Not built yet. This section will be added in a later phase.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -771,67 +562,8 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Security & Moderation</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="font-semibold text-white mb-2">
-                    Flagged Content
-                  </h3>
-                  <p className="text-2xl font-bold text-red-400">12</p>
-                  <Button size="sm" className="w-full mt-3 bg-red-600 hover:bg-red-700">
-                    Review Now
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="font-semibold text-white mb-2">
-                    Suspicious Activities
-                  </h3>
-                  <p className="text-2xl font-bold text-orange-400">5</p>
-                  <Button size="sm" className="w-full mt-3 bg-orange-600 hover:bg-orange-700">
-                    View Details
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="font-semibold text-white mb-2">Audit Logs</h3>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Track all admin & user activities
-                  </p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    View Logs
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="font-semibold text-white mb-2">
-                    Spam Management
-                  </h3>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Block spam & abuse
-                  </p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Manage Spam
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-slate-600 rounded-lg border border-slate-500">
-                <h3 className="font-semibold text-white mb-3">
-                  IP Whitelist/Blacklist
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-slate-500 rounded">
-                    <span className="text-sm">192.168.1.100</span>
-                    <Button size="sm" variant="ghost">
-                      Remove
-                    </Button>
-                  </div>
-                  <Button size="sm" variant="outline" className="w-full">
-                    Add IP Address
-                  </Button>
-                </div>
-              </div>
+            <CardContent>
+              <p className="text-sm text-gray-300">Not built yet. This section will be added in a later phase.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -842,46 +574,8 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Platform Analytics</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="text-sm text-gray-300 mb-2">User Growth</h3>
-                  <p className="text-3xl font-bold text-blue-400">+18%</p>
-                  <p className="text-xs text-gray-400 mt-1">vs last month</p>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="text-sm text-gray-300 mb-2">
-                    Conversion Rate
-                  </h3>
-                  <p className="text-3xl font-bold text-green-400">4.2%</p>
-                  <p className="text-xs text-gray-400 mt-1">candidates → placed</p>
-                </div>
-
-                <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="text-sm text-gray-300 mb-2">Avg. Response</h3>
-                  <p className="text-3xl font-bold text-purple-400">2.4h</p>
-                  <p className="text-xs text-gray-400 mt-1">application → offer</p>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-600 rounded-lg">
-                <h3 className="font-semibold text-white mb-3">Reports</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export User Analytics (CSV)
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Revenue Report (PDF)
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Job Performance (Excel)
-                  </Button>
-                </div>
-              </div>
+            <CardContent>
+              <p className="text-sm text-gray-300">Not built yet. This section will be added in a later phase.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -892,89 +586,12 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Platform Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-white">
-                    Platform Fee (%)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="10"
-                    defaultValue="10"
-                    className="mt-1 w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-white">
-                    Minimum Job Title
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue="TRICCI Recruitment"
-                    className="mt-1 w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-white">
-                    Support Email
-                  </label>
-                  <input
-                    type="email"
-                    defaultValue="support@tricci.in"
-                    className="mt-1 w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-white">
-                    Maintenance Message
-                  </label>
-                  <textarea
-                    placeholder="We are undergoing scheduled maintenance..."
-                    className="mt-1 w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white h-24"
-                  />
-                </div>
-
-                <div className="pt-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="w-5 h-5" />
-                    <span className="text-white">
-                      Allow new user registrations
-                    </span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="w-5 h-5" />
-                    <span className="text-white">
-                      Require email verification
-                    </span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-5 h-5" />
-                    <span className="text-white">
-                      Enable Two-Factor Authentication
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button className="bg-green-600 hover:bg-green-700">
-                  Save Settings
-                </Button>
-                <Button variant="outline">Reset to Default</Button>
-              </div>
+            <CardContent>
+              <p className="text-sm text-gray-300">Not built yet. This section will be added in a later phase.</p>
             </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
 
       {/* Footer */}

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
+import JdAiAssist from './JdAiAssist';
 import {
   XCircle, CheckCircle, PlusCircle, Building2, MapPin,
   IndianRupee, Maximize2, Minimize2, Edit3, Briefcase,
@@ -486,6 +487,18 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
                     className={`flex items-center gap-2 flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${jdMode === 'upload' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
                     <Upload size={13} /> Attach JD (PDF / DOC)
                   </button>
+                </div>
+
+                {/* AI assist: enhance write-up, create from position name, or enhance uploaded file */}
+                <div className="mb-3">
+                  <JdAiAssist
+                    values={{
+                      title: form.title, location: form.location, experience: form.experience,
+                      skills: form.skills, description: form.description,
+                      responsibilities: form.responsibilities, requirements: form.requirements,
+                    }}
+                    onApply={patch => setForm(f => ({ ...f, ...patch }))}
+                  />
                 </div>
 
                 {/* Write mode */}

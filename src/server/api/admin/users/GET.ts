@@ -25,7 +25,7 @@ export default async function handler(req: Request, res: Response) {
 
     const [rows, lastSeen] = await Promise.all([
       db
-        .select({ id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt, suspendedAt: user.suspendedAt })
+        .select({ id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt, suspendedAt: user.suspendedAt, removedAt: user.removedAt })
         .from(user)
         .orderBy(desc(user.createdAt))
         .limit(LIMIT),
@@ -40,7 +40,7 @@ export default async function handler(req: Request, res: Response) {
         email: u.email,
         name: u.name,
         role: u.role,
-        status: u.suspendedAt ? 'suspended' : 'active',
+        status: u.removedAt ? 'removed' : u.suspendedAt ? 'suspended' : 'active',
         joinedDate: u.createdAt,
         lastLogin: lastLoginByUser.get(u.id) ?? null,
         activityScore: 0,

@@ -89,24 +89,29 @@ export function getAuth() {
 
         // Auto-create role-specific profile row when a new user is created
         databaseHooks: {
-                // Block sign-in for suspended accounts. Only the suspended user is affected.
+                // Block sign-in for suspended or removed accounts. Only those users are affected.
                 // If this check itself fails, sign-in is allowed (fail open) so other users are never locked out by a database hiccup.
                 session: {
                   create: {
                     before: async (newSession) => {
-                      let suspendedAt: Date | null = null;
+                      let row: { suspendedAt: Date | null; removedAt: Date | null } | undefined;
                       try {
-                        const [row] = await db
-                          .select({ suspendedAt: user.suspendedAt })
+                        [row] = await db
+                          .select({ suspendedAt: user.suspendedAt, removedAt: user.removedAt })
                           .from(user)
                           .where(eq(user.id, newSession.userId))
                           .limit(1);
-                        suspendedAt = row?.suspendedAt ?? null;
                       } catch (err) {
                         console.error('session.suspension_check.error', err);
                         return undefined;
                       }
-                      if (suspendedAt) {
+                      if (row?.removedAt) {
+                        throw APIError.from('FORBIDDEN', {
+                          code: 'ACCOUNT_REMOVED',
+                          message: 'This account is no longer active. Please contact support@tricci.in.',
+                        });
+                      }
+                      if (row?.suspendedAt) {
                         throw APIError.from('FORBIDDEN', {
                           code: 'ACCOUNT_SUSPENDED',
                           message: 'Your account is suspended. Please contact support@tricci.in.',

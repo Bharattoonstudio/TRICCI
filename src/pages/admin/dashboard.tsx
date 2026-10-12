@@ -50,7 +50,7 @@ interface User {
   email: string;
   name: string;
   role: 'employer' | 'consultant' | 'candidate' | 'admin';
-  status: 'active' | 'suspended' | 'pending';
+  status: 'active' | 'suspended' | 'removed' | 'pending';
   joinedDate: string;
   lastLogin: string;
   activityScore: number;
@@ -60,6 +60,7 @@ interface AdminStats {
   totalUsers: number;
   activeUsers: number;
   suspendedUsers: number;
+  removedUsers: number;
   totalJobs: number;
   totalApplications: number;
   totalPlacements: number;
@@ -105,14 +106,18 @@ export default function AdminDashboard() {
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
-  // Pauses or reactivates an account. Suspending asks for a confirmation and a reason.
-  async function changeAccess(target: { id: string; name: string }, action: 'suspend' | 'unsuspend') {
+  // Pauses, removes or restores an account. Suspend and remove ask for a confirmation and a reason.
+  async function changeAccess(target: { id: string; name: string }, action: 'suspend' | 'unsuspend' | 'remove' | 'restore') {
     let reason: string | undefined;
-    if (action === 'suspend') {
-      if (!window.confirm(`Suspend ${target.name}? They will be signed out and cannot sign in until reactivated.`)) return;
-      const input = (window.prompt('Reason for suspending this account (at least 5 characters, recorded in the audit log):') ?? '').trim();
+    if (action === 'suspend' || action === 'remove') {
+      const verb = action === 'suspend' ? 'Suspend' : 'Remove';
+      const effect = action === 'suspend'
+        ? 'They will be signed out and cannot sign in until reactivated.'
+        : 'They will be signed out and cannot sign in. Their data is kept and the account can be restored.';
+      if (!window.confirm(`${verb} ${target.name}? ${effect}`)) return;
+      const input = (window.prompt(`Reason for this ${action === 'suspend' ? 'suspension' : 'removal'} (at least 5 characters, recorded in the audit log):`) ?? '').trim();
       if (input.length < 5) {
-        setActionMessage('Suspension cancelled: a reason of at least 5 characters is required.');
+        setActionMessage(`${verb} cancelled: a reason of at least 5 characters is required.`);
         return;
       }
       reason = input;
@@ -128,14 +133,11 @@ export default function AdminDashboard() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Action failed');
-      const suspended = action === 'suspend';
-      setUsers((prev) => prev.map((u) => (u.id === target.id ? { ...u, status: suspended ? 'suspended' : 'active' } : u)));
-      setStats((s) => (s ? {
-        ...s,
-        suspendedUsers: s.suspendedUsers + (suspended ? 1 : -1),
-        activeUsers: s.activeUsers + (suspended ? -1 : 1),
-      } : s));
-      setActionMessage(data.message || (suspended ? 'Account suspended.' : 'Account reactivated.'));
+      const newStatus: User['status'] = action === 'suspend' ? 'suspended' : action === 'remove' ? 'removed' : 'active';
+      setUsers((prev) => prev.map((u) => (u.id === target.id ? { ...u, status: newStatus } : u)));
+      const statsRes = await fetch('/api/admin/stats', { credentials: 'include' });
+      if (statsRes.ok) setStats(await statsRes.json());
+      setActionMessage(data.message || 'Done.');
       if (detailId === target.id) await openUserDetail(target.id);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : 'Action failed');
@@ -171,6 +173,7 @@ export default function AdminDashboard() {
             totalUsers: 0,
             activeUsers: 0,
             suspendedUsers: 0,
+            removedUsers: 0,
             totalJobs: 0,
             totalApplications: 0,
             totalPlacements: 0,
@@ -184,6 +187,7 @@ export default function AdminDashboard() {
           totalUsers: 0,
           activeUsers: 0,
           suspendedUsers: 0,
+          removedUsers: 0,
           totalJobs: 0,
           totalApplications: 0,
           totalPlacements: 0,
@@ -248,6 +252,7 @@ export default function AdminDashboard() {
     const colors: Record<string, string> = {
       active: 'bg-green-100 text-green-800',
       suspended: 'bg-red-100 text-red-800',
+      removed: 'bg-gray-300 text-gray-800',
       pending: 'bg-yellow-100 text-yellow-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
@@ -392,29 +397,56 @@ export default function AdminDashboard() {
                   <section>
                     <h3 className="text-sm font-semibold text-blue-300 mb-3">Access</h3>
                     <p className="text-sm text-gray-300 mb-3">
-                      Status: <span className="text-white font-medium">{detail.user.suspendedAt ? 'Suspended' : 'Active'}</span>
+                      Status: <span className="text-white font-medium">
+                        {detail.user.removedAt ? 'Removed' : detail.user.suspendedAt ? 'Suspended' : 'Active'}
+                      </span>
                     </p>
-                    {detail.user.suspendedAt ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={actionBusy}
-                        onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'unsuspend')}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        Reactivate account
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={actionBusy}
-                        onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'suspend')}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        Suspend account
-                      </Button>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {detail.user.removedAt ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={actionBusy}
+                          onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'restore')}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Restore account
+                        </Button>
+                      ) : (
+                        <>
+                          {detail.user.suspendedAt ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={actionBusy}
+                              onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'unsuspend')}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              Reactivate account
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={actionBusy}
+                              onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'suspend')}
+                              className="bg-amber-600 hover:bg-amber-700 text-white"
+                            >
+                              Suspend account
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={actionBusy}
+                            onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'remove')}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            Remove account
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </section>
                 )}
 
@@ -558,6 +590,7 @@ export default function AdminDashboard() {
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
                   <option value="suspended">Suspended</option>
+                  <option value="removed">Removed</option>
                 </select>
               </div>
 
@@ -605,28 +638,54 @@ export default function AdminDashboard() {
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : '—'}
                         </td>
                         <td className="p-3">
-                          {user.role !== 'admin' &&
-                            (user.status === 'suspended' ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={actionBusy}
-                                onClick={() => changeAccess(user, 'unsuspend')}
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                              >
-                                Reactivate
-                              </Button>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={actionBusy}
-                                onClick={() => changeAccess(user, 'suspend')}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                              >
-                                Suspend
-                              </Button>
-                            ))}
+                          {user.role !== 'admin' && (
+                            <div className="flex flex-wrap gap-2">
+                              {user.status === 'removed' ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={actionBusy}
+                                  onClick={() => changeAccess(user, 'restore')}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  Restore
+                                </Button>
+                              ) : (
+                                <>
+                                  {user.status === 'suspended' ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      disabled={actionBusy}
+                                      onClick={() => changeAccess(user, 'unsuspend')}
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                      Reactivate
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      disabled={actionBusy}
+                                      onClick={() => changeAccess(user, 'suspend')}
+                                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                                    >
+                                      Suspend
+                                    </Button>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    disabled={actionBusy}
+                                    onClick={() => changeAccess(user, 'remove')}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                  >
+                                    Remove
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

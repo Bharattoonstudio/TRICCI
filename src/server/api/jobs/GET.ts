@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { db } from '../../db/client.js';
 import { job as jobTable } from '../../db/schema.js';
 import { eq, and, gte } from 'drizzle-orm';
+import { visibleJobCondition } from '@/server/lib/posterStatus.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
@@ -65,6 +66,8 @@ export default async function handler(req: Request, res: Response) {
 
     // Build WHERE conditions
     const conditions = [eq(jobTable.status, 'active')];
+    // Hide jobs from employers an admin has suspended or removed.
+    conditions.push(visibleJobCondition());
 
     if (typeof category === 'string' && category !== 'all') {
       conditions.push(eq(jobTable.category, category));

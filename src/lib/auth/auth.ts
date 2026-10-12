@@ -119,6 +119,14 @@ export function getAuth() {
                       }
                       return undefined;
                     },
+                    // Record the sign-in time for the admin "Last login" field. Never blocks sign-in.
+                    after: async (newSession) => {
+                      try {
+                        await db.update(user).set({ lastLoginAt: new Date() }).where(eq(user.id, newSession.userId));
+                      } catch (err) {
+                        console.error('session.last_login.error', err);
+                      }
+                    },
                   },
                 },
                 user: {

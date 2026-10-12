@@ -22,7 +22,34 @@ import {
   Bell,
   Lock,
   AlertTriangle,
+  X,
 } from 'lucide-react';
+
+// Turns a camelCase field name into a readable label, e.g. "currentTitle" -> "Current Title"
+const labelize = (key: string) => key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+
+// Formats one value for display in the user-details popup
+const showValue = (v: unknown): string => {
+  if (v === null || v === undefined || v === '') return '—';
+  if (Array.isArray(v)) return v.length ? v.join(', ') : '—';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleString();
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+};
+
+function DetailGrid({ items }: { items: [string, unknown][] }) {
+  return (
+    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+      {items.map(([label, value]) => (
+        <div key={label} className="min-w-0">
+          <dt className="text-xs text-gray-400">{label}</dt>
+          <dd className="text-white break-words">{showValue(value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 interface User {
   id: string;
@@ -54,7 +81,38 @@ export default function AdminDashboard() {
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-  const [showUserModal, setShowUserModal] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+
+  async function openUserDetail(id: string) {
+    setDetailId(id);
+    setDetail(null);
+    setDetailError('');
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(id)}`, { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load user details');
+      setDetail(data);
+    } catch (err) {
+      setDetailError(err instanceof Error ? err.message : 'Could not load user details');
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  function closeUserDetail() {
+    setDetailId(null);
+    setDetail(null);
+    setDetailError('');
+  }
+
+  function openUsersTab() {
+    setActiveTab('users');
+    document.getElementById('admin-tabs')?.scrollIntoView({ behavior: 'smooth' });
+  }
   const [isLoading, setIsLoading] = useState(true);
   const [alerts, setAlerts] = useState<any[]>([]);
 
@@ -262,7 +320,7 @@ export default function AdminDashboard() {
       {/* Stats Overview */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-slate-700 border-slate-600 hover:border-blue-500 transition">
+          <Card onClick={openUsersTab} className="cursor-pointer bg-slate-700 border-slate-600 hover:border-blue-500 transition">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-gray-300">Total Users</CardTitle>
             </CardHeader>
@@ -314,8 +372,90 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* User details popup (read-only) */}
+      {detailId && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 overflow-y-auto"
+          onClick={closeUserDetail}
+        >
+          <div
+            className="w-full max-w-2xl bg-slate-800 border border-slate-600 rounded-2xl p-5 my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">User details</h2>
+              <button type="button" onClick={closeUserDetail} className="text-gray-400 hover:text-white" aria-label="Close">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {detailLoading && <p className="text-gray-400 text-sm">Loading…</p>}
+            {detailError && <p className="text-red-400 text-sm">{detailError}</p>}
+
+            {detail && (
+              <div className="space-y-6">
+                <section>
+                  <h3 className="text-sm font-semibold text-blue-300 mb-3">Account</h3>
+                  <DetailGrid
+                    items={[
+                      ['Name', detail.user.name],
+                      ['Email', detail.user.email],
+                      ['Role', detail.user.role],
+                      ['Email verified', detail.user.emailVerified],
+                      ['Joined', detail.user.createdAt],
+                      ['Last updated', detail.user.updatedAt],
+                    ]}
+                  />
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-blue-300 mb-3">Activity</h3>
+                  <DetailGrid
+                    items={[
+                      ['Last sign-in', detail.activity.lastSignIn],
+                      ['Active sessions', detail.activity.activeSessions],
+                      ['Jobs posted', detail.activity.jobsPosted],
+                      ['Applications submitted', detail.activity.applications],
+                    ]}
+                  />
+                </section>
+
+                {detail.user.role === 'candidate' && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-blue-300 mb-3">Consent</h3>
+                    <DetailGrid
+                      items={[
+                        ['Consent status', detail.user.consentStatus],
+                        ['Consent granted at', detail.user.consentGrantedAt],
+                        ['Consent withdrawn at', detail.user.consentWithdrawnAt],
+                        ['Consent given via', detail.user.consentGrantedVia],
+                      ]}
+                    />
+                  </section>
+                )}
+
+                <section>
+                  <h3 className="text-sm font-semibold text-blue-300 mb-3">
+                    {detail.user.role ? `${labelize(detail.user.role)} profile` : 'Profile'}
+                  </h3>
+                  {detail.profile ? (
+                    <DetailGrid
+                      items={Object.entries(detail.profile as Record<string, unknown>)
+                        .filter(([key]) => key !== 'id' && key !== 'userId')
+                        .map(([key, value]) => [labelize(key), value] as [string, unknown])}
+                    />
+                  ) : (
+                    <p className="text-gray-400 text-sm">No profile details saved yet.</p>
+                  )}
+                </section>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs id="admin-tabs" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-6 bg-slate-700 border border-slate-600">
           <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600">
             <LayoutGrid className="w-4 h-4 mr-2" />
@@ -352,26 +492,17 @@ export default function AdminDashboard() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="text-sm text-gray-300 mb-2">System Health</h3>
-                  <p className="text-2xl font-bold text-green-400">✓ Operational</p>
+                  <h3 className="text-sm text-gray-300 mb-2">Platform stats</h3>
+                  <p className={`text-2xl font-bold ${stats ? 'text-green-400' : 'text-red-400'}`}>{stats ? 'Loaded' : 'Not loaded'}</p>
                 </div>
                 <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="text-sm text-gray-300 mb-2">Response Time</h3>
-                  <p className="text-2xl font-bold text-blue-400">245ms</p>
+                  <h3 className="text-sm text-gray-300 mb-2">User list</h3>
+                  <p className={`text-2xl font-bold ${users.length ? 'text-blue-400' : 'text-gray-400'}`}>{users.length ? `${users.length} loaded` : 'None loaded'}</p>
                 </div>
                 <div className="p-4 bg-slate-600 rounded-lg">
-                  <h3 className="text-sm text-gray-300 mb-2">Database</h3>
-                  <p className="text-2xl font-bold text-yellow-400">Connected</p>
+                  <h3 className="text-sm text-gray-300 mb-2">Activity feed</h3>
+                  <p className="text-sm text-gray-400">Not connected yet</p>
                 </div>
-              </div>
-              <div className="mt-6 p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
-                <h3 className="font-semibold text-blue-300 mb-2">Recent Activity</h3>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li>• 5 new users registered in the last hour</li>
-                  <li>• 12 jobs posted today</li>
-                  <li>• 3 placements completed</li>
-                  <li>• 2 users flagged for review</li>
-                </ul>
               </div>
             </CardContent>
           </Card>
@@ -504,7 +635,7 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-3">
                           <div>
-                            <p className="font-medium text-white">{user.name}</p>
+                            <button type="button" onClick={() => openUserDetail(user.id)} className="font-medium text-white hover:text-blue-400 text-left">{user.name}</button>
                             <p className="text-xs text-gray-400">{user.email}</p>
                           </div>
                         </td>

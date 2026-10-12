@@ -47,6 +47,8 @@ import jobs_aggregate_get_47 from "./api/jobs/aggregate/GET";
 import jobs_parse_jd_post_48 from "./api/jobs/parse-jd/POST";
 import jobs_ai_draft_post_201 from "./api/jobs/ai-draft/POST";
 import jobs_ai_draft_extract_post_202, { multerMiddleware as jobs_ai_draft_extract_post_202_upload } from "./api/jobs/ai-draft/extract/POST";
+import admin_stats_get from "./api/admin/stats/GET";
+import admin_users_get from "./api/admin/users/GET";
 import jobs_id_get_49 from "./api/jobs/[id]/GET";
 import jobs_id_apply_post_50 from "./api/jobs/[id]/apply/POST";
 import og_get_51 from "./api/og/GET";
@@ -272,6 +274,10 @@ app.get("/api/jobs/aggregate", jobs_aggregate_get_47);
 app.post("/api/jobs/parse-jd", jobs_parse_jd_post_48);
 app.post("/api/jobs/ai-draft", jobs_ai_draft_post_201);
 app.post("/api/jobs/ai-draft/extract", jobs_ai_draft_extract_post_202_upload, jobs_ai_draft_extract_post_202);
+
+// Admin dashboard (admin role checked inside each handler)
+app.get("/api/admin/stats", admin_stats_get);
+app.get("/api/admin/users", admin_users_get);
 app.get("/api/jobs/:id", jobs_id_get_49);
 app.post("/api/jobs/:id/apply", jobs_id_apply_post_50);
 app.get("/api/og", og_get_51);

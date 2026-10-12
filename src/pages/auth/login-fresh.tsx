@@ -55,7 +55,14 @@ export default function LoginFreshPage() {
       };
       navigate(dashboardRoutes[role as string] || '/', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
+      const message = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
+      // Accounts created before the security upgrade must set a new password once.
+      // Say so clearly, and reassure the user that their profile is kept.
+      setError(
+        /invalid|incorrect|password/i.test(message)
+          ? `${message} If you signed up before our security upgrade, use "Forgot password" below to set a new password. Your profile and details are saved.`
+          : message,
+      );
     } finally {
       setLoading(false);
     }

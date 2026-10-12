@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 import type { Job } from '../GET.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { posterIsInactive } from '@/server/lib/posterStatus.js';
 
 export default async function handler(req: Request, res: Response) {
   const id = String(req.params.id);
@@ -20,6 +21,12 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const r = rows[0];
+
+    // Hide jobs from employers an admin has suspended or removed (admins can still open them).
+    const viewerIsAdmin = await getAuth().api.getSession({ headers: toWebRequest(req).headers }).then((x) => (x?.user as { role?: string } | undefined)?.role === 'admin').catch(() => false);
+    if (!viewerIsAdmin && await posterIsInactive(rows[0].postedByUserId)) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
 
     // Resolve viewer and enforce the same visibility rules as the job list.
     const auth = getAuth();

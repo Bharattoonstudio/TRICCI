@@ -1,13 +1,16 @@
 /**
  * GET /api/admin/users
- * Admin only. Lists accounts for the admin dashboard (newest first, max 500).
+ * Admin only. Lists accounts for the admin dashboard, newest first, one page at a time.
+ *
+ * Query: ?offset=0 (default 0). Returns up to 500 users per page.
+ * Header X-Total-Count gives the total number of accounts, so the dashboard can load every page.
  *
  * Read-only. Passwords and session tokens are never selected.
  * status is "suspended" when an admin has paused the account, otherwise "active".
  * activityScore is 0 for now, because it is not calculated yet.
  */
 import type { Request, Response } from 'express';
-import { desc, max } from 'drizzle-orm';
+import { count, desc, max } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth/auth.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { db } from '@/server/db/client.js';
@@ -23,14 +26,20 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const [rows, lastSeen] = await Promise.all([
+    const offsetRaw = parseInt(String(req.query.offset ?? '0'), 10);
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0;
+
+    const [rows, lastSeen, totals] = await Promise.all([
       db
         .select({ id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt, suspendedAt: user.suspendedAt, removedAt: user.removedAt })
         .from(user)
-        .orderBy(desc(user.createdAt))
-        .limit(LIMIT),
+        .orderBy(desc(user.createdAt), user.id)
+        .limit(LIMIT)
+        .offset(offset),
       db.select({ userId: session.userId, lastLogin: max(session.createdAt) }).from(session).groupBy(session.userId),
+      db.select({ value: count() }).from(user),
     ]);
+    res.setHeader('X-Total-Count', String(Number(totals[0]?.value ?? 0)));
 
     const lastLoginByUser = new Map(lastSeen.map((s) => [s.userId, s.lastLogin]));
 

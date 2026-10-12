@@ -51,7 +51,7 @@ interface User {
   email: string;
   name: string;
   role: 'employer' | 'consultant' | 'candidate' | 'admin';
-  status: 'active' | 'suspended' | 'removed' | 'pending';
+  status: 'active' | 'suspended' | 'removed';
   joinedDate: string;
   lastLogin: string;
   activityScore: number;
@@ -199,13 +199,20 @@ export default function AdminDashboard() {
 
       // Fetch users
       try {
-        const usersResponse = await fetch('/api/admin/users');
-        if (usersResponse.ok) {
-          const usersData = await usersResponse.json();
-          setUsers(usersData);
-        } else {
-          setUsers([]);
+        // Load every page of users (the server returns up to 500 at a time).
+        const allUsers: User[] = [];
+        let offset = 0;
+        let total = Infinity;
+        while (allUsers.length < total) {
+          const usersResponse = await fetch(`/api/admin/users?offset=${offset}`, { credentials: 'include' });
+          if (!usersResponse.ok) throw new Error('Could not load users');
+          total = Number(usersResponse.headers.get('X-Total-Count') ?? allUsers.length);
+          const page: User[] = await usersResponse.json();
+          if (page.length === 0) break;
+          allUsers.push(...page);
+          offset += page.length;
         }
+        setUsers(allUsers);
       } catch (e) {
         console.error('Error fetching users:', e);
         setUsers([]);
@@ -593,7 +600,6 @@ export default function AdminDashboard() {
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
-                  <option value="pending">Pending</option>
                   <option value="suspended">Suspended</option>
                   <option value="removed">Removed</option>
                 </select>

@@ -13,6 +13,7 @@ import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
+import { posterIsInactive } from '@/server/lib/posterStatus.js';
 
 const ORANGE = '#E8470A';
 const PURPLE = '#6B4FBB';
@@ -178,6 +179,7 @@ export default async function handler(req: Request, res: Response) {
 
     if (!jobRow) return res.status(404).json({ error: 'Job not found' });
     if (jobRow.status !== 'active') return res.status(400).json({ error: 'This job is no longer accepting applications' });
+    if (await posterIsInactive(jobRow.postedByUserId)) return res.status(404).json({ error: 'Job not found' });
 
     // Point 72: block reapplying to the SAME job within 90 days of a prior
     // application — not permanently. Done at the application layer rather

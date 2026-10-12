@@ -3,7 +3,7 @@
  * Admin only. Lists accounts for the admin dashboard (newest first, max 500).
  *
  * Read-only. Passwords and session tokens are never selected.
- * status is always "active" for now, because suspension is not built yet.
+ * status is "suspended" when an admin has paused the account, otherwise "active".
  * activityScore is 0 for now, because it is not calculated yet.
  */
 import type { Request, Response } from 'express';
@@ -25,7 +25,7 @@ export default async function handler(req: Request, res: Response) {
 
     const [rows, lastSeen] = await Promise.all([
       db
-        .select({ id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt })
+        .select({ id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt, suspendedAt: user.suspendedAt })
         .from(user)
         .orderBy(desc(user.createdAt))
         .limit(LIMIT),
@@ -40,7 +40,7 @@ export default async function handler(req: Request, res: Response) {
         email: u.email,
         name: u.name,
         role: u.role,
-        status: 'active',
+        status: u.suspendedAt ? 'suspended' : 'active',
         joinedDate: u.createdAt,
         lastLogin: lastLoginByUser.get(u.id) ?? null,
         activityScore: 0,

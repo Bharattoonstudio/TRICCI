@@ -50,6 +50,8 @@ import jobs_ai_draft_extract_post_202, { multerMiddleware as jobs_ai_draft_extra
 import admin_stats_get from "./api/admin/stats/GET";
 import admin_users_get from "./api/admin/users/GET";
 import admin_user_detail_get from "./api/admin/users/[id]/GET";
+import admin_user_suspend_post from "./api/admin/users/[id]/suspend/POST";
+import admin_user_unsuspend_post from "./api/admin/users/[id]/unsuspend/POST";
 import jobs_id_get_49 from "./api/jobs/[id]/GET";
 import jobs_id_apply_post_50 from "./api/jobs/[id]/apply/POST";
 import og_get_51 from "./api/og/GET";
@@ -280,6 +282,8 @@ app.post("/api/jobs/ai-draft/extract", jobs_ai_draft_extract_post_202_upload, jo
 app.get("/api/admin/stats", admin_stats_get);
 app.get("/api/admin/users", admin_users_get);
 app.get("/api/admin/users/:id", admin_user_detail_get);
+app.post("/api/admin/users/:id/suspend", admin_user_suspend_post);
+app.post("/api/admin/users/:id/unsuspend", admin_user_unsuspend_post);
 app.get("/api/jobs/:id", jobs_id_get_49);
 app.post("/api/jobs/:id/apply", jobs_id_apply_post_50);
 app.get("/api/og", og_get_51);

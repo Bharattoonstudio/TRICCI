@@ -25,6 +25,8 @@ export const user = pgTable('user', {
   role: varchar('role', { length: 32 }).notNull().default('candidate'),
   // Prevent clients from writing isAdmin directly (enforced in auth.ts)
   isAdmin: boolean('is_admin').notNull().default(false),
+  // Set by an admin to pause an account. Null means active. Checked at sign-in (auth.ts).
+  suspendedAt: timestamp('suspended_at'),
 
   // P0 #2: Candidate consent tracking
   // consent_status: 'pending' (no consent yet) | 'granted' (can be submitted) | 'withdrawn' (consent revoked)

@@ -102,6 +102,48 @@ export default function AdminDashboard() {
     setDetailError('');
   }
 
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
+
+  // Pauses or reactivates an account. Suspending asks for a confirmation and a reason.
+  async function changeAccess(target: { id: string; name: string }, action: 'suspend' | 'unsuspend') {
+    let reason: string | undefined;
+    if (action === 'suspend') {
+      if (!window.confirm(`Suspend ${target.name}? They will be signed out and cannot sign in until reactivated.`)) return;
+      const input = (window.prompt('Reason for suspending this account (at least 5 characters, recorded in the audit log):') ?? '').trim();
+      if (input.length < 5) {
+        setActionMessage('Suspension cancelled: a reason of at least 5 characters is required.');
+        return;
+      }
+      reason = input;
+    }
+    setActionBusy(true);
+    setActionMessage('');
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(target.id)}/${action}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reason ? { reason } : {}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Action failed');
+      const suspended = action === 'suspend';
+      setUsers((prev) => prev.map((u) => (u.id === target.id ? { ...u, status: suspended ? 'suspended' : 'active' } : u)));
+      setStats((s) => (s ? {
+        ...s,
+        suspendedUsers: s.suspendedUsers + (suspended ? 1 : -1),
+        activeUsers: s.activeUsers + (suspended ? -1 : 1),
+      } : s));
+      setActionMessage(data.message || (suspended ? 'Account suspended.' : 'Account reactivated.'));
+      if (detailId === target.id) await openUserDetail(target.id);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   function openUsersTab() {
     setActiveTab('users');
     document.getElementById('admin-tabs')?.scrollIntoView({ behavior: 'smooth' });
@@ -302,12 +344,8 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm text-gray-300">Revenue</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-yellow-400">
-                ₹{stats.platformRevenue.toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                ₹{stats.pendingPayouts.toLocaleString()} pending
-              </p>
+              <p className="text-3xl font-bold text-yellow-400">Not calculated yet</p>
+              <p className="text-xs text-gray-400 mt-1">Revenue and payouts are not tracked yet</p>
             </CardContent>
           </Card>
         </div>
@@ -332,6 +370,7 @@ export default function AdminDashboard() {
 
             {detailLoading && <p className="text-gray-400 text-sm">Loading…</p>}
             {detailError && <p className="text-red-400 text-sm">{detailError}</p>}
+            {actionMessage && <p className="text-amber-300 text-sm mb-3">{actionMessage}</p>}
 
             {detail && (
               <div className="space-y-6">
@@ -348,6 +387,36 @@ export default function AdminDashboard() {
                     ]}
                   />
                 </section>
+
+                {detail.user.role !== 'admin' && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-blue-300 mb-3">Access</h3>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Status: <span className="text-white font-medium">{detail.user.suspendedAt ? 'Suspended' : 'Active'}</span>
+                    </p>
+                    {detail.user.suspendedAt ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={actionBusy}
+                        onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'unsuspend')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        Reactivate account
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={actionBusy}
+                        onClick={() => changeAccess({ id: detail.user.id, name: detail.user.name }, 'suspend')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Suspend account
+                      </Button>
+                    )}
+                  </section>
+                )}
 
                 <section>
                   <h3 className="text-sm font-semibold text-blue-300 mb-3">Activity</h3>
@@ -488,8 +557,11 @@ export default function AdminDashboard() {
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
+                  <option value="suspended">Suspended</option>
                 </select>
               </div>
+
+              {actionMessage && <p className="text-amber-300 text-sm">{actionMessage}</p>}
 
               {/* Users Table */}
               <div className="overflow-x-auto">
@@ -501,6 +573,7 @@ export default function AdminDashboard() {
                       <th className="text-left p-3">Status</th>
                       <th className="text-left p-3">Joined</th>
                       <th className="text-left p-3">Last Login</th>
+                      <th className="text-left p-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -529,7 +602,31 @@ export default function AdminDashboard() {
                           {new Date(user.joinedDate).toLocaleDateString()}
                         </td>
                         <td className="p-3 text-xs text-gray-400">
-                          {new Date(user.lastLogin).toLocaleDateString()}
+                          {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="p-3">
+                          {user.role !== 'admin' &&
+                            (user.status === 'suspended' ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={actionBusy}
+                                onClick={() => changeAccess(user, 'unsuspend')}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                Reactivate
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={actionBusy}
+                                onClick={() => changeAccess(user, 'suspend')}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                              >
+                                Suspend
+                              </Button>
+                            ))}
                         </td>
                       </tr>
                     ))}

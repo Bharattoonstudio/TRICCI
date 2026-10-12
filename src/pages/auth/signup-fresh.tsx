@@ -76,7 +76,17 @@ export default function SignupFreshPage() {
         credentials: 'include',
       });
       const { data, error: apiError } = await readResponse(response);
-      if (apiError) throw new Error(apiError);
+      if (apiError) {
+        // Existing account (e.g. created before the security upgrade): point the user to
+        // password reset instead of showing a raw error, so their saved profile is not
+        // mistaken for lost data.
+        if (/already exists/i.test(apiError)) {
+          throw new Error(
+            'An account with this email already exists. Your profile and details are saved. Use "Forgot password" on the login page to set a new password and sign in.',
+          );
+        }
+        throw new Error(apiError);
+      }
 
       if (data.token) localStorage.setItem('sessionToken', data.token);
       if (data.user?.id) localStorage.setItem('userId', data.user.id);

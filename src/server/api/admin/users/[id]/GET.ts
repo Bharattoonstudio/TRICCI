@@ -49,6 +49,7 @@ export default async function handler(req: Request, res: Response) {
         consentWithdrawnAt: user.consentWithdrawnAt,
         consentGrantedVia: user.consentGrantedVia,
         suspendedAt: user.suspendedAt,
+        removedAt: user.removedAt,
       })
       .from(user)
       .where(eq(user.id, id))

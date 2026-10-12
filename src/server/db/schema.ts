@@ -27,6 +27,8 @@ export const user = pgTable('user', {
   isAdmin: boolean('is_admin').notNull().default(false),
   // Set by an admin to pause an account. Null means active. Checked at sign-in (auth.ts).
   suspendedAt: timestamp('suspended_at'),
+  // Set by an admin to remove an account (soft delete: data kept, sign-in blocked). Null means not removed.
+  removedAt: timestamp('removed_at'),
 
   // P0 #2: Candidate consent tracking
   // consent_status: 'pending' (no consent yet) | 'granted' (can be submitted) | 'withdrawn' (consent revoked)

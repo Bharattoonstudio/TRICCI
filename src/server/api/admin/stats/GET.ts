@@ -20,9 +20,10 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const [users, suspended, jobs, applications, placements] = await Promise.all([
+    const [users, suspended, removed, jobs, applications, placements] = await Promise.all([
       db.select({ value: count() }).from(user),
       db.select({ value: count() }).from(user).where(isNotNull(user.suspendedAt)),
+      db.select({ value: count() }).from(user).where(isNotNull(user.removedAt)),
       db.select({ value: count() }).from(job),
       db.select({ value: count() }).from(candidateApplication),
       db.select({ value: count() }).from(placement),
@@ -30,10 +31,12 @@ export default async function handler(req: Request, res: Response) {
 
     const totalUsers = Number(users[0]?.value ?? 0);
     const suspendedUsers = Number(suspended[0]?.value ?? 0);
+    const removedUsers = Number(removed[0]?.value ?? 0);
     return res.status(200).json({
       totalUsers,
-      activeUsers: totalUsers - suspendedUsers,
+      activeUsers: totalUsers - suspendedUsers - removedUsers,
       suspendedUsers,
+      removedUsers,
       totalJobs: Number(jobs[0]?.value ?? 0),
       totalApplications: Number(applications[0]?.value ?? 0),
       totalPlacements: Number(placements[0]?.value ?? 0),

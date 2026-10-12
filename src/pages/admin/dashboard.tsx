@@ -315,7 +315,7 @@ export default function AdminDashboard() {
             <CardContent>
               <p className="text-3xl font-bold text-blue-400">{stats.totalUsers}</p>
               <p className="text-xs text-gray-400 mt-1">
-                {stats.activeUsers} active
+                {stats.activeUsers} active · {stats.suspendedUsers} suspended · {stats.removedUsers} removed
               </p>
             </CardContent>
           </Card>
@@ -613,7 +613,9 @@ export default function AdminDashboard() {
                     {filteredUsers.map((user) => (
                       <tr
                         key={user.id}
-                        className="border-b border-slate-600 hover:bg-slate-600 transition"
+                        className={`border-b border-slate-600 hover:bg-slate-600 transition ${
+                          user.status === 'suspended' ? 'bg-red-950/60' : user.status === 'removed' ? 'bg-slate-800/80' : ''
+                        }`}
                       >
                         <td className="p-3">
                           <div>
@@ -627,7 +629,7 @@ export default function AdminDashboard() {
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Badge className={getStatusColor(user.status)}>
+                          <Badge className={`${getStatusColor(user.status)} capitalize`}>
                             {user.status}
                           </Badge>
                         </td>

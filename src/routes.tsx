@@ -19,9 +19,7 @@ const CandidateOffers = lazy(() => import('./pages/candidate/offers'));
 const CandidateDocuments = lazy(() => import('./pages/candidate/documents'));
 const BillingPage = lazy(() => import('./pages/billing/index'));
 const AdminDashboard = lazy(() => import('./pages/admin/dashboard'));
-const AdminQuickAccessPage = lazy(() => import('./pages/admin/quick-access'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
-const AdminSetupPage = lazy(() => import('./pages/admin/setup'));
 const LoginFreshPage = lazy(() => import('./pages/auth/login-fresh'));
 const ForgotPasswordFreshPage = lazy(() => import('./pages/auth/forgot-password-fresh'));
 const SignupFreshPage = lazy(() => import('./pages/auth/signup-fresh'));
@@ -208,10 +206,15 @@ export const routes: RouteObject[] = [
     ),
   },
 
-  // Admin login & setup (public — no auth required)
-  { path: '/admin/quick-access', element: <AdminQuickAccessPage /> },
-  { path: '/admin/setup', element: <AdminSetupPage /> },
-  { path: '/admin/audit-log', element: <AdminAuditLogPage /> },
+  // Admin audit log: admin only
+  {
+    path: '/admin/audit-log',
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminAuditLogPage />
+      </ProtectedRoute>
+    ),
+  },
 
   { path: '*', element: <NotFoundPage /> },
 ];
@@ -237,6 +240,6 @@ export type Path =
   | '/candidate/documents'
   | '/billing'
   | '/admin'
-  | '/admin/quick-access'
+  | '/admin/audit-log'
   | '/accept-invite';
 export type Params = Record<string, string | undefined>;

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { signOut } from '@/lib/auth/auth-client';
 import {
   LayoutGrid,
   Users,
@@ -259,22 +260,26 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4 sm:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2 sm:mb-6">
           <div>
-            <h1 className="text-4xl font-bold flex items-center gap-3">
-              <Shield className="w-10 h-10 text-blue-400" />
+            <h1 className="text-2xl sm:text-4xl font-bold flex items-center gap-2 sm:gap-3">
+              <Shield className="w-7 h-7 sm:w-10 sm:h-10 text-blue-400" />
               Admin Control Panel
             </h1>
-            <p className="text-gray-400 mt-2">Complete platform management system</p>
+            <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">Complete platform management system</p>
           </div>
           <Button
             variant="outline"
-            className="text-white border-white hover:bg-white hover:text-slate-900"
-            onClick={() => {
-              /* Logout logic */
+            className="text-white border-white hover:bg-white hover:text-slate-900 self-start sm:self-auto"
+            onClick={async () => {
+              try {
+                await signOut();
+              } finally {
+                window.location.href = '/login';
+              }
             }}
           >
             <LogOut className="w-4 h-4 mr-2" />
@@ -315,7 +320,7 @@ export default function AdminDashboard() {
             <CardContent>
               <p className="text-3xl font-bold text-blue-400">{stats.totalUsers}</p>
               <p className="text-xs text-gray-400 mt-1">
-                {stats.activeUsers} active
+                {stats.activeUsers} active · {stats.suspendedUsers} suspended · {stats.removedUsers} removed
               </p>
             </CardContent>
           </Card>
@@ -363,7 +368,7 @@ export default function AdminDashboard() {
           onClick={closeUserDetail}
         >
           <div
-            className="w-full max-w-2xl bg-slate-800 border border-slate-600 rounded-2xl p-5 my-8"
+            className="w-full max-w-2xl bg-slate-800 border border-slate-600 rounded-2xl p-4 sm:p-5 my-4 sm:my-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -498,7 +503,7 @@ export default function AdminDashboard() {
 
       {/* Main Tabs */}
       <Tabs id="admin-tabs" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 bg-slate-700 border border-slate-600">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1 bg-slate-700 border border-slate-600">
           <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600">
             <LayoutGrid className="w-4 h-4 mr-2" />
             Overview
@@ -560,8 +565,8 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Search & Filter */}
-              <div className="flex gap-4 flex-wrap">
-                <div className="flex-1 min-w-64">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
                   <input
                     type="text"
                     placeholder="Search by name or email..."
@@ -571,7 +576,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <select
-                  className="px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full sm:w-auto px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
                 >
@@ -582,7 +587,7 @@ export default function AdminDashboard() {
                   <option value="candidate">Candidate</option>
                 </select>
                 <select
-                  className="px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full sm:w-auto px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                 >
@@ -596,8 +601,57 @@ export default function AdminDashboard() {
 
               {actionMessage && <p className="text-amber-300 text-sm">{actionMessage}</p>}
 
-              {/* Users Table */}
-              <div className="overflow-x-auto">
+              {/* Phone layout: one card per user, same details and actions as the table */}
+              <div className="md:hidden space-y-3">
+                {filteredUsers.length === 0 && <p className="text-sm text-gray-400">No users match these filters.</p>}
+                {filteredUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className={`rounded-lg border border-slate-600 p-4 ${
+                      user.status === 'suspended' ? 'bg-red-950/60' : user.status === 'removed' ? 'bg-slate-800/80' : 'bg-slate-600/40'
+                    }`}
+                  >
+                    <button type="button" onClick={() => openUserDetail(user.id)} className="font-semibold text-white text-left text-base">
+                      {user.name}
+                    </button>
+                    <p className="text-xs text-gray-400 break-all">{user.email}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
+                      <Badge className={`${getStatusColor(user.status)} capitalize`}>{user.status}</Badge>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Joined {new Date(user.joinedDate).toLocaleDateString()} · Last login {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : '—'}
+                    </p>
+                    {user.role !== 'admin' && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {user.status === 'removed' ? (
+                          <Button type="button" size="sm" disabled={actionBusy} onClick={() => changeAccess(user, 'restore')} className="bg-green-600 hover:bg-green-700 text-white">
+                            Restore
+                          </Button>
+                        ) : (
+                          <>
+                            {user.status === 'suspended' ? (
+                              <Button type="button" size="sm" disabled={actionBusy} onClick={() => changeAccess(user, 'unsuspend')} className="bg-green-600 hover:bg-green-700 text-white">
+                                Reactivate
+                              </Button>
+                            ) : (
+                              <Button type="button" size="sm" disabled={actionBusy} onClick={() => changeAccess(user, 'suspend')} className="bg-amber-600 hover:bg-amber-700 text-white">
+                                Suspend
+                              </Button>
+                            )}
+                            <Button type="button" size="sm" disabled={actionBusy} onClick={() => changeAccess(user, 'remove')} className="bg-red-600 hover:bg-red-700 text-white">
+                              Remove
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Users Table (tablet and desktop) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-600">
@@ -613,7 +667,9 @@ export default function AdminDashboard() {
                     {filteredUsers.map((user) => (
                       <tr
                         key={user.id}
-                        className="border-b border-slate-600 hover:bg-slate-600 transition"
+                        className={`border-b border-slate-600 hover:bg-slate-600 transition ${
+                          user.status === 'suspended' ? 'bg-red-950/60' : user.status === 'removed' ? 'bg-slate-800/80' : ''
+                        }`}
                       >
                         <td className="p-3">
                           <div>
@@ -627,7 +683,7 @@ export default function AdminDashboard() {
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Badge className={getStatusColor(user.status)}>
+                          <Badge className={`${getStatusColor(user.status)} capitalize`}>
                             {user.status}
                           </Badge>
                         </td>

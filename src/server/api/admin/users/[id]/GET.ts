@@ -50,6 +50,7 @@ export default async function handler(req: Request, res: Response) {
         consentGrantedVia: user.consentGrantedVia,
         suspendedAt: user.suspendedAt,
         removedAt: user.removedAt,
+        lastLoginAt: user.lastLoginAt,
       })
       .from(user)
       .where(eq(user.id, id))
@@ -83,7 +84,7 @@ export default async function handler(req: Request, res: Response) {
       user: account,
       profile,
       activity: {
-        lastSignIn: lastSignIn[0]?.value ?? null,
+        lastSignIn: account.lastLoginAt ?? lastSignIn[0]?.value ?? null,
         activeSessions: Number(activeSessions[0]?.value ?? 0),
         jobsPosted: Number(jobsPosted[0]?.value ?? 0),
         applications: Number(applications[0]?.value ?? 0),

@@ -29,6 +29,8 @@ export const user = pgTable('user', {
   suspendedAt: timestamp('suspended_at'),
   // Set by an admin to remove an account (soft delete: data kept, sign-in blocked). Null means not removed.
   removedAt: timestamp('removed_at'),
+  // Set on every successful sign-in (auth.ts). Null if the user has never signed in since this was added.
+  lastLoginAt: timestamp('last_login_at'),
 
   // P0 #2: Candidate consent tracking
   // consent_status: 'pending' (no consent yet) | 'granted' (can be submitted) | 'withdrawn' (consent revoked)

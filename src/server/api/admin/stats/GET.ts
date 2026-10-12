@@ -6,7 +6,7 @@
  * Response: { totalUsers, activeUsers, suspendedUsers, totalJobs, totalApplications, totalPlacements, platformRevenue, pendingPayouts }
  */
 import type { Request, Response } from 'express';
-import { count } from 'drizzle-orm';
+import { count, isNotNull } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth/auth.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { db } from '@/server/db/client.js';
@@ -20,18 +20,20 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const [users, jobs, applications, placements] = await Promise.all([
+    const [users, suspended, jobs, applications, placements] = await Promise.all([
       db.select({ value: count() }).from(user),
+      db.select({ value: count() }).from(user).where(isNotNull(user.suspendedAt)),
       db.select({ value: count() }).from(job),
       db.select({ value: count() }).from(candidateApplication),
       db.select({ value: count() }).from(placement),
     ]);
 
     const totalUsers = Number(users[0]?.value ?? 0);
+    const suspendedUsers = Number(suspended[0]?.value ?? 0);
     return res.status(200).json({
       totalUsers,
-      activeUsers: totalUsers,
-      suspendedUsers: 0,
+      activeUsers: totalUsers - suspendedUsers,
+      suspendedUsers,
       totalJobs: Number(jobs[0]?.value ?? 0),
       totalApplications: Number(applications[0]?.value ?? 0),
       totalPlacements: Number(placements[0]?.value ?? 0),

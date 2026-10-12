@@ -15,7 +15,9 @@
  */
 
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { eq } from 'drizzle-orm';
 
 import { db } from '@/server/db/client';
 import { user, session, account, verification, candidateProfile, employerProfile, consultantProfile } from '@/server/db/schema';
@@ -87,6 +89,33 @@ export function getAuth() {
 
         // Auto-create role-specific profile row when a new user is created
         databaseHooks: {
+                // Block sign-in for suspended accounts. Only the suspended user is affected.
+                // If this check itself fails, sign-in is allowed (fail open) so other users are never locked out by a database hiccup.
+                session: {
+                  create: {
+                    before: async (newSession) => {
+                      let suspendedAt: Date | null = null;
+                      try {
+                        const [row] = await db
+                          .select({ suspendedAt: user.suspendedAt })
+                          .from(user)
+                          .where(eq(user.id, newSession.userId))
+                          .limit(1);
+                        suspendedAt = row?.suspendedAt ?? null;
+                      } catch (err) {
+                        console.error('session.suspension_check.error', err);
+                        return undefined;
+                      }
+                      if (suspendedAt) {
+                        throw APIError.from('FORBIDDEN', {
+                          code: 'ACCOUNT_SUSPENDED',
+                          message: 'Your account is suspended. Please contact support@tricci.in.',
+                        });
+                      }
+                      return undefined;
+                    },
+                  },
+                },
                 user: {
                           create: {
                                       after: async (newUser) => {

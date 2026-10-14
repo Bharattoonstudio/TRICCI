@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ProtectedRoute } from './lib/auth/auth-client';
+import FloatingNav from './components/shared/FloatingNav';
 
 // Lazy load pages
 const HomePage = lazy(() => import('./pages/index'));
@@ -91,6 +92,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <FloatingNav />
     </Router>
   );
 }

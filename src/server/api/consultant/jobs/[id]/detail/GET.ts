@@ -11,6 +11,7 @@ import { job, submission } from '@/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { posterIsInactive } from '@/server/lib/posterStatus.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -23,7 +24,10 @@ export default async function handler(req: Request, res: Response) {
     const jobId = String(req.params.id);
 
     const [jobRow] = await db.select().from(job).where(eq(job.id, jobId)).limit(1);
-    if (!jobRow) return res.status(404).json({ error: 'Job not found' });
+    // A suspended or removed employer's jobs are hidden from consultants; admins can still open them.
+    if (!jobRow || (role === 'consultant' && (await posterIsInactive(jobRow.postedByUserId)))) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
 
     const mySubmissions = await db
       .select()

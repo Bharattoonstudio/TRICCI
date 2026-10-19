@@ -13,6 +13,7 @@ import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
+import { posterIsInactive } from '@/server/lib/posterStatus.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -27,8 +28,10 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const jobId = String(req.params.id);
-    const [jobRow] = await db.select({ id: job.id }).from(job).where(eq(job.id, jobId)).limit(1);
-    if (!jobRow) return res.status(404).json({ error: 'Job not found' });
+    const [jobRow] = await db.select({ id: job.id, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
+    if (!jobRow || (role === 'consultant' && (await posterIsInactive(jobRow.postedByUserId)))) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
 
     const [existing] = await db
       .select({ id: jobAcceptance.id })

@@ -20,7 +20,7 @@ import DocumentsModal from '@/components/employer/DocumentsModal';
 
 interface JobDetail {
   id: string; title: string; department: string; location: string;
-  ctcLabel: string; feePercent: number; status: string; description?: string;
+  ctcLabel: string; feePercent: number; feeType?: string; feeAmountRupees?: number | null; status: string; description?: string;
   skills?: string[];
 }
 interface Funnel {
@@ -173,7 +173,7 @@ export default function EmployerJobDetailPage() {
                   <span className="flex items-center gap-1"><Briefcase size={13} /> {jobDetail.department}</span>
                   <span className="flex items-center gap-1"><MapPin size={13} /> {jobDetail.location}</span>
                   <span className="flex items-center gap-1"><IndianRupee size={13} /> {jobDetail.ctcLabel}</span>
-                  <span>Fee: {jobDetail.feePercent}%</span>
+                  <span>Fee: {jobDetail.feeType === 'amount' ? `₹${(jobDetail.feeAmountRupees ?? 0).toLocaleString('en-IN')} fixed` : `${jobDetail.feePercent}% of offer CTC`}</span>
                 </div>
                 {postedBy && (
                   <p className="text-xs text-muted-foreground mt-2">Posted by <span className="font-semibold text-foreground">{postedBy.name}</span> ({postedBy.email})</p>

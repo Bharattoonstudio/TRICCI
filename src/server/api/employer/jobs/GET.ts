@@ -4,6 +4,7 @@ import { job as jobTable } from '@/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { formatFeeLabel } from '@/server/lib/employerFee.js';
 
 interface JobResponse {
   id: string;
@@ -12,6 +13,9 @@ interface JobResponse {
   location: string;
   ctcLabel: string;
   feePercent: number;
+  feeType: string;
+  feeAmountRupees: number | null;
+  feeLabel: string;
   status: string;
   priority: number;
   applicants: number;
@@ -55,6 +59,9 @@ export default async function handler(req: Request, res: Response) {
       location: r.location,
       ctcLabel: r.ctcLabel,
       feePercent: r.feePercent,
+      feeType: r.feeType,
+      feeAmountRupees: r.feeAmountRupees,
+      feeLabel: formatFeeLabel(r),
       status: r.status,
       priority: r.priority,
       applicants: r.applicants,

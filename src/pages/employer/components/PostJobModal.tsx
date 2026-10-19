@@ -42,7 +42,7 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
 
   const [form, setForm] = useState({
     title: '', department: '', location: '', locationType: 'hybrid',
-    ctcMin: '', ctcMax: '', fee: '8', description: '', skills: '',
+    ctcMin: '', ctcMax: '', fee: '8', feeType: 'percent', feeAmount: '', description: '', skills: '',
     experience: '', responsibilities: '', requirements: '', visibility: 'public',
     paymentTermDays: '45',
   });
@@ -57,6 +57,10 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
     setRounds(r => r.map((round, idx) => idx === i ? { ...round, [key]: val } : round));
   }
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const feeDisplay = form.feeType === 'amount'
+    ? `₹${Number(form.feeAmount || 0).toLocaleString('en-IN')} fixed fee`
+    : `${form.fee}% of offer CTC`;
+  const feeAmountInvalid = form.feeType === 'amount' && form.feeAmount !== '' && Number(form.feeAmount) < 50000;
 
   const [jdRawText, setJdRawText] = useState('');
 
@@ -117,7 +121,9 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
           ctcMax: form.ctcMax ? Number(form.ctcMax) : 0,
           description: form.description || jdRawText,
           skills: form.skills,
+          feeType: form.feeType,
           feePercent: Number(form.fee),
+          feeAmountRupees: form.feeType === 'amount' ? Number(form.feeAmount) : undefined,
           paymentTermDays: Number(form.paymentTermDays),
           experience: form.experience,
           responsibilities: form.responsibilities,
@@ -307,8 +313,8 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
               )}
               <div className="bg-primary/8 border border-primary/20 rounded-2xl p-5">
                 <h3 className="text-sm font-black text-foreground mb-2">Placement Fee</h3>
-                <p className="text-2xl font-black text-primary" style={{ fontFamily: 'var(--font-heading)' }}>{form.fee}%</p>
-                <p className="text-xs text-muted-foreground mt-1">of first-year CTC, payable on successful placement only</p>
+                <p className="text-2xl font-black text-primary" style={{ fontFamily: 'var(--font-heading)' }}>{feeDisplay}</p>
+                <p className="text-xs text-muted-foreground mt-1">{form.feeType === 'amount' ? 'Fixed fee, payable on successful placement only' : 'of offer CTC, payable on successful placement only'}</p>
               </div>
               {form.experience && (
                 <div className="bg-card border border-border rounded-2xl p-5">
@@ -613,15 +619,38 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
               {/* Placement Fee */}
               <div>
                 <label className="text-sm font-semibold text-foreground mb-2 block">
-                  Placement Fee: <span className="text-primary font-black">{form.fee}% of first-year CTC</span>
+                  Placement Fee: <span className="text-primary font-black">{feeDisplay}</span>
                 </label>
-                <input type="range" min="5" max="35" step="0.5" value={form.fee}
-                  onChange={e => update('fee', e.target.value)} className="w-full accent-primary" />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>5%</span>
-                  <span className="text-primary font-semibold">Payable only on successful placement</span>
-                  <span>35%</span>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <button type="button" onClick={() => update('feeType', 'percent')}
+                    className={`rounded-xl px-3 py-2 text-sm font-semibold border transition-colors ${form.feeType === 'percent' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-foreground border-border'}`}>
+                    % of offer CTC
+                  </button>
+                  <button type="button" onClick={() => update('feeType', 'amount')}
+                    className={`rounded-xl px-3 py-2 text-sm font-semibold border transition-colors ${form.feeType === 'amount' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-foreground border-border'}`}>
+                    Fixed amount (₹)
+                  </button>
                 </div>
+                {form.feeType === 'percent' ? (
+                  <>
+                    <input type="range" min="5" max="35" step="0.5" value={form.fee}
+                      onChange={e => update('fee', e.target.value)} className="w-full accent-primary" />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>5%</span>
+                      <span className="text-primary font-semibold">Payable only on successful placement</span>
+                      <span>35%</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <input type="number" min="50000" step="1000" inputMode="numeric" placeholder="e.g. 75000"
+                      value={form.feeAmount} onChange={e => update('feeAmount', e.target.value)}
+                      className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors" />
+                    <p className={`text-xs mt-1 ${feeAmountInvalid ? 'text-red-400' : 'text-muted-foreground'}`}>
+                      {feeAmountInvalid ? 'The fixed fee must be at least ₹50,000' : 'Minimum ₹50,000, no maximum. Payable only on successful placement.'}
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Payment Term */}
@@ -747,7 +776,7 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
                   </div>
                   <div className="bg-primary/8 border border-primary/20 rounded-lg p-3">
                     <p className="text-xs text-muted-foreground mb-0.5">Placement Fee</p>
-                    <p className="text-sm font-black text-primary">{form.fee}% of CTC</p>
+                    <p className="text-sm font-black text-primary">{feeDisplay}</p>
                   </div>
                 </div>
 

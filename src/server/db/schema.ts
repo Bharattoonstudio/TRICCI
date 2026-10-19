@@ -218,6 +218,9 @@ export const job = pgTable('job', {
   priority: integer('priority').notNull().default(1),
   applicants: integer('applicants').notNull().default(0),
   feePercent: doublePrecision('fee_percent').notNull().default(8.5),
+  // Employer fee option: 'percent' (feePercent of offer CTC) or 'amount' (fixed rupee fee)
+  feeType: varchar('fee_type', { length: 16 }).notNull().default('percent'),
+  feeAmountRupees: integer('fee_amount_rupees'),
   // Point 52: employer-defined payment term (days from candidate joining
   // until placement fee is due). Common values: 45 or 90.
   paymentTermDays: integer('payment_term_days').notNull().default(45),
@@ -395,7 +398,9 @@ export const commissionConfig = pgTable('commission_config', {
   id: serial('id').primaryKey(),
   // Employer-facing: allowed fee range on job postings
   minFeePercent: doublePrecision('min_fee_percent').notNull().default(5),
-  maxFeePercent: doublePrecision('max_fee_percent').notNull().default(15),
+  maxFeePercent: doublePrecision('max_fee_percent').notNull().default(35),
+  // Employer fixed-fee option: minimum rupee amount (no maximum)
+  minFeeAmountRupees: integer('min_fee_amount_rupees').notNull().default(50000),
   // Default fee % charged to employer when posting a job
   defaultFeePercent: doublePrecision('default_fee_percent').notNull().default(8),
   // Platform margin — what TRICCI retains from the employer fee

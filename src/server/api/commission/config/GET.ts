@@ -14,7 +14,8 @@ async function getOrSeedConfig() {
   // Insert default row
   await db.insert(commissionConfig).values({
     minFeePercent: 5,
-    maxFeePercent: 15,
+    maxFeePercent: 35,
+    minFeeAmountRupees: 50000,
     defaultFeePercent: 8,
     platformFeePct: 2,
     payoutDays: 3,
@@ -30,6 +31,7 @@ export default async function handler(_req: Request, res: Response) {
     res.json({
       minFeePercent: config.minFeePercent,
       maxFeePercent: config.maxFeePercent,
+      minFeeAmountRupees: config.minFeeAmountRupees,
       defaultFeePercent: config.defaultFeePercent,
       platformFeePct: config.platformFeePct,
       consultantFeePct,

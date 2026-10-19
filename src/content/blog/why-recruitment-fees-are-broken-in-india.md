@@ -61,7 +61,7 @@ A fair recruitment fee model has three properties:
 
 At TRICCI, we built our fee model around these principles from day one.
 
-Employers pay a placement fee only when a hire is made. The fee percentage is agreed upfront and visible to all parties. Of that fee, 68.75% goes directly to the consultant who placed the candidate. TRICCI retains 31.25% to fund the platform — technology, compliance, payment processing, and support.
+Employers pay a placement fee only when a hire is made. The fee percentage is agreed upfront and visible to all parties. Of that fee, 80% goes directly to the consultant who placed the candidate. TRICCI retains 20% to fund the platform — technology, compliance, payment processing, and support.
 
 On a ₹3 lakh placement fee, the consultant earns ₹2,06,250. Not ₹75,000.
 

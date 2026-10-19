@@ -559,7 +559,7 @@ export default function JobsPage() {
                         Are you a recruitment consultant?
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Submit candidates for these roles and earn % of the placement fee.
+                        Submit candidates for these roles and earn maximum from the placement fee.
                       </p>
                     </div>
                     <Link to="/signup?role=consultant"

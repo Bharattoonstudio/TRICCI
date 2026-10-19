@@ -107,18 +107,18 @@ The administrative work that used to require an agency — job posting, candidat
 
 TRICCI provides the infrastructure so you can operate at scale without the overhead. You focus on relationships and placements. We handle the rest.
 
-## What 68.75% Actually Means
+## What 80% Actually Means
 
-At TRICCI, independent consultants earn 68.75% of every placement fee. Let us put that in context.
+At TRICCI, independent consultants keep 80% of every placement fee. Let us put that in context.
 
 If you place 10 candidates this year at an average fee of ₹3 lakhs:
 
 | Model | Your Earnings | Platform/Agency Cut |
 |-------|--------------|---------------------|
 | Traditional agency (30% split) | ₹9,00,000 | ₹21,00,000 |
-| TRICCI (68.75% split) | ₹20,62,500 | ₹9,37,500 |
+| TRICCI (80% split) | ₹24,00,000 | ₹6,00,000 |
 
-The difference is ₹11,62,500 — in your pocket, not the agency's.
+The difference is ₹15,00,000 — in your pocket, not the agency's.
 
 ## Getting Started
 

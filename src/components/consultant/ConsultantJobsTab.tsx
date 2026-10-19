@@ -45,9 +45,8 @@ function UrgencyBadge({ urgency }: { urgency: UrgencyLevel }) {
 }
 
 // ─── Submit Candidate Modal ───────────────────────────────────────────────────
-function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
+function SubmitCandidateModal({ job, onClose }: {
   job: EnrichedJob;
-  consultantFeePct: number;
   onClose: () => void;
 }) {
   const [form, setForm] = useState({
@@ -146,7 +145,8 @@ function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
         {/* Commission banner */}
         {!submitted && (() => {
           const ctcMidLPA = ((job.ctcMin + job.ctcMax) / 2) / 100000;
-          const estimatedFee = Math.round(ctcMidLPA * consultantFeePct / 100 * 100000);
+          // Consultant share: 80% of the employer's fee (fixed amount, or % of CTC)
+          const estimatedFee = job.consultantFeeAmountRupees ?? Math.round(ctcMidLPA * (job.consultantFeePercent ?? 0) / 100 * 100000);
           const feeLabel = estimatedFee >= 100000
             ? `₹${(estimatedFee / 100000).toFixed(1)} L`
             : `₹${(estimatedFee / 1000).toFixed(0)}K`;
@@ -158,7 +158,7 @@ function SubmitCandidateModal({ job, consultantFeePct, onClose }: {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-green-400 uppercase tracking-wide">Your Commission on Placement</p>
                 <p className="text-sm font-black text-foreground mt-0.5">
-                  {feeLabel} estimated &middot; {consultantFeePct}% of CTC
+                  {feeLabel} estimated &middot; {job.consultantFeeLabel}
                 </p>
               </div>
               <div className="text-right shrink-0">
@@ -635,7 +635,6 @@ export default function ConsultantJobsTab() {
   const [skillFilter, setSkillFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedJob, setSelectedJob] = useState<EnrichedJob | null>(null);
-  const [consultantFeePct, setConsultantFeePct] = useState(6);
 
   const [liveJobs, setLiveJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
@@ -657,11 +656,6 @@ export default function ConsultantJobsTab() {
       .then((d: { jobs?: Job[] }) => setLiveJobs(d.jobs ?? []))
       .catch(() => setJobsError('Could not load mandates. Please try again.'))
       .finally(() => setJobsLoading(false));
-
-    fetch('/api/commission/config')
-      .then(r => r.json())
-      .then(data => { if (typeof data.consultantFeePct === 'number') setConsultantFeePct(data.consultantFeePct); })
-      .catch(() => { /* keep default 6% */ });
 
     fetch('/api/consultant/jobs/accepted')
       .then(r => r.json())
@@ -921,11 +915,11 @@ export default function ConsultantJobsTab() {
 
       {/* Submit modal */}
       <AnimatePresence>
-        {selectedJob && <SubmitCandidateModal job={selectedJob} consultantFeePct={consultantFeePct} onClose={() => setSelectedJob(null)} />}
+        {selectedJob && <SubmitCandidateModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
         {acceptModalJob && (
           <AcceptJobModal
             jobTitle={acceptModalJob.title}
-            feePercent={consultantFeePct}
+            feeLabel={acceptModalJob.consultantFeeLabel ?? ''}
             onClose={() => setAcceptModalJob(null)}
             onConfirm={() => confirmAcceptJob(acceptModalJob)}
           />

@@ -13,6 +13,8 @@ export const RUPEES_PER_LPA = 100000;
 export const FEE_PERCENT_MIN = 5;
 export const FEE_PERCENT_MAX = 35;
 export const FEE_AMOUNT_MIN_RUPEES = 50000;
+/** Platform keeps this share of the employer's fee. The consultant gets the rest. */
+export const PLATFORM_SHARE_PCT = 20;
 
 export type FeeType = 'percent' | 'amount';
 
@@ -81,7 +83,6 @@ export function validateEmployerFee(
 export function placementFeeForOffer(
   fee: EmployerFee,
   offerCtcLpa: number,
-  platformFeePct: number,
   hasConsultant: boolean,
 ): {
   feePercent: number;
@@ -105,15 +106,43 @@ export function placementFeeForOffer(
     };
   }
 
-  const platformAmountLpa = (offerCtcLpa * platformFeePct) / 100;
-  const consultantFeeAmountLpa = Math.max(feeAmountLpa - platformAmountLpa, 0);
+  // Platform keeps PLATFORM_SHARE_PCT of the fee; the consultant gets the rest.
+  const platformAmountLpa = feeAmountLpa * (PLATFORM_SHARE_PCT / 100);
+  const consultantFeeAmountLpa = feeAmountLpa - platformAmountLpa;
   const consultantFeePercent = offerCtcLpa > 0 ? (consultantFeeAmountLpa / offerCtcLpa) * 100 : 0;
   return {
     feePercent,
     feeAmountLpa,
-    platformFeePercent: platformFeePct,
+    platformFeePercent: offerCtcLpa > 0 ? (platformAmountLpa / offerCtcLpa) * 100 : 0,
     consultantFeePercent,
     consultantFeeAmountLpa,
+  };
+}
+
+/**
+ * What the consultant sees for a job, based on the employer's fee.
+ * Percentage job: consultant share is 80% of the percentage (10% → 8%).
+ * Fixed-amount job: consultant share is 80% of the amount (₹1,00,000 → ₹80,000).
+ */
+export function consultantShareFor(fee: EmployerFee): {
+  consultantFeePercent: number | null;
+  consultantFeeAmountRupees: number | null;
+  consultantFeeLabel: string;
+} {
+  const consultantSharePct = 100 - PLATFORM_SHARE_PCT;
+  if (fee.feeType === 'amount') {
+    const amount = Math.round(((fee.feeAmountRupees ?? 0) * consultantSharePct) / 100);
+    return {
+      consultantFeePercent: null,
+      consultantFeeAmountRupees: amount,
+      consultantFeeLabel: `${formatRupees(amount)} fixed`,
+    };
+  }
+  const pct = Math.round(fee.feePercent * consultantSharePct) / 100;
+  return {
+    consultantFeePercent: pct,
+    consultantFeeAmountRupees: null,
+    consultantFeeLabel: `${pct}% of CTC`,
   };
 }
 

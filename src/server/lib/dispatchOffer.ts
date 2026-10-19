@@ -7,7 +7,6 @@ import { db } from '@/server/db/client.js';
 import { placement, submission, candidateApplication, user, notification, job } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { sendEmail } from '@/server/email.js';
-import { getFeeConfig } from '@/server/lib/feeConfig.js';
 import { placementFeeForOffer } from '@/server/lib/employerFee.js';
 
 interface PlacementRow {
@@ -32,7 +31,6 @@ export async function dispatchOffer(row: PlacementRow, offerCtcLpa: number, offe
       .where(eq(job.id, row.jobId))
       .limit(1);
     if (jobFee) {
-      const cfg = await getFeeConfig();
       const fee = placementFeeForOffer(
         {
           feeType: jobFee.feeType === 'amount' ? 'amount' : 'percent',
@@ -40,7 +38,6 @@ export async function dispatchOffer(row: PlacementRow, offerCtcLpa: number, offe
           feeAmountRupees: jobFee.feeAmountRupees,
         },
         offerCtcLpa,
-        cfg.platformFeePct,
         !!row.consultantUserId,
       );
       await db.update(placement).set({

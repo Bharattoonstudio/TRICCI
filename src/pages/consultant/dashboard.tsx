@@ -709,7 +709,7 @@ export default function ConsultantDashboard() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right hidden sm:block">
-                            <p className="text-sm font-black text-primary">{CONSULTANT_FEE_PCT}%</p>
+                            <p className="text-sm font-black text-primary">{job.consultantFeeLabel ?? `${CONSULTANT_FEE_PCT}%`}</p>
                             <p className="text-[10px] text-white/25">your fee</p>
                           </div>
                           <UrgencyBadge urgency={jobUrgency(job)} />

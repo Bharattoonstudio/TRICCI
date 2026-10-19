@@ -18,6 +18,8 @@ import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { eq } from 'drizzle-orm';
+import { timingSafeEqual } from 'node:crypto';
+import { hashPassword, verifyPassword } from 'better-auth/crypto';
 
 import { db } from '@/server/db/client';
 import { user, session, account, verification, candidateProfile, employerProfile, consultantProfile } from '@/server/db/schema';
@@ -195,6 +197,26 @@ export function getAuth() {
         emailAndPassword: {
                 enabled: true,
                 requireEmailVerification: false,   // ← disabled: mobile OTP at signup is the verification gate
+                password: {
+                          hash: hashPassword,
+                          verify: async ({ hash, password }) => {
+                                      // Normal accounts store "salt:key" and use BetterAuth's own check.
+                                      if (hash.includes(':')) return verifyPassword({ hash, password });
+                                      // Legacy accounts stored the password as plain text. Accept only an exact match,
+                                      // then replace the stored value with the secure format so it is never plain again.
+                                      const a = Buffer.from(hash);
+                                      const b = Buffer.from(password);
+                                      if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+                                      try {
+                                                  await db.update(account)
+                                                    .set({ password: await hashPassword(password), updatedAt: new Date() })
+                                                    .where(eq(account.password, hash));
+                                      } catch (err) {
+                                                  console.error('password.legacy_upgrade.error', err);
+                                      }
+                                      return true;
+                          },
+                },
                 sendResetPassword: async ({ user: u, url }) => {
                           try {
                                       console.log(`[PASSWORD RESET EMAIL] Attempting to send to ${u.email}`);

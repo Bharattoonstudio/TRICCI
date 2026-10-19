@@ -12,6 +12,7 @@ interface FeeConfig {
   id: number;
   minFeePercent: number;
   maxFeePercent: number;
+  minFeeAmountRupees: number;
   defaultFeePercent: number;
   platformFeePct: number;
   payoutDays: number;
@@ -45,7 +46,8 @@ export async function getFeeConfig(): Promise<FeeConfig> {
     cachedConfig = {
       id: 0,
       minFeePercent: 5,
-      maxFeePercent: 15,
+      maxFeePercent: 35,
+      minFeeAmountRupees: 50000,
       defaultFeePercent: 8,
       platformFeePct: 2,
       payoutDays: 3,

@@ -11,6 +11,8 @@ import { sendEmail } from '@/server/email.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 import type { Job } from './GET.js';
+import { getFeeConfig } from '@/server/lib/feeConfig.js';
+import { validateEmployerFee } from '@/server/lib/employerFee.js';
 
 const ORANGE = '#E8470A';
 const PURPLE = '#6B4FBB';
@@ -93,6 +95,8 @@ export default async function handler(req: Request, res: Response) {
       description,
       skills,
       feePercent,
+      feeType: rawFeeType,
+      feeAmountRupees: rawFeeAmount,
       experience,
       experienceYears,
       category,
@@ -117,9 +121,18 @@ export default async function handler(req: Request, res: Response) {
     // Point 52: payment term is either 45 or 90 days — anything else falls
     // back to the safe default rather than trusting an arbitrary number.
     const paymentTermDaysNum = [45, 90].includes(Number(rawPaymentTermDays)) ? Number(rawPaymentTermDays) : 45;
-    // Point 85: commission range is 5-35%. Clamp server-side too, since the
-    // frontend slider is a UI convenience, not a security boundary.
-    const feeNum = Math.min(35, Math.max(5, Number(feePercent) || 8.5));
+    // Employer fee: either a percentage of offer CTC (5-35%) or a fixed rupee
+    // amount (minimum ₹50,000, no maximum). Limits come from the admin config.
+    // Invalid values are rejected, not silently clamped.
+    const feeCfg = await getFeeConfig();
+    const feeResult = validateEmployerFee(
+      { feeType: rawFeeType, feePercent, feeAmountRupees: rawFeeAmount },
+      { percentMin: feeCfg.minFeePercent, percentMax: feeCfg.maxFeePercent, amountMin: feeCfg.minFeeAmountRupees },
+    );
+    if (!feeResult.ok) {
+      return res.status(400).json({ error: feeResult.error });
+    }
+    const jobFee = feeResult.fee;
     const expYears = Number(experienceYears) || 0;
 
     const skillsArr: string[] = Array.isArray(skills)
@@ -208,7 +221,9 @@ export default async function handler(req: Request, res: Response) {
       postedDays: 0,
       status: 'active',
       applicants: 0,
-      feePercent: feeNum,
+      feePercent: jobFee.feePercent,
+      feeType: jobFee.feeType,
+      feeAmountRupees: jobFee.feeAmountRupees,
       paymentTermDays: paymentTermDaysNum,
       visibility,
     });
@@ -245,7 +260,7 @@ export default async function handler(req: Request, res: Response) {
       postedDays: 0,
       status: 'active',
       applicants: 0,
-      feePercent: feeNum,
+      feePercent: jobFee.feePercent,
     };
     // Don't blast consultant-only/confidential roles out to general public
     // job-alert subscribers — that would defeat the purpose of restricting them.

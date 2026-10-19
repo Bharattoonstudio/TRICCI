@@ -43,6 +43,8 @@ export interface DashboardJob {
   ctcMin?: number;
   ctcMax?: number;
   fee: number;
+  /** Human-readable fee, e.g. "8% of offer CTC" or "₹75,000 fixed fee" */
+  feeLabel: string;
   status: string;
   priority?: number;
   applicants: number;

@@ -4,12 +4,15 @@
  * (offer/approve), so both paths notify/email identically.
  */
 import { db } from '@/server/db/client.js';
-import { placement, submission, candidateApplication, user, notification } from '@/server/db/schema.js';
+import { placement, submission, candidateApplication, user, notification, job } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { sendEmail } from '@/server/email.js';
+import { getFeeConfig } from '@/server/lib/feeConfig.js';
+import { placementFeeForOffer } from '@/server/lib/employerFee.js';
 
 interface PlacementRow {
   id: number;
+  jobId?: string | null;
   submissionId: number | null;
   applicationId: number | null;
   candidateEmail: string;
@@ -20,6 +23,36 @@ interface PlacementRow {
 }
 
 export async function dispatchOffer(row: PlacementRow, offerCtcLpa: number, offerExpiryDate: string, note?: string) {
+  // The placement fee is calculated on the offer CTC, using the fee option the
+  // employer chose on the job (percentage of CTC, or a fixed rupee amount).
+  if (row.jobId) {
+    const [jobFee] = await db
+      .select({ feeType: job.feeType, feePercent: job.feePercent, feeAmountRupees: job.feeAmountRupees })
+      .from(job)
+      .where(eq(job.id, row.jobId))
+      .limit(1);
+    if (jobFee) {
+      const cfg = await getFeeConfig();
+      const fee = placementFeeForOffer(
+        {
+          feeType: jobFee.feeType === 'amount' ? 'amount' : 'percent',
+          feePercent: jobFee.feePercent,
+          feeAmountRupees: jobFee.feeAmountRupees,
+        },
+        offerCtcLpa,
+        cfg.platformFeePct,
+        !!row.consultantUserId,
+      );
+      await db.update(placement).set({
+        feePercent: fee.feePercent,
+        feeAmountLpa: fee.feeAmountLpa,
+        platformFeePercent: fee.platformFeePercent,
+        consultantFeePercent: fee.consultantFeePercent,
+        consultantFeeAmountLpa: fee.consultantFeeAmountLpa,
+      }).where(eq(placement.id, row.id));
+    }
+  }
+
   await db.update(placement).set({
     offerStatus: 'sent',
     offerCtcLpa,

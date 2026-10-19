@@ -18,10 +18,14 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const { minFeePercent, maxFeePercent, defaultFeePercent, platformFeePct, payoutDays } = req.body as {
+    const { minFeePercent, maxFeePercent, defaultFeePercent, platformFeePct, payoutDays, minFeeAmountRupees } = req.body as {
       minFeePercent?: number; maxFeePercent?: number; defaultFeePercent?: number;
-      platformFeePct?: number; payoutDays?: number;
+      platformFeePct?: number; payoutDays?: number; minFeeAmountRupees?: number;
     };
+
+    if (minFeeAmountRupees !== undefined && (!Number.isInteger(minFeeAmountRupees) || minFeeAmountRupees <= 0)) {
+      return res.status(400).json({ error: 'Minimum fixed fee must be a whole rupee amount above zero' });
+    }
 
     // Validate
     if (platformFeePct !== undefined && defaultFeePercent !== undefined) {
@@ -35,7 +39,8 @@ export default async function handler(req: Request, res: Response) {
     if (existing.length === 0) {
       await db.insert(commissionConfig).values({
         minFeePercent: minFeePercent ?? 5,
-        maxFeePercent: maxFeePercent ?? 15,
+        maxFeePercent: maxFeePercent ?? 35,
+        minFeeAmountRupees: minFeeAmountRupees ?? 50000,
         defaultFeePercent: defaultFeePercent ?? 8,
         platformFeePct: platformFeePct ?? 2,
         payoutDays: payoutDays ?? 3,
@@ -44,6 +49,7 @@ export default async function handler(req: Request, res: Response) {
       const update: Partial<typeof commissionConfig.$inferInsert> = {};
       if (minFeePercent !== undefined) update.minFeePercent = minFeePercent;
       if (maxFeePercent !== undefined) update.maxFeePercent = maxFeePercent;
+      if (minFeeAmountRupees !== undefined) update.minFeeAmountRupees = minFeeAmountRupees;
       if (defaultFeePercent !== undefined) update.defaultFeePercent = defaultFeePercent;
       if (platformFeePct !== undefined) update.platformFeePct = platformFeePct;
       if (payoutDays !== undefined) update.payoutDays = payoutDays;
@@ -57,6 +63,7 @@ export default async function handler(req: Request, res: Response) {
       config: {
         minFeePercent: cfg.minFeePercent,
         maxFeePercent: cfg.maxFeePercent,
+        minFeeAmountRupees: cfg.minFeeAmountRupees,
         defaultFeePercent: cfg.defaultFeePercent,
         platformFeePct: cfg.platformFeePct,
         consultantFeePct: cfg.defaultFeePercent - cfg.platformFeePct,

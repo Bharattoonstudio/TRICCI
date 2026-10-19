@@ -183,7 +183,7 @@ function JobPreviewModal({ job, onClose, onEmailTemplate }: { job: DashboardJob;
               <span className="flex items-center gap-1.5"><Building2 size={13} /> {job.department || 'N/A'}</span>
               <span className="flex items-center gap-1.5"><MapPin size={13} /> {job.location}</span>
               <span className="flex items-center gap-1.5"><IndianRupee size={13} /> {job.ctc}</span>
-              <span className="flex items-center gap-1.5"><Star size={13} /> {job.fee}% placement fee</span>
+              <span className="flex items-center gap-1.5"><Star size={13} /> {job.feeLabel}</span>
             </div>
           </div>
 
@@ -221,7 +221,7 @@ function JobPreviewModal({ job, onClose, onEmailTemplate }: { job: DashboardJob;
           <div className="bg-primary/8 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
             <IndianRupee size={16} className="text-primary shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-foreground">Placement Fee: {job.fee}% of first-year CTC</p>
+              <p className="text-sm font-bold text-foreground">Placement Fee: {job.feeLabel}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Payable only on successful placement. No upfront cost.</p>
             </div>
           </div>
@@ -576,7 +576,7 @@ export default function EmployerDashboard() {
       if (!res.ok) return;
       const data = await res.json() as { jobs: Array<{
         id: string; title: string; department: string; location: string;
-        ctcLabel: string; feePercent: number; status: string; applicants: number; postedDays: number;
+        ctcLabel: string; feePercent: number; feeLabel?: string; status: string; applicants: number; postedDays: number;
         skills?: string[]; description?: string; interviewRounds?: { label: string; description: string }[];
       }> };
       const mapped: DashboardJob[] = data.jobs.map(j => ({
@@ -586,6 +586,7 @@ export default function EmployerDashboard() {
         location: j.location,
         ctc: j.ctcLabel,
         fee: j.feePercent,
+        feeLabel: j.feeLabel ?? `${j.feePercent}% of offer CTC`,
         status: j.status,
         applicants: j.applicants,
         shortlisted: 0,
@@ -1000,7 +1001,7 @@ export default function EmployerDashboard() {
                                   <span className="text-sm text-foreground">{job.ctc}</span>
                                 </td>
                                 <td className="px-4 py-4 hidden lg:table-cell">
-                                  <span className="text-sm font-bold text-primary">{job.fee}%</span>
+                                  <span className="text-sm font-bold text-primary">{job.feeLabel}</span>
                                 </td>
                                 <td className="px-4 py-4">
                                   <button onClick={() => navigate(`/employer/jobs/${job.id}`)} className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left">

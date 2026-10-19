@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { otpStore, user, candidateProfile, consultantProfile, employerProfile, session } from '@/server/db/schema.js';
+import { hashOtp } from '@/server/lib/otpHash.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
@@ -35,7 +36,7 @@ export default async function handler(req: Request, res: Response) {
       .where(
         and(
           eq(otpStore.identifier, identifier),
-          eq(otpStore.otp, otp),
+          eq(otpStore.otp, hashOtp(identifier, 'signup_mobile', otp)),
           eq(otpStore.purpose, 'signup_mobile'),
           eq(otpStore.verified, false),
           gt(otpStore.expiresAt, now),

@@ -185,7 +185,7 @@ export const candidateProfile = pgTable('candidate_profile', {
 export const otpStore = pgTable('otp_store', {
   id: serial('id').primaryKey(),
   identifier: varchar('identifier', { length: 255 }).notNull(), // phone or email
-  otp: varchar('otp', { length: 8 }).notNull(),
+  otp: varchar('otp', { length: 64 }).notNull(), // HMAC-SHA256 hex of the code, never the plain code
   purpose: varchar('purpose', { length: 32 }).notNull().default('verify'), // 'verify' | '2fa'
   expiresAt: timestamp('expires_at').notNull(),
   verified: boolean('verified').notNull().default(false),

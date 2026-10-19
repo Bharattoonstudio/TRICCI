@@ -135,12 +135,8 @@ const CONSULTANT_PLANS = [
   },
 ];
 
-const TRANSACTIONS = [
-  { id: 'TXN-2026-0041', date: '9 Jun 2026', description: 'Placement fee — Head of Growth Marketing @ BrandForce', type: 'credit', amount: 224000, status: 'settled' },
-  { id: 'TXN-2026-0038', date: '14 Apr 2026', description: 'Placement fee — Senior Frontend Engineer @ TechStack Co.', type: 'credit', amount: 82500, status: 'settled' },
-  { id: 'TXN-2026-0031', date: '1 Mar 2026', description: 'Pro subscription — March 2026', type: 'debit', amount: 1999, status: 'paid' },
-  { id: 'TXN-2026-0022', date: '1 Feb 2026', description: 'Pro subscription — February 2026', type: 'debit', amount: 1999, status: 'paid' },
-];
+// Real transactions will load here once payments are connected. No sample data is shown.
+const TRANSACTIONS: { id: string; date: string; description: string; type: 'credit' | 'debit'; amount: number; status: string }[] = [];
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 function FeeCalculator() {
@@ -627,17 +623,17 @@ export default function BillingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-card border border-border rounded-2xl p-6">
                     <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
-                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹3,06,500</p>
-                    <p className="text-xs text-muted-foreground mt-1">2 placements</p>
+                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹0</p>
+                    <p className="text-xs text-muted-foreground mt-1">No placements yet</p>
                   </div>
                   <div className="bg-card border border-border rounded-2xl p-6">
                     <p className="text-sm text-muted-foreground mb-1">Subscription Paid</p>
-                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹3,998</p>
-                    <p className="text-xs text-muted-foreground mt-1">2 months Pro</p>
+                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹0</p>
+                    <p className="text-xs text-muted-foreground mt-1">No Pro subscription</p>
                   </div>
                   <div className="bg-card border border-border rounded-2xl p-6">
                     <p className="text-sm text-muted-foreground mb-1">Net Received</p>
-                    <p className="text-3xl font-black text-primary" style={{ fontFamily: 'var(--font-heading)' }}>₹3,02,502</p>
+                    <p className="text-3xl font-black text-primary" style={{ fontFamily: 'var(--font-heading)' }}>₹0</p>
                     <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><ArrowUpRight size={11} /> After fees</p>
                   </div>
                 </div>
@@ -662,6 +658,9 @@ export default function BillingPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
+                        {TRANSACTIONS.length === 0 && (
+                          <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-muted-foreground">No transactions yet.</td></tr>
+                        )}
                         {TRANSACTIONS.map(txn => (
                           <tr key={txn.id} className="hover:bg-muted/20 transition-colors">
                             <td className="px-6 py-4">

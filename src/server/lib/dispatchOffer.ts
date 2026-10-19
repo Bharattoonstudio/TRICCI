@@ -8,6 +8,7 @@ import { placement, submission, candidateApplication, user, notification, job } 
 import { eq } from 'drizzle-orm';
 import { sendEmail } from '@/server/email.js';
 import { placementFeeForOffer } from '@/server/lib/employerFee.js';
+import { consultantSharePctFor } from '@/server/lib/consultantPlan.js';
 
 interface PlacementRow {
   id: number;
@@ -39,6 +40,7 @@ export async function dispatchOffer(row: PlacementRow, offerCtcLpa: number, offe
         },
         offerCtcLpa,
         !!row.consultantUserId,
+        await consultantSharePctFor(row.consultantUserId),
       );
       await db.update(placement).set({
         feePercent: fee.feePercent,

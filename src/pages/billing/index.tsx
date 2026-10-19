@@ -103,7 +103,7 @@ const CONSULTANT_PLANS = [
     features: [
       'Priority placement in employer search',
       'Access to exclusive high-CTC mandates',
-      'Enhanced payout: 71% of fee',
+      'Enhanced payout: 85% of fee',
       'Fast payout processing (3 days)',
       'Verified Pro badge on profile',
       'Advanced analytics on submissions',
@@ -122,7 +122,7 @@ const CONSULTANT_PLANS = [
     description: 'For recruitment agencies managing multiple consultants on TRICCI.',
     features: [
       'Multi-seat team management',
-      'Agency-level payout: 73% of fee',
+      'Agency-level payout: custom, agreed per contract',
       'Dedicated mandate pipeline',
       'White-label candidate portal',
       'API access',
@@ -595,8 +595,8 @@ export default function BillingPage() {
                       <tbody className="divide-y divide-border">
                         {[
                           { plan: 'Free', consultant: '80%', tricci: '20%', speed: '7 business days' },
-                          { plan: 'Pro', consultant: '71%', tricci: '29%', speed: '3 business days', highlight: true },
-                          { plan: 'Agency', consultant: '73%', tricci: '27%', speed: '1 business day' },
+                          { plan: 'Pro', consultant: '85%', tricci: '15%', speed: '3 business days', highlight: true },
+                          { plan: 'Agency', consultant: 'Custom', tricci: 'Custom', speed: '1 business day' },
                         ].map(row => (
                           <tr key={row.plan} className={`hover:bg-muted/20 transition-colors ${row.highlight ? 'bg-primary/5' : ''}`}>
                             <td className="px-6 py-4 text-sm font-semibold text-foreground">

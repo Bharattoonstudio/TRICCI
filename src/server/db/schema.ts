@@ -126,6 +126,9 @@ export const consultantProfile = pgTable('consultant_profile', {
   // multi-select instead of the old free-text specialisation field.
   industriesExpertise: jsonb('industries_expertise').$type<string[]>(),
   industriesInterested: jsonb('industries_interested').$type<string[]>(),
+  // Plan decides the consultant's share of the placement fee: 'free' = 80%, 'pro' = 85%.
+  // Set by an admin for now; Pro billing is not yet connected.
+  plan: varchar('plan', { length: 16 }).notNull().default('free'),
   // Agreement / KYC fields
   agencyName: varchar('agency_name', { length: 255 }),
   signatoryName: varchar('signatory_name', { length: 255 }),

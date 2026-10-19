@@ -16,6 +16,14 @@ export const FEE_AMOUNT_MIN_RUPEES = 50000;
 /** Platform keeps this share of the employer's fee. The consultant gets the rest. */
 export const PLATFORM_SHARE_PCT = 20;
 
+/** Consultant share of the placement fee by plan. Free = 80%, Pro = 85%. */
+export const CONSULTANT_SHARE_PCT_FREE = 80;
+export const CONSULTANT_SHARE_PCT_PRO = 85;
+
+export function consultantSharePctForPlan(plan: string | null | undefined): number {
+  return plan === 'pro' ? CONSULTANT_SHARE_PCT_PRO : CONSULTANT_SHARE_PCT_FREE;
+}
+
 export type FeeType = 'percent' | 'amount';
 
 export interface FeeLimits {
@@ -84,6 +92,7 @@ export function placementFeeForOffer(
   fee: EmployerFee,
   offerCtcLpa: number,
   hasConsultant: boolean,
+  consultantSharePct: number = CONSULTANT_SHARE_PCT_FREE,
 ): {
   feePercent: number;
   feeAmountLpa: number;
@@ -106,8 +115,9 @@ export function placementFeeForOffer(
     };
   }
 
-  // Platform keeps PLATFORM_SHARE_PCT of the fee; the consultant gets the rest.
-  const platformAmountLpa = feeAmountLpa * (PLATFORM_SHARE_PCT / 100);
+  // Platform keeps its share of the fee; the consultant gets the rest.
+  const platformSharePct = 100 - consultantSharePct;
+  const platformAmountLpa = feeAmountLpa * (platformSharePct / 100);
   const consultantFeeAmountLpa = feeAmountLpa - platformAmountLpa;
   const consultantFeePercent = offerCtcLpa > 0 ? (consultantFeeAmountLpa / offerCtcLpa) * 100 : 0;
   return {

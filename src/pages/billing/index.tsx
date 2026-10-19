@@ -97,13 +97,13 @@ const CONSULTANT_PLANS = [
   {
     id: 'growth' as PlanId,
     name: 'Pro',
-    price: 1999,
-    billing: '₹1,999 / month',
+    price: 1000,
+    billing: '₹1,000 / month',
     description: 'Get priority placement, faster payouts, and exclusive high-value mandates.',
     features: [
       'Priority placement in employer search',
       'Access to exclusive high-CTC mandates',
-      'Enhanced payout: 71% of fee',
+      'Enhanced payout: 85% of fee',
       'Fast payout processing (3 days)',
       'Verified Pro badge on profile',
       'Advanced analytics on submissions',
@@ -122,7 +122,7 @@ const CONSULTANT_PLANS = [
     description: 'For recruitment agencies managing multiple consultants on TRICCI.',
     features: [
       'Multi-seat team management',
-      'Agency-level payout: 73% of fee',
+      'Agency-level payout: custom, agreed per contract',
       'Dedicated mandate pipeline',
       'White-label candidate portal',
       'API access',
@@ -135,12 +135,8 @@ const CONSULTANT_PLANS = [
   },
 ];
 
-const TRANSACTIONS = [
-  { id: 'TXN-2026-0041', date: '9 Jun 2026', description: 'Placement fee — Head of Growth Marketing @ BrandForce', type: 'credit', amount: 224000, status: 'settled' },
-  { id: 'TXN-2026-0038', date: '14 Apr 2026', description: 'Placement fee — Senior Frontend Engineer @ TechStack Co.', type: 'credit', amount: 82500, status: 'settled' },
-  { id: 'TXN-2026-0031', date: '1 Mar 2026', description: 'Pro subscription — March 2026', type: 'debit', amount: 1999, status: 'paid' },
-  { id: 'TXN-2026-0022', date: '1 Feb 2026', description: 'Pro subscription — February 2026', type: 'debit', amount: 1999, status: 'paid' },
-];
+// Real transactions will load here once payments are connected. No sample data is shown.
+const TRANSACTIONS: { id: string; date: string; description: string; type: 'credit' | 'debit'; amount: number; status: string }[] = [];
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 function FeeCalculator() {
@@ -238,6 +234,8 @@ function PlanCard({
   onSelect: (id: PlanId) => void;
 }) {
   const isActive = currentPlan === plan.id;
+  // Consultant Pro is shown but cannot be bought yet (payment not connected).
+  const comingSoon = userType === 'consultant' && plan.id === 'growth';
 
   return (
     <motion.div
@@ -300,7 +298,7 @@ function PlanCard({
 
       <button
         onClick={() => onSelect(plan.id)}
-        disabled={isActive}
+        disabled={isActive || comingSoon}
         className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${
           isActive
             ? 'bg-green-500/15 text-green-400 border border-green-500/30 cursor-default'
@@ -309,7 +307,7 @@ function PlanCard({
             : 'bg-muted text-foreground border border-border hover:border-primary/40 hover:bg-primary/5'
         }`}
       >
-        {isActive ? 'Active Plan' : plan.cta}
+        {isActive ? 'Active Plan' : comingSoon ? 'Coming soon' : plan.cta}
       </button>
     </motion.div>
   );
@@ -438,6 +436,7 @@ export default function BillingPage() {
   const handleSelectPlan = (id: PlanId) => {
     const plan = plans.find(p => p.id === id);
     if (!plan || id === currentPlan) return;
+    if (userType === 'consultant' && id === 'growth') return; // Pro not yet available
     if (plan.price === null) return; // contact sales
     if (plan.price === 0) { setCurrentPlan(id); return; }
     setSelectedPlan(plan);
@@ -595,8 +594,8 @@ export default function BillingPage() {
                       <tbody className="divide-y divide-border">
                         {[
                           { plan: 'Free', consultant: '80%', tricci: '20%', speed: '7 business days' },
-                          { plan: 'Pro', consultant: '71%', tricci: '29%', speed: '3 business days', highlight: true },
-                          { plan: 'Agency', consultant: '73%', tricci: '27%', speed: '1 business day' },
+                          { plan: 'Pro', consultant: '85%', tricci: '15%', speed: '3 business days', highlight: true },
+                          { plan: 'Agency', consultant: 'Custom', tricci: 'Custom', speed: '1 business day' },
                         ].map(row => (
                           <tr key={row.plan} className={`hover:bg-muted/20 transition-colors ${row.highlight ? 'bg-primary/5' : ''}`}>
                             <td className="px-6 py-4 text-sm font-semibold text-foreground">
@@ -624,17 +623,17 @@ export default function BillingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-card border border-border rounded-2xl p-6">
                     <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
-                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹3,06,500</p>
-                    <p className="text-xs text-muted-foreground mt-1">2 placements</p>
+                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹0</p>
+                    <p className="text-xs text-muted-foreground mt-1">No placements yet</p>
                   </div>
                   <div className="bg-card border border-border rounded-2xl p-6">
                     <p className="text-sm text-muted-foreground mb-1">Subscription Paid</p>
-                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹3,998</p>
-                    <p className="text-xs text-muted-foreground mt-1">2 months Pro</p>
+                    <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>₹0</p>
+                    <p className="text-xs text-muted-foreground mt-1">No Pro subscription</p>
                   </div>
                   <div className="bg-card border border-border rounded-2xl p-6">
                     <p className="text-sm text-muted-foreground mb-1">Net Received</p>
-                    <p className="text-3xl font-black text-primary" style={{ fontFamily: 'var(--font-heading)' }}>₹3,02,502</p>
+                    <p className="text-3xl font-black text-primary" style={{ fontFamily: 'var(--font-heading)' }}>₹0</p>
                     <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><ArrowUpRight size={11} /> After fees</p>
                   </div>
                 </div>
@@ -659,6 +658,9 @@ export default function BillingPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
+                        {TRANSACTIONS.length === 0 && (
+                          <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-muted-foreground">No transactions yet.</td></tr>
+                        )}
                         {TRANSACTIONS.map(txn => (
                           <tr key={txn.id} className="hover:bg-muted/20 transition-colors">
                             <td className="px-6 py-4">

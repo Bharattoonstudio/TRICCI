@@ -15,6 +15,7 @@ import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
 import { logAudit } from '@/lib/audit.js';
 import { placementFeeForOffer } from '@/server/lib/employerFee.js';
+import { consultantSharePctFor } from '@/server/lib/consultantPlan.js';
 
 const VALID_STATUSES = [
   'pending', 'review', 'shortlisted', 'interview', 'hold',
@@ -406,6 +407,7 @@ export default async function handler(req: Request, res: Response) {
                 },
                 ctcLpa,
                 true,
+                await consultantSharePctFor(row.consultantUserId),
               )
             : null;
           const feePercent = jobRow ? (split?.feePercent ?? jobRow.feePercent) : null;

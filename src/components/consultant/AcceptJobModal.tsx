@@ -9,7 +9,8 @@ import { X, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface AcceptJobModalProps {
   jobTitle: string;
-  feePercent: number;
+  /** Consultant's share, e.g. "8% of CTC" or "₹80,000 fixed" */
+  feeLabel: string;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -21,7 +22,7 @@ const RULES = [
   'I will obtain each candidate\u2019s explicit consent before submitting them',
 ];
 
-export default function AcceptJobModal({ jobTitle, feePercent, onClose, onConfirm }: AcceptJobModalProps) {
+export default function AcceptJobModal({ jobTitle, feeLabel, onClose, onConfirm }: AcceptJobModalProps) {
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +51,7 @@ export default function AcceptJobModal({ jobTitle, feePercent, onClose, onConfir
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
         </div>
         <p className="text-xs text-muted-foreground mb-1">{jobTitle}</p>
-        <p className="text-xs text-muted-foreground mb-4">Fee: <span className="font-bold text-foreground">{feePercent}%</span> of candidate CTC on successful placement</p>
+        <p className="text-xs text-muted-foreground mb-4">You earn: <span className="font-bold text-foreground">{feeLabel}</span> on successful placement</p>
 
         <div className="space-y-2 mb-4">
           {RULES.map(rule => (

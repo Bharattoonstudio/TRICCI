@@ -6,7 +6,7 @@ import { visibleJobCondition } from '@/server/lib/posterStatus.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
-import { formatFeeLabel } from '@/server/lib/employerFee.js';
+import { formatFeeLabel, consultantShareFor } from '@/server/lib/employerFee.js';
 
 export interface InterviewRound {
   label: string;
@@ -39,6 +39,10 @@ export interface Job {
   feeAmountRupees?: number | null;
   /** Human-readable fee, e.g. "8% of offer CTC" or "₹75,000 fixed fee" */
   feeLabel?: string;
+  /** What the consultant earns: 80% of the employer's fee (percentage of CTC, or fixed amount) */
+  consultantFeePercent?: number | null;
+  consultantFeeAmountRupees?: number | null;
+  consultantFeeLabel?: string;
   interviewRounds?: InterviewRound[];
   /** 'public' (default) | 'consultant_only' | 'confidential' */
   visibility?: string;
@@ -149,6 +153,7 @@ export default async function handler(req: Request, res: Response) {
         feeType: r.feeType,
         feeAmountRupees: r.feeAmountRupees,
         feeLabel: formatFeeLabel(r),
+        ...consultantShareFor({ feeType: r.feeType === 'amount' ? 'amount' : 'percent', feePercent: r.feePercent, feeAmountRupees: r.feeAmountRupees }),
         visibility: r.visibility ?? 'public',
         companyHidden,
       };

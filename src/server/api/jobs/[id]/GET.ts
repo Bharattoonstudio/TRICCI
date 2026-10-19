@@ -6,6 +6,7 @@ import type { Job } from '../GET.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { posterIsInactive } from '@/server/lib/posterStatus.js';
+import { formatFeeLabel, consultantShareFor } from '@/server/lib/employerFee.js';
 
 export default async function handler(req: Request, res: Response) {
   const id = String(req.params.id);
@@ -67,6 +68,10 @@ export default async function handler(req: Request, res: Response) {
       status: r.status as Job['status'],
       applicants: r.applicants,
       feePercent: r.feePercent,
+      feeType: r.feeType,
+      feeAmountRupees: r.feeAmountRupees,
+      feeLabel: formatFeeLabel(r),
+      ...consultantShareFor({ feeType: r.feeType === 'amount' ? 'amount' : 'percent', feePercent: r.feePercent, feeAmountRupees: r.feeAmountRupees }),
       visibility: r.visibility ?? 'public',
       companyHidden,
     };

@@ -10,6 +10,7 @@ import { db } from '@/server/db/client.js';
 import { job, submission } from '@/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
+import { consultantShareFor } from '@/server/lib/employerFee.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { posterIsInactive } from '@/server/lib/posterStatus.js';
 
@@ -52,7 +53,14 @@ export default async function handler(req: Request, res: Response) {
         : eq(submission.jobId, jobId));
 
     res.json({
-      job: jobRow,
+      job: {
+        ...jobRow,
+        ...consultantShareFor({
+          feeType: jobRow.feeType === 'amount' ? 'amount' : 'percent',
+          feePercent: jobRow.feePercent,
+          feeAmountRupees: jobRow.feeAmountRupees,
+        }),
+      },
       submissions: mySubmissions,
       funnel: {
         submitted: counts?.total ?? 0,

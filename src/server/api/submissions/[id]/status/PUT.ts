@@ -14,6 +14,7 @@ import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
 import { logAudit } from '@/lib/audit.js';
+import { placementFeeForOffer } from '@/server/lib/employerFee.js';
 
 const VALID_STATUSES = [
   'pending', 'review', 'shortlisted', 'interview', 'hold',
@@ -389,17 +390,28 @@ export default async function handler(req: Request, res: Response) {
 
           // Fetch job fee percent + payment term
           const [jobRow] = await db
-            .select({ feePercent: job.feePercent, paymentTermDays: job.paymentTermDays })
+            .select({ feeType: job.feeType, feePercent: job.feePercent, feeAmountRupees: job.feeAmountRupees, paymentTermDays: job.paymentTermDays })
             .from(job)
             .where(eq(job.id, row.jobId))
             .limit(1);
 
-          const feePercent = jobRow?.feePercent ?? null;
-          const feeAmountLpa = ctcLpa && feePercent ? (ctcLpa * feePercent) / 100 : null;
-          // Point 28/49: platform keeps a flat 2%, consultant gets the rest
-          const PLATFORM_CUT = 2;
-          const consultantFeePercent = feePercent != null ? Math.max(feePercent - PLATFORM_CUT, 0) : null;
-          const consultantFeeAmountLpa = ctcLpa && consultantFeePercent != null ? (ctcLpa * consultantFeePercent) / 100 : null;
+          // Provisional split on the candidate CTC. Recalculated on the offer CTC
+          // when the employer sends the offer. Platform keeps 20% of the fee; consultant gets 80%.
+          const split = jobRow && ctcLpa
+            ? placementFeeForOffer(
+                {
+                  feeType: jobRow.feeType === 'amount' ? 'amount' : 'percent',
+                  feePercent: jobRow.feePercent,
+                  feeAmountRupees: jobRow.feeAmountRupees,
+                },
+                ctcLpa,
+                true,
+              )
+            : null;
+          const feePercent = jobRow ? (split?.feePercent ?? jobRow.feePercent) : null;
+          const feeAmountLpa = split?.feeAmountLpa ?? null;
+          const consultantFeePercent = split?.consultantFeePercent ?? null;
+          const consultantFeeAmountLpa = split?.consultantFeeAmountLpa ?? null;
 
           await db.insert(placement).values({
             submissionId: id,
@@ -414,7 +426,7 @@ export default async function handler(req: Request, res: Response) {
             ctcLpa,
             feePercent,
             feeAmountLpa,
-            platformFeePercent: PLATFORM_CUT,
+            platformFeePercent: split?.platformFeePercent ?? null,
             consultantFeePercent,
             consultantFeeAmountLpa,
             paymentTermDays: jobRow?.paymentTermDays ?? 45,

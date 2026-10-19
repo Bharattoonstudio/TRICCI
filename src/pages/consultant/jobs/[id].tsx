@@ -17,6 +17,8 @@ import ProposeInterviewModal from '@/components/consultant/ProposeInterviewModal
 interface JobDetail {
   id: string; title: string; department: string; location: string;
   ctcLabel: string; ctcMin: number; ctcMax: number; feePercent: number; status: string;
+  feeType?: string; feeAmountRupees?: number | null;
+  consultantFeePercent?: number | null; consultantFeeAmountRupees?: number | null; consultantFeeLabel?: string;
 }
 interface Funnel {
   submitted: number; seen: number; shortlisted: number; interview: number; rejected: number; selected: number;
@@ -40,7 +42,6 @@ export default function ConsultantJobDetailPage() {
   const [jobDetail, setJobDetail] = useState<JobDetail | null>(null);
   const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [mySubmissions, setMySubmissions] = useState<MySubmission[]>([]);
-  const [consultantFeePct, setConsultantFeePct] = useState<number>(8);
   const [loading, setLoading] = useState(true);
   const [proposeFor, setProposeFor] = useState<MySubmission | null>(null);
   const [proposing, setProposing] = useState(false);
@@ -50,19 +51,12 @@ export default function ConsultantJobDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const [detailRes, commRes] = await Promise.all([
-        fetch(`/api/consultant/jobs/${id}/detail`),
-        fetch('/api/commission/config'),
-      ]);
+      const detailRes = await fetch(`/api/consultant/jobs/${id}/detail`);
       if (detailRes.ok) {
         const d = await detailRes.json();
         setJobDetail(d.job);
         setFunnel(d.funnel);
         setMySubmissions(d.submissions ?? []);
-      }
-      if (commRes.ok) {
-        const c = await commRes.json();
-        if (c.consultantFeePct) setConsultantFeePct(c.consultantFeePct);
       }
     } finally {
       setLoading(false);
@@ -96,7 +90,8 @@ export default function ConsultantJobDetailPage() {
   }
 
   const ctcMidLPA = ((jobDetail.ctcMin + jobDetail.ctcMax) / 2) / 100000;
-  const estimatedFee = Math.round(ctcMidLPA * consultantFeePct / 100 * 100000);
+  // Consultant share: 80% of the employer's fee (fixed amount, or % of CTC)
+  const estimatedFee = jobDetail.consultantFeeAmountRupees ?? Math.round(ctcMidLPA * (jobDetail.consultantFeePercent ?? 0) / 100 * 100000);
   const feeLabel = estimatedFee >= 100000 ? `₹${(estimatedFee / 100000).toFixed(1)}L` : `₹${(estimatedFee / 1000).toFixed(0)}K`;
 
   return (
@@ -124,7 +119,7 @@ export default function ConsultantJobDetailPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-green-400 uppercase tracking-wide">Your Commission on Placement</p>
-                <p className="text-sm font-black text-white mt-0.5">{feeLabel} estimated · {consultantFeePct}% of CTC</p>
+                <p className="text-sm font-black text-white mt-0.5">{feeLabel} estimated · {jobDetail.consultantFeeLabel}</p>
               </div>
             </div>
           </div>

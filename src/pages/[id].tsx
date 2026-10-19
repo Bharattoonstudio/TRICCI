@@ -573,7 +573,7 @@ export default function JobDetailPage() {
                 </p>
                 <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
                   Submit a candidate for this role and earn{' '}
-                  <strong className="text-foreground">{consultantFee}% of CTC</strong> on successful placement — paid directly to you.
+                  <strong className="text-foreground">{job?.consultantFeeLabel ?? `${consultantFee}% of CTC`}</strong> on successful placement — paid directly to you.
                 </p>
                 <Link to="/signup?role=consultant"
                   className="w-full flex items-center justify-center gap-2 bg-secondary text-background font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity text-sm">

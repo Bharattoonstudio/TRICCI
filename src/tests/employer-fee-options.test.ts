@@ -3,7 +3,7 @@
  * Pure logic only — does not touch the database.
  */
 import { describe, it, expect } from 'vitest';
-import { validateEmployerFee, placementFeeForOffer, formatFeeLabel } from '../server/lib/employerFee';
+import { validateEmployerFee, placementFeeForOffer, formatFeeLabel, consultantShareFor } from '../server/lib/employerFee';
 
 describe('validateEmployerFee — percentage option', () => {
   it('accepts 5% and 35% (the boundaries)', () => {
@@ -59,7 +59,7 @@ describe('validateEmployerFee — fixed amount option', () => {
 describe('placementFeeForOffer', () => {
   it('applies a percentage to the offer CTC', () => {
     // 8% of ₹20 LPA offer = ₹1.6 LPA fee
-    const r = placementFeeForOffer({ feeType: 'percent', feePercent: 8, feeAmountRupees: null }, 20, 2, false);
+    const r = placementFeeForOffer({ feeType: 'percent', feePercent: 8, feeAmountRupees: null }, 20, false);
     expect(r.feeAmountLpa).toBeCloseTo(1.6);
     expect(r.feePercent).toBeCloseTo(8);
     expect(r.platformFeePercent).toBeCloseTo(8);
@@ -68,23 +68,42 @@ describe('placementFeeForOffer', () => {
 
   it('uses a fixed amount as-is and derives the effective percentage', () => {
     // ₹1,00,000 fixed fee on ₹10 LPA offer = 1.0 LPA = 10%
-    const r = placementFeeForOffer({ feeType: 'amount', feePercent: 0, feeAmountRupees: 100000 }, 10, 2, false);
+    const r = placementFeeForOffer({ feeType: 'amount', feePercent: 0, feeAmountRupees: 100000 }, 10, false);
     expect(r.feeAmountLpa).toBeCloseTo(1);
     expect(r.feePercent).toBeCloseTo(10);
   });
 
-  it('splits the fee between platform margin and consultant when a consultant is involved', () => {
-    // 10% of ₹10 LPA: platform keeps 2% (₹0.2 LPA), consultant gets 8% (₹0.8 LPA)
-    const r = placementFeeForOffer({ feeType: 'percent', feePercent: 10, feeAmountRupees: null }, 10, 2, true);
-    expect(r.platformFeePercent).toBe(2);
+  it('gives the consultant 80% of the fee when a consultant is involved', () => {
+    // 10% of ₹10 LPA = ₹1.0 LPA fee: platform keeps 20% (₹0.2 LPA), consultant gets 80% (₹0.8 LPA)
+    const r = placementFeeForOffer({ feeType: 'percent', feePercent: 10, feeAmountRupees: null }, 10, true);
+    expect(r.platformFeePercent).toBeCloseTo(2);
     expect(r.consultantFeeAmountLpa).toBeCloseTo(0.8);
     expect(r.consultantFeePercent).toBeCloseTo(8);
   });
 
-  it('never gives the consultant a negative share on a small fixed fee', () => {
-    // ₹50,000 fixed (0.5 LPA) on a 40 LPA offer: platform margin 2% = 0.8 LPA > fee
-    const r = placementFeeForOffer({ feeType: 'amount', feePercent: 0, feeAmountRupees: 50000 }, 40, 2, true);
-    expect(r.consultantFeeAmountLpa).toBe(0);
+  it('gives the consultant 80% of a fixed fee', () => {
+    // ₹1,00,000 fixed fee on a 20 LPA offer: consultant gets ₹80,000 (0.8 LPA)
+    const r = placementFeeForOffer({ feeType: 'amount', feePercent: 0, feeAmountRupees: 100000 }, 20, true);
+    expect(r.consultantFeeAmountLpa).toBeCloseTo(0.8);
+  });
+});
+
+describe('consultantShareFor', () => {
+  it('shows 8% when the employer enters 10%', () => {
+    const s = consultantShareFor({ feeType: 'percent', feePercent: 10, feeAmountRupees: null });
+    expect(s.consultantFeePercent).toBe(8);
+    expect(s.consultantFeeLabel).toBe('8% of CTC');
+  });
+
+  it('shows 6.8% when the employer enters 8.5%', () => {
+    const s = consultantShareFor({ feeType: 'percent', feePercent: 8.5, feeAmountRupees: null });
+    expect(s.consultantFeePercent).toBe(6.8);
+  });
+
+  it('shows ₹80,000 when the employer enters ₹1,00,000', () => {
+    const s = consultantShareFor({ feeType: 'amount', feePercent: 0, feeAmountRupees: 100000 });
+    expect(s.consultantFeeAmountRupees).toBe(80000);
+    expect(s.consultantFeeLabel).toBe('₹80,000 fixed');
   });
 });
 

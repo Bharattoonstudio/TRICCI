@@ -8,10 +8,11 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { otpStore, user, session } from '@/server/db/schema.js';
+import { otpStore } from '@/server/db/schema.js';
 import { hashOtp } from '@/server/lib/otpHash.js';
+import { getAuth } from '@/lib/auth/auth.js';
 import { eq, and, gt } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
+import { createHmac } from 'crypto';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -60,28 +61,28 @@ export default async function handler(req: Request, res: Response) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Create new session token
-    const sessionId = randomUUID();
-    const sessionToken = randomUUID();
-    const sessionExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    // Create a real BetterAuth session so the site's own useSession / getSession
+    // recognise the user. This also runs BetterAuth's session hooks (suspended/removed accounts).
+    const authCtx = await (getAuth() as any).$context;
+    const betterSession = await authCtx.internalAdapter.createSession(loginUser.id, false);
+    const sessionToken: string = betterSession.token;
 
-    await db.insert(session).values({
-      id: sessionId,
-      userId: loginUser.id,
-      token: sessionToken,
-      expiresAt: sessionExpiresAt,
-    });
+    // BetterAuth expects its session cookie signed as `token.HMAC-SHA256(token)` (base64), URL-encoded.
+    const signature = createHmac('sha256', authCtx.secret)
+      .update(sessionToken)
+      .digest('base64');
+    const signedValue = encodeURIComponent(`${sessionToken}.${signature}`);
+
+    const cookieName: string = authCtx.authCookies.sessionToken.name;
+    const maxAgeSeconds = 30 * 24 * 60 * 60;
+    const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
 
     console.log(`[otp.login.verify] Session created for user ${loginUser.id}`);
 
-    // Set session cookie (HttpOnly, SameSite=Lax)
-    res.cookie('sessionToken', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: '/',
-    });
+    // Set the BetterAuth session cookie (HttpOnly, SameSite=Lax) and the legacy sessionToken cookie
+    // used by the custom session middleware. Raw header so the value is not encoded twice.
+    res.append('Set-Cookie', `${cookieName}=${signedValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secureFlag}`);
+    res.append('Set-Cookie', `sessionToken=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secureFlag}`);
 
     // Delete OTP record (mark as used)
     await db.delete(otpStore).where(eq(otpStore.id, rows[0].id));

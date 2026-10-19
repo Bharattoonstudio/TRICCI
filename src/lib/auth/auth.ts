@@ -261,11 +261,18 @@ export function getAuth() {
                 } : {}),
         },
 
-        // Rate limiting for auth endpoints
+        // Rate limiting for auth endpoints. BetterAuth reads `window` in seconds
+        // (the old `windowMs` setting was ignored). Sign-in: 10 attempts per IP per 15 minutes.
+        // Session checks run on every page load, so they are not limited.
+        // Password reset keeps BetterAuth's default limit, which is unchanged.
         rateLimit: {
                 enabled: true,
-                windowMs: 15 * 60 * 1000, // 15 minutes
-                max: 10, // 10 requests per window
+                window: 60,
+                max: 100,
+                customRules: {
+                        '/sign-in/email': { window: 15 * 60, max: 10 },
+                        '/get-session': false,
+                },
         },
   });
 

@@ -6,6 +6,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { otpStore, candidateProfile } from '@/server/db/schema.js';
+import { hashOtp } from '@/server/lib/otpHash.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -25,7 +26,7 @@ export default async function handler(req: Request, res: Response) {
     const [record] = await db.select().from(otpStore)
       .where(and(
         eq(otpStore.identifier, identifier),
-        eq(otpStore.otp, otp),
+        eq(otpStore.otp, hashOtp(identifier, purpose, otp)),
         eq(otpStore.purpose, purpose),
         eq(otpStore.verified, false),
         gt(otpStore.expiresAt, now),

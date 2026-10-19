@@ -10,6 +10,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { otpStore, user } from '@/server/db/schema.js';
+import { hashOtp } from '@/server/lib/otpHash.js';
 import { eq } from 'drizzle-orm';
 import { sendEmail } from '@/server/email.js';
 import { randomInt } from 'crypto';
@@ -92,7 +93,7 @@ export default async function otp_send_public_post_53(req: Request, res: Respons
 		const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 		await db.insert(otpStore).values({
 			identifier,
-			otp,
+			otp: hashOtp(identifier, 'signup_mobile', otp),
 			expiresAt,
 			purpose: 'signup_mobile',
 			verified: false,

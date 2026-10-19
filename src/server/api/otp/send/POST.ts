@@ -3,7 +3,7 @@
  * Body: { identifier: string (phone or email), purpose: 'verify' | '2fa' }
  * Generates a 6-digit OTP, stores it, and sends via email (SMS gateway TBD).
  */
-import type { Request, Response } from 'express'; import { db } from '@/server/db/client.js'; import { otpStore } from '@/server/db/schema.js'; import { eq, and, gt } from 'drizzle-orm'; import { sendEmail } from '@/server/email.js'; import { toWebRequest } from '@/lib/auth/express-adapter.js'; import { getAuth } from '@/lib/auth/auth.js';
+import type { Request, Response } from 'express'; import { db } from '@/server/db/client.js'; import { otpStore } from '@/server/db/schema.js'; import { hashOtp } from '@/server/lib/otpHash.js'; import { eq, and, gt } from 'drizzle-orm'; import { sendEmail } from '@/server/email.js'; import { toWebRequest } from '@/lib/auth/express-adapter.js'; import { getAuth } from '@/lib/auth/auth.js';
 
 import { randomInt } from 'crypto';
 
@@ -50,7 +50,7 @@ export default async function handler(req: Request, res: Response) {
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-    await db.insert(otpStore).values({ identifier, otp, purpose, expiresAt });
+    await db.insert(otpStore).values({ identifier, otp: hashOtp(identifier, purpose, otp), purpose, expiresAt });
 
     // Determine if identifier is email or phone
     const isEmail = identifier.includes('@');

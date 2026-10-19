@@ -92,7 +92,7 @@ export default function PlacementsFeeList() {
                 )}
               </div>
               <p className="text-[11px] text-white/30 mb-3">
-                Candidate CTC: {p.ctcLpa != null ? `₹${p.ctcLpa}L` : '—'} · Your fee: {p.consultantFeePercent != null ? `${p.consultantFeePercent}%` : '—'} (platform keeps 2%)
+                Candidate CTC: {p.ctcLpa != null ? `₹${p.ctcLpa}L` : '—'} · Your fee: {p.consultantFeePercent != null ? `${p.consultantFeePercent}%` : '—'}
               </p>
 
               {p.feeAcceptanceStatus === 'pending' && (

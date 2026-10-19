@@ -171,11 +171,6 @@ const jsonLd = {
     description: "India's first transparent, AI-powered recruitment marketplace connecting employers, independent consultants, and candidates.",
     foundingDate: '2024',
     areaServed: { '@type': 'Country', name: 'India' },
-    founder: {
-      '@type': 'Person',
-      name: 'R L Bhatia',
-      jobTitle: 'Founder',
-    },
   },
 };
 
@@ -295,10 +290,10 @@ export default function AboutPage() {
                   style={{ background: 'linear-gradient(90deg, #E8470A, #6B4FBB)' }} />
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white mb-5 shrink-0"
                   style={{ background: 'linear-gradient(135deg, #E8470A 0%, #6B4FBB 100%)' }}>
-                  RB
+                  TT
                 </div>
                 <p className="font-black text-foreground text-2xl leading-tight mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-                  R L Bhatia
+                  Team TRICCI
                 </p>
                 <p className="text-sm font-semibold mb-5" style={{ color: '#E8470A' }}>Founder, TRICCI</p>
                 <a
@@ -327,7 +322,7 @@ export default function AboutPage() {
                 <p className="text-sm text-muted-foreground italic leading-relaxed">
                   &ldquo;If Hiring Is Hard, TRICCI Makes It Easy.&rdquo;
                 </p>
-                <p className="text-xs font-bold text-foreground mt-3">— R L Bhatia</p>
+                <p className="text-xs font-bold text-foreground mt-3">— Team TRICCI</p>
               </motion.div>
             </motion.div>
 
@@ -522,7 +517,7 @@ export default function AboutPage() {
                   <span style={{ color: '#E8470A' }}>hundreds of recruiters</span>{' '}
                   working simultaneously on the same position.&rdquo;
                 </p>
-                <p className="text-sm text-muted-foreground mt-3">— R L Bhatia, Founder</p>
+                <p className="text-sm text-muted-foreground mt-3">— Team TRICCI</p>
               </motion.div>
             </motion.div>
 
@@ -749,10 +744,10 @@ export default function AboutPage() {
               <div className="mt-8 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black text-white shrink-0"
                   style={{ background: 'linear-gradient(135deg, #E8470A 0%, #6B4FBB 100%)' }}>
-                  RB
+                  TT
                 </div>
                 <div>
-                  <p className="font-black text-white text-lg" style={{ fontFamily: 'var(--font-heading)' }}>R L Bhatia</p>
+                  <p className="font-black text-white text-lg" style={{ fontFamily: 'var(--font-heading)' }}>Team TRICCI</p>
                   <p className="text-sm text-white/50">Founder, TRICCI</p>
                   <p className="text-xs text-white/30 mt-0.5 italic">TRICCI &mdash; India&rsquo;s AI-Powered Marketplace for Recruitment</p>
                 </div>

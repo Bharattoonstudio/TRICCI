@@ -20,6 +20,7 @@ export interface PipelineCard {
   id: number;
   source: 'direct' | 'consultant';
   candidateName: string;
+  candidateFlag?: string | null;
   status: string;
   cvUrl: string | null;
   consultantName?: string;
@@ -93,6 +94,7 @@ export default function PipelineBoard({ cards, onAdvance, onReject, onManageOffe
                     <div key={`${card.source}-${card.id}`} className="bg-card border border-border rounded-lg p-3">
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <p className="text-xs font-semibold text-foreground truncate">{card.candidateName}</p>
+                        {card.candidateFlag && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-500 shrink-0">Negative profile</span>}
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${card.source === 'direct' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
                           {card.source === 'direct' ? 'Direct' : 'Consultant'}
                         </span>

@@ -53,6 +53,8 @@ export default async function handler(req: Request, res: Response) {
         candidateUserId: user.id,
         candidateName: user.name,
         candidateEmail: user.email,
+        candidateSuspendedAt: user.suspendedAt,
+        candidateRemovedAt: user.removedAt,
         candidatePhone: candidateProfile.phone,
         candidateTitle: candidateProfile.currentTitle,
         // Prefer the AI-enhanced, JD-tailored CV the candidate approved for
@@ -72,10 +74,12 @@ export default async function handler(req: Request, res: Response) {
       .limit(500);
 
     // Mask contact details per SOP CV Masking Engine
-    const masked = rows.map(r => ({
+    // Candidates stay visible. A suspended or removed account is flagged as a negative profile.
+    const masked = rows.map(({ candidateSuspendedAt, candidateRemovedAt, ...r }) => ({
       ...r,
       candidateEmail: r.candidateEmail ? maskEmail(r.candidateEmail) : null,
       candidatePhone: r.candidatePhone ? maskPhone(r.candidatePhone) : null,
+      candidateFlag: candidateRemovedAt ? 'removed' : candidateSuspendedAt ? 'suspended' : null,
     }));
 
     res.json({ applications: masked, total: masked.length });

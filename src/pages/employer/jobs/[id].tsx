@@ -33,7 +33,7 @@ interface ConsultantSubmission {
   consultantId: string; consultantName: string; consultantEmail: string;
 }
 interface DirectApp {
-  id: number; status: string; candidateName: string; candidateCvUrl: string | null;
+  id: number; status: string; candidateName: string; candidateFlag?: string | null; candidateCvUrl: string | null;
   cvMatchScore: number | null; appliedAt: string;
 }
 
@@ -232,7 +232,7 @@ export default function EmployerJobDetailPage() {
               <PipelineBoard
                 cards={[
                   ...consultantSubs.map((s): PipelineCard => ({ id: s.id, source: 'consultant', candidateName: s.candidateName, status: s.status, cvUrl: s.cvUrl, consultantName: s.consultantName })),
-                  ...directApps.map((a): PipelineCard => ({ id: a.id, source: 'direct', candidateName: a.candidateName, status: a.status, cvUrl: a.candidateCvUrl })),
+                  ...directApps.map((a): PipelineCard => ({ id: a.id, source: 'direct', candidateName: a.candidateName, candidateFlag: a.candidateFlag, status: a.status, cvUrl: a.candidateCvUrl })),
                 ]}
                 actioningIds={actioning}
                 onAdvance={(card, nextStatus) => card.source === 'consultant' ? actOnSubmission(card.id, nextStatus as 'shortlisted' | 'rejected') : actOnApplication(card.id, nextStatus as 'shortlisted' | 'selected' | 'rejected')}
@@ -315,7 +315,7 @@ export default function EmployerJobDetailPage() {
                   return (
                     <div key={app.id} className="px-4 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{app.candidateName}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{app.candidateName}{app.candidateFlag && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-500">Negative profile: account {app.candidateFlag}</span>}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES[app.status] || 'bg-muted text-muted-foreground'}`}>{app.status}</span>
                           {app.cvMatchScore != null && <span className="text-[10px] text-muted-foreground">Match: {app.cvMatchScore}%</span>}

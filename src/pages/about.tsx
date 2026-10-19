@@ -173,7 +173,7 @@ const jsonLd = {
     areaServed: { '@type': 'Country', name: 'India' },
     founder: {
       '@type': 'Person',
-      name: 'Ritesh Kumar Bhatia',
+      name: 'R L Bhatia',
       jobTitle: 'Founder',
     },
   },
@@ -298,7 +298,7 @@ export default function AboutPage() {
                   RB
                 </div>
                 <p className="font-black text-foreground text-2xl leading-tight mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Ritesh Kumar Bhatia
+                  R L Bhatia
                 </p>
                 <p className="text-sm font-semibold mb-5" style={{ color: '#E8470A' }}>Founder, TRICCI</p>
                 <a
@@ -327,7 +327,7 @@ export default function AboutPage() {
                 <p className="text-sm text-muted-foreground italic leading-relaxed">
                   &ldquo;If Hiring Is Hard, TRICCI Makes It Easy.&rdquo;
                 </p>
-                <p className="text-xs font-bold text-foreground mt-3">— Ritesh Kumar Bhatia</p>
+                <p className="text-xs font-bold text-foreground mt-3">— R L Bhatia</p>
               </motion.div>
             </motion.div>
 
@@ -522,7 +522,7 @@ export default function AboutPage() {
                   <span style={{ color: '#E8470A' }}>hundreds of recruiters</span>{' '}
                   working simultaneously on the same position.&rdquo;
                 </p>
-                <p className="text-sm text-muted-foreground mt-3">— Ritesh Kumar Bhatia, Founder</p>
+                <p className="text-sm text-muted-foreground mt-3">— R L Bhatia, Founder</p>
               </motion.div>
             </motion.div>
 
@@ -752,7 +752,7 @@ export default function AboutPage() {
                   RB
                 </div>
                 <div>
-                  <p className="font-black text-white text-lg" style={{ fontFamily: 'var(--font-heading)' }}>Ritesh Kumar Bhatia</p>
+                  <p className="font-black text-white text-lg" style={{ fontFamily: 'var(--font-heading)' }}>R L Bhatia</p>
                   <p className="text-sm text-white/50">Founder, TRICCI</p>
                   <p className="text-xs text-white/30 mt-0.5 italic">TRICCI &mdash; India&rsquo;s AI-Powered Marketplace for Recruitment</p>
                 </div>

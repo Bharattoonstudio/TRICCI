@@ -13,6 +13,7 @@ import { db } from '@/server/db/client.js';
 import { submission, job, jobAcceptance, candidateApplication, user } from '@/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
+import { posterIsInactive } from '@/server/lib/posterStatus.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 
@@ -66,8 +67,10 @@ export default async function handler(req: Request, res: Response) {
     }
 
     // Verify job exists
-    const [jobRow] = await db.select({ id: job.id }).from(job).where(eq(job.id, jobId)).limit(1);
-    if (!jobRow) return res.status(404).json({ error: 'Job not found' });
+    const [jobRow] = await db.select({ id: job.id, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
+    if (!jobRow || (await posterIsInactive(jobRow.postedByUserId))) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
 
     // Spec STEP 5: consultant must have explicitly accepted this job's
     // terms before submitting a candidate to it.

@@ -7,7 +7,8 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { job, candidateApplication, submission, user } from '@/server/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { visibleApplicationCondition } from '@/server/lib/candidateStatus.js';
+import { and, eq, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 
@@ -39,7 +40,7 @@ export default async function handler(req: Request, res: Response) {
         rejected: sql<number>`count(*) filter (where ${candidateApplication.status} = 'rejected')::int`,
       })
       .from(candidateApplication)
-      .where(eq(candidateApplication.jobId, jobId));
+      .where(role === 'employer' ? and(eq(candidateApplication.jobId, jobId), visibleApplicationCondition()) : eq(candidateApplication.jobId, jobId));
 
     const [subCounts] = await db
       .select({

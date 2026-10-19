@@ -12,7 +12,8 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { candidateApplication, submission, job } from '@/server/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { visibleApplicationCondition } from '@/server/lib/candidateStatus.js';
+import { and, eq, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 
@@ -36,7 +37,7 @@ export default async function handler(req: Request, res: Response) {
       })
       .from(candidateApplication)
       .innerJoin(job, eq(candidateApplication.jobId, job.id))
-      .where(role === 'employer' ? eq(job.postedByUserId, employerId) : sql`true`);
+      .where(role === 'employer' ? and(eq(job.postedByUserId, employerId), visibleApplicationCondition()) : sql`true`);
 
     const [subCounts] = await db
       .select({

@@ -9,6 +9,7 @@ import { documentRequest, documentSubmission } from '@/server/db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { applicationHiddenFromEmployer } from '@/server/lib/candidateStatus.js';
 import { resolveDocEntity } from '@/server/lib/documentEntity.js';
 
 export default async function handler(req: Request, res: Response) {
@@ -21,6 +22,9 @@ export default async function handler(req: Request, res: Response) {
 
     const entity = await resolveDocEntity('application', String(req.params.id));
     if (!entity) return res.status(404).json({ error: 'Application not found' });
+    if (role === 'employer' && await applicationHiddenFromEmployer(Number(req.params.id))) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
     if (role === 'employer' && entity.postedByUserId !== session.user.id) {
       return res.status(403).json({ error: 'Not your job posting' });
     }

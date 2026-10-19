@@ -9,6 +9,7 @@ import { candidateApplication, job, user, candidateProfile } from '@/server/db/s
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
+import { visibleApplicationCondition } from '@/server/lib/candidateStatus.js';
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
@@ -34,6 +35,7 @@ export default async function handler(req: Request, res: Response) {
     const conditions = [];
     if (role === 'employer') {
       conditions.push(eq(job.postedByUserId, session.user.id));
+      conditions.push(visibleApplicationCondition());
     }
     if (jobId) conditions.push(eq(candidateApplication.jobId, jobId));
     if (status && status !== 'all') conditions.push(eq(candidateApplication.status, status));

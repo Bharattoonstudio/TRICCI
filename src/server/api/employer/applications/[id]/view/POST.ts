@@ -7,6 +7,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { candidateApplication, job } from '@/server/db/schema.js';
+import { applicationHiddenFromEmployer } from '@/server/lib/candidateStatus.js';
 import { eq, and, isNull } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -31,6 +32,9 @@ export default async function handler(req: Request, res: Response) {
       .limit(1);
 
     if (!row) return res.status(404).json({ error: 'Application not found' });
+    if (role === 'employer' && await applicationHiddenFromEmployer(id)) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
     if (role === 'employer' && row.postedByUserId !== session.user.id) {
       return res.status(403).json({ error: 'Not your job posting' });
     }

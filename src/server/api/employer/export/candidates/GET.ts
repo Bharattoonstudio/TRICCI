@@ -8,6 +8,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { candidateApplication, submission, job, user } from '@/server/db/schema.js';
+import { visibleApplicationCondition } from '@/server/lib/candidateStatus.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -32,7 +33,7 @@ export default async function handler(req: Request, res: Response) {
     const jobIdFilter = req.query.jobId ? String(req.query.jobId) : undefined;
 
     const appConditions = role === 'employer'
-      ? and(eq(job.postedByUserId, session.user.id), ...(jobIdFilter ? [eq(candidateApplication.jobId, jobIdFilter)] : []))
+      ? and(eq(job.postedByUserId, session.user.id), visibleApplicationCondition(), ...(jobIdFilter ? [eq(candidateApplication.jobId, jobIdFilter)] : []))
       : jobIdFilter ? eq(candidateApplication.jobId, jobIdFilter) : undefined;
 
     const apps = await db

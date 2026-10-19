@@ -97,8 +97,8 @@ const CONSULTANT_PLANS = [
   {
     id: 'growth' as PlanId,
     name: 'Pro',
-    price: 1999,
-    billing: '₹1,999 / month',
+    price: 1000,
+    billing: '₹1,000 / month',
     description: 'Get priority placement, faster payouts, and exclusive high-value mandates.',
     features: [
       'Priority placement in employer search',
@@ -238,6 +238,8 @@ function PlanCard({
   onSelect: (id: PlanId) => void;
 }) {
   const isActive = currentPlan === plan.id;
+  // Consultant Pro is shown but cannot be bought yet (payment not connected).
+  const comingSoon = userType === 'consultant' && plan.id === 'growth';
 
   return (
     <motion.div
@@ -300,7 +302,7 @@ function PlanCard({
 
       <button
         onClick={() => onSelect(plan.id)}
-        disabled={isActive}
+        disabled={isActive || comingSoon}
         className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${
           isActive
             ? 'bg-green-500/15 text-green-400 border border-green-500/30 cursor-default'
@@ -309,7 +311,7 @@ function PlanCard({
             : 'bg-muted text-foreground border border-border hover:border-primary/40 hover:bg-primary/5'
         }`}
       >
-        {isActive ? 'Active Plan' : plan.cta}
+        {isActive ? 'Active Plan' : comingSoon ? 'Coming soon' : plan.cta}
       </button>
     </motion.div>
   );
@@ -438,6 +440,7 @@ export default function BillingPage() {
   const handleSelectPlan = (id: PlanId) => {
     const plan = plans.find(p => p.id === id);
     if (!plan || id === currentPlan) return;
+    if (userType === 'consultant' && id === 'growth') return; // Pro not yet available
     if (plan.price === null) return; // contact sales
     if (plan.price === 0) { setCurrentPlan(id); return; }
     setSelectedPlan(plan);

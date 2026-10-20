@@ -7,7 +7,7 @@ cd /d C:\Users\Lavya\TRICCI
 REM Create .env file with production settings
 echo Creating .env file with production configuration...
 (
-echo DATABASE_URL=postgresql://postgres.qvuenvngwgcknawfsnxl:Ritesh@9282@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+echo DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
 echo BETTER_AUTH_SECRET=abc123def456789abc123def456789abc123def456789abc123def456789abc1
 echo BETTER_AUTH_URL=https://tricci.in
 echo PORT=3000

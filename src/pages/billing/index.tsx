@@ -103,7 +103,7 @@ const CONSULTANT_PLANS = [
     features: [
       'Priority placement in employer search',
       'Access to exclusive high-CTC mandates',
-      'Enhanced payout: 85% of fee',
+      'Enhanced payout: coming soon',
       'Fast payout processing (3 days)',
       'Verified Pro badge on profile',
       'Advanced analytics on submissions',
@@ -594,7 +594,7 @@ export default function BillingPage() {
                       <tbody className="divide-y divide-border">
                         {[
                           { plan: 'Free', consultant: '80%', tricci: '20%', speed: '7 business days' },
-                          { plan: 'Pro', consultant: '85%', tricci: '15%', speed: '3 business days', highlight: true },
+                          { plan: 'Pro', consultant: 'Coming soon', tricci: '—', speed: 'Coming soon', highlight: true },
                           { plan: 'Agency', consultant: 'Custom', tricci: 'Custom', speed: '1 business day' },
                         ].map(row => (
                           <tr key={row.plan} className={`hover:bg-muted/20 transition-colors ${row.highlight ? 'bg-primary/5' : ''}`}>

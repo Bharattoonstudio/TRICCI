@@ -114,25 +114,6 @@ const CONSULTANT_PLANS = [
     highlight: true,
     badge: 'Best Value',
   },
-  {
-    id: 'enterprise' as PlanId,
-    name: 'Agency',
-    price: null,
-    billing: 'Custom pricing',
-    description: 'For recruitment agencies managing multiple consultants on TRICCI.',
-    features: [
-      'Multi-seat team management',
-      'Agency-level payout: custom, agreed per contract',
-      'Dedicated mandate pipeline',
-      'White-label candidate portal',
-      'API access',
-      'Dedicated account manager',
-    ],
-    limitations: [],
-    cta: 'Contact Sales',
-    highlight: false,
-    badge: null,
-  },
 ];
 
 // Real transactions will load here once payments are connected. No sample data is shown.
@@ -595,7 +576,6 @@ export default function BillingPage() {
                         {[
                           { plan: 'Free', consultant: '80%', tricci: '20%', speed: '7 business days' },
                           { plan: 'Pro', consultant: 'Coming soon', tricci: '—', speed: 'Coming soon', highlight: true },
-                          { plan: 'Agency', consultant: 'Custom', tricci: 'Custom', speed: '1 business day' },
                         ].map(row => (
                           <tr key={row.plan} className={`hover:bg-muted/20 transition-colors ${row.highlight ? 'bg-primary/5' : ''}`}>
                             <td className="px-6 py-4 text-sm font-semibold text-foreground">
@@ -766,7 +746,7 @@ export default function BillingPage() {
                   <TrendingUp size={16} className="text-accent shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-foreground">Upgrade to Pro for faster payouts</p>
-                    <p className="text-xs text-muted-foreground mt-1">Free plan: 7 business days · Pro plan: 3 business days · Agency: 1 business day</p>
+                    <p className="text-xs text-muted-foreground mt-1">Free plan: 7 business days · Pro plan: 3 business days</p>
                     <button onClick={() => setActiveTab('plans')}
                       className="flex items-center gap-1 text-xs text-primary font-semibold mt-2 hover:gap-2 transition-all">
                       View Pro plan <ChevronRight size={12} />

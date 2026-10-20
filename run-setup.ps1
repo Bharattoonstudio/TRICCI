@@ -19,7 +19,7 @@ $envContent = @"
 # TRICCI Environment Configuration
 # Auto-generated setup
 
-DATABASE_URL=postgresql://postgres.qvuenvngwgcknawfsnxl:Ritesh@9282@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
 
 BETTER_AUTH_SECRET=abc123def456789abc123def456789abc123def456789abc123def456789abc1
 

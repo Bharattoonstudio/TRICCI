@@ -270,6 +270,28 @@ export default async function handler(req: Request, res: Response) {
       );
     }
 
+    // Alert the TRICCI team inbox that a job was posted. Fire-and-forget: never blocks or fails the request.
+    const escapeHtml = (v: unknown) =>
+      String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+    const alertTo = process.env.JOB_ALERT_EMAIL || 'connect@tricci.in';
+    sendEmail({
+      to: alertTo,
+      subject: `New job posted: ${String(title).trim()} (${jobCode})`,
+      html: `<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;">
+        <p><strong>A new job was posted on TRICCI.</strong></p>
+        <ul>
+          <li>Role: ${escapeHtml(String(title).trim())}</li>
+          <li>Company: ${escapeHtml(companyName)}</li>
+          <li>Location: ${escapeHtml(String(location).trim())}</li>
+          <li>CTC: ${escapeHtml(ctcLabel)}</li>
+          <li>Job code: ${escapeHtml(jobCode)}</li>
+          <li>Visibility: ${escapeHtml(visibility)}</li>
+          <li>Employer account: ${escapeHtml((session.user as { email?: string }).email ?? '')}</li>
+        </ul>
+      </div>`,
+      text: `New job posted on TRICCI: ${String(title).trim()} at ${companyName} (${jobCode}). Visibility: ${visibility}.`,
+    }).catch(err => console.error('[POST /api/jobs] admin alert failed:', err));
+
     // Send job posted confirmation email to employer (SOP §24)
     try {
       const [employerUser] = await db

@@ -7,11 +7,11 @@
  * is treated as final/binding — flagged clearly in the UI, not just here.
  */
 /** Bump when the consultant agreement changes. Consultants who signed an older version must re-accept. */
-export const CONSULTANT_AGREEMENT_VERSION = '1.1';
+export const CONSULTANT_AGREEMENT_VERSION = '1.2';
 
 export const CONSULTANT_AGREEMENT_TEXT = `TRICCI CONSULTANT MASTER SERVICE AGREEMENT (MSA)
 
-Version: 1.1 (Draft — pending legal review)
+Version: 1.2 (Draft — pending legal review)
 Effective Date: [DD/MM/YYYY]
 Last Updated: [DD/MM/YYYY]
 
@@ -19,7 +19,7 @@ Last Updated: [DD/MM/YYYY]
 
 1. AGREEMENT AND ACCEPTANCE
 
-This Consultant Master Service Agreement ("Agreement" or "MSA") is a legally binding agreement between TRICCI ("TRICCI", "Platform", "We", "Us", or "Our"), the owner and operator of the online recruitment marketplace available at www.tricci.in, and the individual, agency, recruitment firm, partnership, LLP, or other legal entity registering as a Recruitment Consultant or Freelance Recruiter on the Platform ("Consultant", "You", or "Your").
+This Consultant Master Service Agreement ("Agreement" or "MSA") is a legally binding agreement between TRICCI ("TRICCI", "Platform", "We", "Us", or "Our"), the owner and operator of the online recruitment marketplace available at www.tricci.in, and the individual, agency, recruitment firm, partnership, LLP, or other legal entity registering as a Recruitment Consultant or Freelance Recruiter on the Platform ("Consultant", "You", or "Your"). TRICCI means [LEGAL ENTITY NAME], a [company / LLP] incorporated under [●], having its registered office at [●], CIN/LLPIN [●], GSTIN [●].
 
 By registering a Consultant account, clicking "I Agree", electronically accepting this Agreement, or accessing or using the Platform, the Consultant confirms that:
 
@@ -56,13 +56,21 @@ Platform means the website, software, mobile application, APIs, dashboards and r
 
 Placement Fee means the total fee an Employer agrees to pay for a successful placement, as displayed on the relevant Job Posting.
 
-Consultant Commission means the Consultant's share of the Placement Fee after TRICCI's Platform Fee is deducted, as calculated and displayed to the Consultant at the time of a successful placement.
+Consultant Commission means the Consultant's share of the Placement Fee, being eighty percent (80%) of the Placement Fee, as calculated and displayed to the Consultant at the time of a successful placement.
 
-Platform Fee means the flat percentage TRICCI retains from the Placement Fee for facilitating the placement through the Platform.
+Platform Fee means the twenty percent (20%) share of the Placement Fee that TRICCI retains for facilitating the placement through the Platform.
 
 Date of Joining (DOJ) means the date the Candidate commences employment with the Employer.
 
 Business Day means any day on which commercial banks are open for business in India.
+
+Evaluation Period means the forty-five (45) or ninety (90) calendar day payment term under Section 9.1 that applies to a Placement, as specified on the relevant Job Posting.
+
+Invoice means a valid tax invoice (and, where the Consultant is registered under GST, a GST-compliant invoice) raised by the Consultant for a Placement in accordance with Section 9.7.
+
+Placement Reversal means any refund, cancellation, credit note or reversal of the Employer's payment for a Placement, in whole or in part, including under the Employer's replacement or guarantee terms.
+
+Replacement Period means the period of [●] calendar days from the Candidate's DOJ during which the Employer may exercise a replacement right under its agreement with TRICCI.
 
 Applicable Law means all statutes, regulations, rules, notifications and governmental requirements applicable within India.
 
@@ -107,6 +115,8 @@ The Consultant shall NOT:
 - solicit or accept payment of any kind from a Candidate in connection with a submission or placement;
 - misrepresent itself as acting on behalf of TRICCI or any Employer.
 
+Non-Circumvention. For [12] months from the date of a Candidate's submission through the Platform, the Consultant shall not, directly or through any third party, place that Candidate with the Employer outside the Platform, or solicit that Employer to engage the Consultant outside the Platform for that Candidate's placement, without TRICCI's prior written consent.
+
 TRICCI reserves the right to reject, withhold, or reverse any submission found to violate this Section, and may suspend or terminate the Consultant's account for repeated or material violations.
 
 ────────────────────────────────────────
@@ -121,7 +131,7 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 8. COMMERCIAL TERMS — FEE STRUCTURE
 
-8.1 Each Job Posting displays a total Placement Fee percentage agreed between TRICCI and the Employer. TRICCI retains a flat Platform Fee (currently 2%, subject to change per the commission configuration displayed on the Platform) from the total Placement Fee; the remainder is the Consultant Commission.
+8.1 Each Job Posting displays a total Placement Fee percentage agreed between TRICCI and the Employer. TRICCI retains twenty percent (20%) of the Placement Fee as its Platform Fee, and the remaining eighty percent (80%) is the Consultant Commission.
 
 8.2 The exact Consultant Commission for a given placement is calculated and displayed to the Consultant once a Candidate reaches Selected status for that Job Posting. The Consultant must Accept or Reject the calculated Commission through the Platform before it is confirmed.
 
@@ -133,23 +143,27 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 9. PAYMENT TERMS
 
-9.1 Candidate Evaluation Period. Every successful placement is subject to a payment term of Forty-Five (45) or Ninety (90) calendar days (as specified on the relevant Job Posting) commencing from the Candidate's actual Date of Joining (DOJ), during which the Employer's payment to TRICCI falls due per the Employer Master Service Agreement.
+9.1 Candidate Evaluation Period. Every successful placement is subject to a payment term of Forty-Five (45) or Ninety (90) calendar days (as specified on the relevant Job Posting) commencing from the Candidate's actual Date of Joining (DOJ), during which the Employer's payment to TRICCI falls due per the Employer Master Service Agreement. For the avoidance of doubt, the Evaluation Period governs only the Employer's payment term. The payout timeline in Section 9.6 applies to every Placement, whether the Job Posting specifies a 45-day or 90-day Evaluation Period, and is measured from the same DOJ.
 
-9.2 Consultant Payment. TRICCI shall remit the accepted Consultant Commission to the Consultant within a reasonable period after TRICCI has received cleared payment of the corresponding invoice from the Employer. TRICCI is not obligated to advance Commission to the Consultant before the Employer's payment has actually been received and realized.
+9.2 Consultant Payment. Subject to Sections 9.6 and 9.8, TRICCI shall remit the accepted Consultant Commission to the Consultant within [●] Business Days after all conditions in Section 9.6 are satisfied. TRICCI is not obligated to advance Commission to the Consultant before the Employer's payment has actually been received and realized.
 
 9.3 The Consultant shall promptly acknowledge receipt of Commission payments through the Platform once credited.
 
 9.4 Payment Methods. Bank Transfer, UPI, or any other mode notified by TRICCI. Payment is deemed made only upon successful realization of cleared funds in the Consultant's designated account.
 
-9.5 Where an Employer defaults on payment, disputes a placement, or exercises a replacement right under its agreement with TRICCI, the corresponding Consultant Commission payment may be delayed, adjusted, or withheld in proportion, and TRICCI shall inform the Consultant of the reason without undue delay.
+9.5 Replacement Period and Employer Default. Where, during the Replacement Period, an Employer defaults on payment, disputes a Placement, or exercises a replacement right under its agreement with TRICCI, the corresponding Consultant Commission may be delayed, adjusted, or withheld in proportion to the affected amount, and TRICCI shall inform the Consultant in writing of the reason without undue delay. Any Commission withheld under this Section 9.5 shall be released or finally adjusted within [●] days after the Replacement Period ends or the dispute is resolved, whichever is later.
 
 9.6 Payout Release and Invoice. Consultant Commission is payable only after (a) the Employer's payment has been received and realized by TRICCI, (b) the Consultant has submitted a valid invoice for the placement by the end of the 90th calendar day from the Candidate's actual Date of Joining (DOJ), and (c) the 92nd calendar day from DOJ has passed. Commission is not released before day 92. If no valid invoice is received by the end of day 90, release is held for review and is not automatic.
+
+9.7 Invoice Requirements. The Invoice for each Placement shall be issued by the Consultant to [TRICCI / the Employer, as TRICCI directs], shall state the Consultant's legal name, PAN, GSTIN (where registered), the bank account details verified through the Platform, the Job Posting reference, the Candidate's DOJ and the Commission amount, and shall otherwise comply with the Central Goods and Services Tax Act, 2017 and applicable rules. An Invoice is valid only if it meets these requirements and is received through the Platform within the period set out in Section 9.6(b).
+
+9.8 Clawback and Set-Off. If a Placement Reversal occurs after Commission has been paid, the Consultant shall repay the Commission attributable to the reversed amount within [30] days of TRICCI's written demand. TRICCI may set off any such amount against any Commission or other amount payable to the Consultant under this Agreement, and may withhold future Commission until repayment is made.
 
 ────────────────────────────────────────
 
 10. TAXES
 
-All Commission amounts are exclusive of GST and other applicable statutory taxes unless expressly stated otherwise. Where required by law, TRICCI (or the Employer, as applicable) shall deduct Tax Deducted at Source (TDS) from Commission payments, and the Consultant shall provide any documentation (such as PAN, GST registration) reasonably required to ensure correct tax treatment. Any liability arising from the Consultant's failure to comply with applicable tax laws is solely the Consultant's.
+All Commission amounts are exclusive of GST and other applicable statutory taxes unless expressly stated otherwise. Where required by law, TRICCI (or the Employer, as applicable) shall deduct Tax Deducted at Source (TDS) under the applicable provision of the Income-tax Act, 1961 [section to be confirmed by counsel and tax adviser] from Commission payments, and shall issue the TDS certificate as required by law. The Consultant shall provide its PAN and any other documentation (such as GST registration) reasonably required to ensure correct tax treatment. Any liability arising from the Consultant's failure to comply with applicable tax laws is solely the Consultant's.
 
 ────────────────────────────────────────
 
@@ -163,7 +177,7 @@ These confidentiality obligations survive termination of this Agreement for five
 
 12. DATA PRIVACY & PROTECTION
 
-12.1 The Consultant shall use Candidate and Employer information only for genuine recruitment purposes related to the Platform, protect it from unauthorized access, comply with applicable data protection laws including the Digital Personal Data Protection Act, 2023 where applicable, and immediately notify TRICCI of any actual or suspected data breach involving information obtained through the Platform.
+12.1 The Consultant shall use Candidate and Employer information only for genuine recruitment purposes related to the Platform, protect it from unauthorized access, comply with applicable data protection laws including the Digital Personal Data Protection Act, 2023 where applicable, and notify TRICCI without undue delay, and in any event within [●] hours, of any actual or suspected data breach involving information obtained through the Platform.
 
 12.2 The Consultant shall not sell or rent Candidate or Employer information, build private databases from Platform information for purposes unrelated to a specific submission, or use such information for marketing unrelated to the specific recruitment mandate.
 
@@ -225,7 +239,7 @@ Termination does not affect any Commission already earned and confirmed prior to
 
 21. GOVERNING LAW & DISPUTE RESOLUTION
 
-This Agreement is governed by the laws of India. The Parties shall first attempt to resolve disputes through mutual discussion; if unresolved within thirty (30) days, disputes shall be referred to arbitration under the Arbitration and Conciliation Act, 1996. The seat and venue of arbitration shall be Thane, Maharashtra, India, and proceedings shall be conducted in English. Subject to the arbitration provisions, courts at Thane, Maharashtra shall have exclusive jurisdiction.
+This Agreement is governed by the laws of India. The Parties shall first attempt to resolve disputes through mutual discussion; if unresolved within thirty (30) days, disputes shall be referred to arbitration under the Arbitration and Conciliation Act, 1996. The tribunal shall consist of a sole arbitrator appointed by mutual agreement within thirty (30) days of a request for arbitration, failing which by [appointing authority]. Costs shall be borne as the arbitrator directs. The seat and venue of arbitration shall be Thane, Maharashtra, India, and proceedings shall be conducted in English. Subject to the arbitration provisions, courts at Thane, Maharashtra shall have exclusive jurisdiction.
 
 ────────────────────────────────────────
 
@@ -237,7 +251,7 @@ The Parties acknowledge that this Agreement is executed electronically. Electron
 
 23. GENERAL PROVISIONS
 
-23.1 Entire Agreement — this Agreement, together with the Privacy Policy and other Platform policies, constitutes the entire agreement between TRICCI and the Consultant.
+23.1 Entire Agreement — this Agreement, together with the Privacy Policy, Refund Policy, Pricing Policy and other Platform policies, constitutes the entire agreement between TRICCI and the Consultant.
 23.2 Severability — if any provision is held invalid or unenforceable, the remaining provisions continue in full force.
 23.3 Waiver — failure by TRICCI to enforce any provision is not a waiver of its rights.
 23.4 Assignment — the Consultant shall not assign or transfer its rights or obligations without TRICCI's prior written consent; TRICCI may assign its rights and obligations to any affiliate, successor or purchaser of its business.
@@ -259,8 +273,38 @@ By registering on TRICCI, clicking "I Agree", electronically accepting this Agre
 
 ────────────────────────────────────────
 
+25. TERM, TERMINATION AND NOTICE
+
+25.1 This Agreement takes effect on acceptance and continues until terminated under this Section.
+
+25.2 Either Party may terminate this Agreement by giving [30] days' written notice. TRICCI may terminate with immediate effect in the circumstances set out in Section 20.
+
+25.3 Termination does not affect Commission for Placements made before the termination date, which remain subject to Section 9.
+
+────────────────────────────────────────
+
+26. AMENDMENTS
+
+26.1 TRICCI may amend this Agreement by publishing the amended version on the Platform and notifying the Consultant at least [30] days before it takes effect.
+
+26.2 An amendment that adversely affects the payment terms of a Placement already confirmed shall not apply to that Placement without the Consultant's written consent.
+
+26.3 Continued use after an amendment takes effect constitutes acceptance, except where the Platform requires the Consultant to re-accept the Agreement.
+
+────────────────────────────────────────
+
+27. NOTICES AND GRIEVANCE REDRESSAL
+
+27.1 Notices to TRICCI shall be sent to [●]. Notices to the Consultant shall be sent to the email address registered on the Platform.
+
+27.2 In accordance with the Information Technology Act, 2000 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, complaints may be addressed to the Grievance Officer: [name, contact details].
+
+────────────────────────────────────────
+
 CONTACT
 
-TRICCI
+[LEGAL ENTITY NAME]
+Registered office: [●]
+Grievance Officer: [●]
 Website: https://tricci.in
 Email: connect@tricci.in`;

@@ -14,7 +14,6 @@ interface FeeConfig {
   maxFeePercent: number;
   minFeeAmountRupees: number;
   defaultFeePercent: number;
-  platformFeePct: number;
   payoutDays: number;
   updatedAt: Date | null;
 }
@@ -49,7 +48,6 @@ export async function getFeeConfig(): Promise<FeeConfig> {
       maxFeePercent: 35,
       minFeeAmountRupees: 50000,
       defaultFeePercent: 8,
-      platformFeePct: 2,
       payoutDays: 3,
       updatedAt: null,
     };
@@ -68,28 +66,4 @@ export function invalidateFeeCache(): void {
   cachedConfig = null;
   cacheExpiry = 0;
   console.log('[getFeeConfig] Cache invalidated');
-}
-
-/**
- * Get platform fee percentage
- * Convenience function for most common use case
- */
-export async function getPlatformFeePct(): Promise<number> {
-  const config = await getFeeConfig();
-  return config.platformFeePct;
-}
-
-/**
- * Calculate commission split
- * Given a job fee %, returns platform and consultant split
- */
-export async function calculateCommissionSplit(jobFeePercent: number): Promise<{
-  platformFeePercent: number;
-  consultantFeePercent: number;
-}> {
-  const config = await getFeeConfig();
-  return {
-    platformFeePercent: config.platformFeePct,
-    consultantFeePercent: Math.max(jobFeePercent - config.platformFeePct, 0),
-  };
 }

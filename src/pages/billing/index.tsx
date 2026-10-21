@@ -43,7 +43,7 @@ const EMPLOYER_PLANS = [
       'Up to 10 active job postings',
       'Priority listing in consultant feeds',
       'Advanced applicant tracking & scoring',
-      'Reduced platform fee (2% vs 3.125%)',
+      'Reduced platform fee',
       'Analytics dashboard',
       'Dedicated account manager',
       'Custom fee negotiation',

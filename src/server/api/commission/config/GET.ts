@@ -6,6 +6,7 @@
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { commissionConfig } from '@/server/db/schema.js';
+import { CONSULTANT_SHARE_PCT_FREE } from '@/server/lib/employerFee.js';
 
 // Seed defaults if the table is empty
 async function getOrSeedConfig() {
@@ -17,7 +18,6 @@ async function getOrSeedConfig() {
     maxFeePercent: 35,
     minFeeAmountRupees: 50000,
     defaultFeePercent: 8,
-    platformFeePct: 2,
     payoutDays: 3,
   });
   const seeded = await db.select().from(commissionConfig).limit(1);
@@ -27,13 +27,13 @@ async function getOrSeedConfig() {
 export default async function handler(_req: Request, res: Response) {
   try {
     const config = await getOrSeedConfig();
-    const consultantFeePct = config.defaultFeePercent - config.platformFeePct;
+    // Consultant keeps 80% of the placement fee; the platform keeps 20%.
+    const consultantFeePct = (config.defaultFeePercent * CONSULTANT_SHARE_PCT_FREE) / 100;
     res.json({
       minFeePercent: config.minFeePercent,
       maxFeePercent: config.maxFeePercent,
       minFeeAmountRupees: config.minFeeAmountRupees,
       defaultFeePercent: config.defaultFeePercent,
-      platformFeePct: config.platformFeePct,
       consultantFeePct,
       payoutDays: config.payoutDays,
     });

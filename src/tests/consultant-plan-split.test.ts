@@ -8,8 +8,14 @@ describe('consultantSharePctForPlan', () => {
   it('gives Free consultants 80%', () => {
     expect(consultantSharePctForPlan('free')).toBe(80);
   });
-  it('gives Pro consultants 85%', () => {
-    expect(consultantSharePctForPlan('pro')).toBe(85);
+  it('gives Pro consultants 80% while the Pro plan is not active', () => {
+    expect(consultantSharePctForPlan('pro')).toBe(80);
+    expect(consultantSharePctForPlan('pro', '1.3')).toBe(80);
+  });
+  it('gives Pro consultants 85% only when Pro is active and the Pro agreement is accepted', () => {
+    expect(consultantSharePctForPlan('pro', '1.3', true)).toBe(85);
+    expect(consultantSharePctForPlan('pro', '1.2', true)).toBe(80);
+    expect(consultantSharePctForPlan('pro', null, true)).toBe(80);
   });
   it('falls back to Free for unknown or missing plans', () => {
     expect(consultantSharePctForPlan(null)).toBe(80);
@@ -24,13 +30,13 @@ describe('placementFeeForOffer with a plan share', () => {
   it('Free: consultant gets 80% of a 10% fee on a 10 LPA offer (0.8 LPA)', () => {
     const r = placementFeeForOffer(pct10, 10, true, 80);
     expect(r.consultantFeeAmountLpa).toBeCloseTo(0.8, 6);
-    expect(r.platformFeePercent).toBeCloseTo(2, 6); // 20% of a 10% fee = 2% of CTC
+    expect(r.platformFeePercent).toBeCloseTo(2, 6); // 20% of a 10% fee (2 points of CTC)
   });
 
   it('Pro: consultant gets 85% of a 10% fee on a 10 LPA offer (0.85 LPA)', () => {
     const r = placementFeeForOffer(pct10, 10, true, 85);
     expect(r.consultantFeeAmountLpa).toBeCloseTo(0.85, 6);
-    expect(r.platformFeePercent).toBeCloseTo(1.5, 6); // 15% of a 10% fee = 1.5% of CTC
+    expect(r.platformFeePercent).toBeCloseTo(1.5, 6); // 15% of a 10% fee (1.5 points of CTC)
   });
 
   it('Pro: platform keeps 15% of a fixed ₹1,00,000 fee', () => {

@@ -406,6 +406,7 @@ console.log('[Security] Rate limit cleanup initialized');
 // Run DB migrations at startup
 import("./db/migrations/otp-system.js").then(m => m.createOtpTable()).catch(console.error);
 import("./db/migrations/commission_config.js").then(m => m.migrateCommissionConfig()).catch(console.error);
+import("./db/migrations/drop_platform_fee_pct.js").then(m => m.migrateDropPlatformFeePct()).catch(console.error);
 import("./db/migrations/interview_rounds.js").then(m => m.migrateInterviewRounds()).catch(console.error);
 import("./db/migrations/consultant_agreement.js").then(m => m.migrateConsultantAgreement()).catch(console.error);
 import("./db/migrations/consultant_reminder_sent_at.js").then(m => m.up()).catch(console.error);

@@ -30,7 +30,7 @@ export const PRO_PLAN_ACTIVE = false;
  * Agreement version that adds the Pro plan clause. A consultant gets the Pro
  * share only after accepting this version or a later one.
  */
-export const PRO_PLAN_MIN_AGREEMENT_VERSION = '1.3';
+export const PRO_PLAN_MIN_AGREEMENT_VERSION = '1.4';
 
 /** True when `version` ("major.minor") is at least `min`. Missing versions are not accepted. */
 export function isAgreementAtLeast(version: string | null | undefined, min: string): boolean {

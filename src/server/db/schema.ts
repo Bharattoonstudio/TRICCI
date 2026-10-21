@@ -751,3 +751,29 @@ export const consultantPayout = pgTable('consultant_payout', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => [index('idx_consultant_payout_consultant').on(t.consultantUserId)]);
+
+// Consultant invoice for a placement. Draft until the consultant submits; once
+// submitted it is locked and goes to admin for approval.
+export const consultantInvoice = pgTable('consultant_invoice', {
+  id: serial('id').primaryKey(),
+  placementId: integer('placement_id').notNull().unique().references(() => placement.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('draft'),
+  gstEnabled: boolean('gst_enabled').notNull().default(false),
+  gstRatePct: doublePrecision('gst_rate_pct').notNull().default(18),
+  offerCtcLpa: doublePrecision('offer_ctc_lpa').notNull(),
+  feeAmountLpa: doublePrecision('fee_amount_lpa').notNull(),
+  platformAmountLpa: doublePrecision('platform_amount_lpa').notNull(),
+  consultantAmountLpa: doublePrecision('consultant_amount_lpa').notNull(),
+  gstAmountLpa: doublePrecision('gst_amount_lpa').notNull(),
+  totalAmountLpa: doublePrecision('total_amount_lpa').notNull(),
+  invoiceNumber: varchar('invoice_number', { length: 64 }),
+  submittedAt: timestamp('submitted_at'),
+  adminRemarks: text('admin_remarks'),
+  reviewedAt: timestamp('reviewed_at'),
+  reviewedByUserId: varchar('reviewed_by_user_id', { length: 36 }),
+  approvedAt: timestamp('approved_at'),
+  sentToEmployerAt: timestamp('sent_to_employer_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [index('idx_consultant_invoice_consultant').on(t.consultantUserId)]);

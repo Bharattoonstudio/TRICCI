@@ -515,7 +515,7 @@ export const placement = pgTable('placement', {
   feePercent: doublePrecision('fee_percent'),   // % charged to employer (total)
   feeAmountLpa: doublePrecision('fee_amount_lpa'), // feePercent × ctcLpa (total)
   // Fee split (points 28, 49): platform keeps a flat cut, consultant gets the rest
-  platformFeePercent: doublePrecision('platform_fee_percent').default(2),
+  platformFeePercent: doublePrecision('platform_fee_percent'),
   consultantFeePercent: doublePrecision('consultant_fee_percent'),
   consultantFeeAmountLpa: doublePrecision('consultant_fee_amount_lpa'),
   // Consultant fee acceptance (points 50-51): pending | accepted | rejected

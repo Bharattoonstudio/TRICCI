@@ -80,10 +80,16 @@ export default async function handler(req: Request, res: Response) {
       // Fee breakdown table
       doc.fillColor(DARK).fontSize(11).font('Helvetica-Bold').text('Fee Breakdown');
       doc.moveDown(0.4);
+      // Shares are shown as a share of the Placement Fee (derived from the stored amounts).
+      const feeLpa = row.feeAmountLpa ?? null;
+      const consultantLpa = row.consultantFeeAmountLpa ?? null;
+      const platformLpa = feeLpa != null && consultantLpa != null ? feeLpa - consultantLpa : null;
+      const platformShare = feeLpa && platformLpa != null ? Math.round((platformLpa / feeLpa) * 1000) / 10 : null;
+      const consultantShare = platformShare != null ? Math.round((100 - platformShare) * 10) / 10 : null;
       const rows: [string, string][] = [
-        ['Total Placement Fee', `${row.feePercent ?? '—'}% (₹${row.feeAmountLpa?.toFixed(2) ?? '—'}L)`],
-        ['Platform Fee (TRICCI)', row.platformFeePercent != null ? `${row.platformFeePercent}%` : '—'],
-        ['Your Commission', `${row.consultantFeePercent ?? '—'}% (₹${row.consultantFeeAmountLpa?.toFixed(2) ?? '—'}L)`],
+        ['Total Placement Fee', `${row.feePercent ?? '—'}% of CTC (₹${feeLpa?.toFixed(2) ?? '—'}L)`],
+        ['Platform Fee (TRICCI)', `${platformShare ?? '—'}% of Placement Fee (₹${platformLpa?.toFixed(2) ?? '—'}L)`],
+        ['Your Commission', `${consultantShare ?? '—'}% of Placement Fee (₹${consultantLpa?.toFixed(2) ?? '—'}L)`],
       ];
       const startY = doc.y;
       let y = startY;

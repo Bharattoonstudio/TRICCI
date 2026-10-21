@@ -277,7 +277,7 @@ By registering on TRICCI, clicking "I Agree", electronically accepting this Agre
 
 25.1 This Agreement takes effect on acceptance and continues until terminated under this Section.
 
-25.2 Either Party may terminate this Agreement by giving [30] days' written notice. TRICCI may terminate with immediate effect in the circumstances set out in Section 20.
+25.2 Either Party may terminate this Agreement by giving one (1) month's written notice. TRICCI may terminate with immediate effect in the circumstances set out in Section 20.
 
 25.3 Termination does not affect Commission for Placements made before the termination date, which remain subject to Section 9.
 
@@ -297,7 +297,7 @@ By registering on TRICCI, clicking "I Agree", electronically accepting this Agre
 
 27.1 Notices to TRICCI shall be sent to [●]. Notices to the Consultant shall be sent to the email address registered on the Platform.
 
-27.2 In accordance with the Information Technology Act, 2000 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, complaints may be addressed to the Grievance Officer: [name, contact details].
+27.2 In accordance with the Information Technology Act, 2000 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, complaints may be addressed to the Grievance Officer: Ritesh Kumar Bhatia, connect@tricci.in.
 
 ────────────────────────────────────────
 
@@ -305,6 +305,6 @@ CONTACT
 
 [LEGAL ENTITY NAME]
 Registered office: [●]
-Grievance Officer: [●]
+Grievance Officer: Ritesh Kumar Bhatia (connect@tricci.in)
 Website: https://tricci.in
 Email: connect@tricci.in`;

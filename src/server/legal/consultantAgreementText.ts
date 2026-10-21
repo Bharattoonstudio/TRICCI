@@ -56,9 +56,9 @@ Platform means the website, software, mobile application, APIs, dashboards and r
 
 Placement Fee means the total fee an Employer agrees to pay for a successful placement, as displayed on the relevant Job Posting.
 
-Consultant Commission means the Consultant's share of the Placement Fee after TRICCI's Platform Fee is deducted, as calculated and displayed to the Consultant at the time of a successful placement.
+Consultant Commission means the Consultant's share of the Placement Fee, being eighty percent (80%) of the Placement Fee, as calculated and displayed to the Consultant at the time of a successful placement.
 
-Platform Fee means the flat percentage TRICCI retains from the Placement Fee for facilitating the placement through the Platform.
+Platform Fee means the twenty percent (20%) share of the Placement Fee that TRICCI retains for facilitating the placement through the Platform.
 
 Date of Joining (DOJ) means the date the Candidate commences employment with the Employer.
 
@@ -131,7 +131,7 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 8. COMMERCIAL TERMS — FEE STRUCTURE
 
-8.1 Each Job Posting displays a total Placement Fee percentage agreed between TRICCI and the Employer. TRICCI retains a flat Platform Fee (currently 2%, subject to change per the commission configuration displayed on the Platform) from the total Placement Fee; the remainder is the Consultant Commission.
+8.1 Each Job Posting displays a total Placement Fee percentage agreed between TRICCI and the Employer. TRICCI retains twenty percent (20%) of the Placement Fee as its Platform Fee, and the remaining eighty percent (80%) is the Consultant Commission.
 
 8.2 The exact Consultant Commission for a given placement is calculated and displayed to the Consultant once a Candidate reaches Selected status for that Job Posting. The Consultant must Accept or Reject the calculated Commission through the Platform before it is confirmed.
 

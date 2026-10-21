@@ -82,7 +82,7 @@ export default async function handler(req: Request, res: Response) {
       doc.moveDown(0.4);
       const rows: [string, string][] = [
         ['Total Placement Fee', `${row.feePercent ?? '—'}% (₹${row.feeAmountLpa?.toFixed(2) ?? '—'}L)`],
-        ['Platform Fee (TRICCI)', `${row.platformFeePercent ?? 2}%`],
+        ['Platform Fee (TRICCI)', row.platformFeePercent != null ? `${row.platformFeePercent}%` : '—'],
         ['Your Commission', `${row.consultantFeePercent ?? '—'}% (₹${row.consultantFeeAmountLpa?.toFixed(2) ?? '—'}L)`],
       ];
       const startY = doc.y;

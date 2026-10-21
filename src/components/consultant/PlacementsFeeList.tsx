@@ -4,7 +4,8 @@
  * once paid, sees a "Remuneration Paid" state with an Acknowledge button.
  */
 import { useState, useEffect } from 'react';
-import { Loader2, IndianRupee, CheckCircle2, XCircle, FileDown } from 'lucide-react';
+import { Loader2, IndianRupee, CheckCircle2, XCircle, FileDown, ReceiptText } from 'lucide-react';
+import ConsultantInvoicePanel from './ConsultantInvoicePanel';
 
 interface Placement {
   id: number;
@@ -26,6 +27,7 @@ export default function PlacementsFeeList() {
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<Set<number>>(new Set());
+  const [invoiceOpen, setInvoiceOpen] = useState<number | null>(null);
 
   function load() {
     setLoading(true);
@@ -134,6 +136,14 @@ export default function PlacementsFeeList() {
                   </a>
                 </div>
               )}
+
+              <button
+                onClick={() => setInvoiceOpen(invoiceOpen === p.id ? null : p.id)}
+                className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/5"
+              >
+                <ReceiptText size={11} /> {invoiceOpen === p.id ? 'Hide invoice' : 'Invoice'}
+              </button>
+              {invoiceOpen === p.id && <ConsultantInvoicePanel placementId={p.id} />}
             </div>
           );
         })}

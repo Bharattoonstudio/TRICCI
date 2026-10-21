@@ -16,12 +16,41 @@ export const FEE_AMOUNT_MIN_RUPEES = 50000;
 /** Platform keeps this share of the employer's fee. The consultant gets the rest. */
 export const PLATFORM_SHARE_PCT = 20;
 
-/** Consultant share of the placement fee by plan. Free = 80%, Pro = 85%. */
+/** Consultant share of the placement fee. Every consultant gets 80% unless Pro is live. */
 export const CONSULTANT_SHARE_PCT_FREE = 80;
 export const CONSULTANT_SHARE_PCT_PRO = 85;
 
-export function consultantSharePctForPlan(plan: string | null | undefined): number {
-  return plan === 'pro' ? CONSULTANT_SHARE_PCT_PRO : CONSULTANT_SHARE_PCT_FREE;
+/**
+ * Pro plan switch. Stays false until Pro billing is live: until then every
+ * consultant, including those on the 'pro' plan value, gets the 80% share.
+ */
+export const PRO_PLAN_ACTIVE = false;
+
+/**
+ * Agreement version that adds the Pro plan clause. A consultant gets the Pro
+ * share only after accepting this version or a later one.
+ */
+export const PRO_PLAN_MIN_AGREEMENT_VERSION = '1.3';
+
+/** True when `version` ("major.minor") is at least `min`. Missing versions are not accepted. */
+export function isAgreementAtLeast(version: string | null | undefined, min: string): boolean {
+  if (!version) return false;
+  const parse = (v: string) => v.split('.').map(n => parseInt(n, 10));
+  const [a, b] = parse(version);
+  const [c, d] = parse(min);
+  if ([a, b, c, d].some(n => Number.isNaN(n))) return false;
+  return a > c || (a === c && b >= d);
+}
+
+export function consultantSharePctForPlan(
+  plan: string | null | undefined,
+  agreementVersion?: string | null,
+  proActive: boolean = PRO_PLAN_ACTIVE,
+): number {
+  if (plan === 'pro' && proActive && isAgreementAtLeast(agreementVersion, PRO_PLAN_MIN_AGREEMENT_VERSION)) {
+    return CONSULTANT_SHARE_PCT_PRO;
+  }
+  return CONSULTANT_SHARE_PCT_FREE;
 }
 
 export type FeeType = 'percent' | 'amount';

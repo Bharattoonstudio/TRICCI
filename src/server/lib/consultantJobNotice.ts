@@ -8,7 +8,7 @@ import { user, notification } from '../db/schema.js';
 import { and, eq, isNull } from 'drizzle-orm';
 
 export const PAYOUT_NOTE =
-  'Payouts are made only after day 90 from the candidate\'s joining date. Submit your invoice by day 90 to be paid on day 92.';
+  'You can raise your invoice from day 90 after the candidate joins. The employer pays within 10 days of the invoice, and your share is paid when they pay.';
 
 export async function notifyConsultantsOfNewJob(jobId: string, title: string, company: string): Promise<void> {
   const consultants = await db

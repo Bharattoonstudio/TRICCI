@@ -19,7 +19,7 @@ Last Updated: [DD/MM/YYYY]
 
 1. AGREEMENT AND ACCEPTANCE
 
-This Consultant Master Service Agreement ("Agreement" or "MSA") is a legally binding agreement between TRICCI ("TRICCI", "Platform", "We", "Us", or "Our"), the owner and operator of the online recruitment marketplace available at www.tricci.in, and the individual, agency, recruitment firm, partnership, LLP, or other legal entity registering as a Recruitment Consultant or Freelance Recruiter on the Platform ("Consultant", "You", or "Your"). TRICCI means TRICCI, a [company / LLP] incorporated under [●], having its registered office at Jankalyan Nagar, Malad West, Mumbai, CIN/LLPIN [●], GSTIN [●].
+This Consultant Master Service Agreement ("Agreement" or "MSA") is a legally binding agreement between TRICCI ("TRICCI", "Platform", "We", "Us", or "Our"), the owner and operator of the online recruitment marketplace available at www.tricci.in, and the individual, agency, recruitment firm, partnership, LLP, or other legal entity registering as a Recruitment Consultant or Freelance Recruiter on the Platform ("Consultant", "You", or "Your"). TRICCI means TRICCI, a [company / LLP] incorporated under [●], having its registered office at Jankalyan Nagar, Malad West, Mumbai, CIN/LLPIN [●], not currently registered under GST.
 
 By registering a Consultant account, clicking "I Agree", electronically accepting this Agreement, or accessing or using the Platform, the Consultant confirms that:
 

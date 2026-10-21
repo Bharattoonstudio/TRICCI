@@ -163,7 +163,7 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 10. TAXES
 
-All Commission amounts are exclusive of GST and other applicable statutory taxes unless expressly stated otherwise. Where required by law, TRICCI (or the Employer, as applicable) shall deduct Tax Deducted at Source (TDS) under the applicable provision of the Income-tax Act, 1961 [section to be confirmed by counsel and tax adviser] from Commission payments, and shall issue the TDS certificate as required by law. The Consultant shall provide its PAN and any other documentation (such as GST registration) reasonably required to ensure correct tax treatment. Any liability arising from the Consultant's failure to comply with applicable tax laws is solely the Consultant's.
+TRICCI is not currently registered under GST and does not charge GST on the Platform Fee or on any Commission payable to the Consultant. Any GST payable on the Consultant's own supply of services is the Consultant's responsibility. Other applicable statutory taxes are payable as required by law. Where required by law, TRICCI (or the Employer, as applicable) shall deduct Tax Deducted at Source (TDS) under the applicable provision of the Income-tax Act, 1961 [section to be confirmed by counsel and tax adviser] from Commission payments, and shall issue the TDS certificate as required by law. The Consultant shall provide its PAN and any other documentation (such as GST registration) reasonably required to ensure correct tax treatment. Any liability arising from the Consultant's failure to comply with applicable tax laws is solely the Consultant's.
 
 ────────────────────────────────────────
 

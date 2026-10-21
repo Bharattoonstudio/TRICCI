@@ -394,9 +394,8 @@ export const auditLog = pgTable('audit_log', {
 }, (t) => [index('idx_audit_log_entity').on(t.entityType, t.entityId), index('idx_audit_log_created').on(t.createdAt)]);
 
 // ── Platform commission configuration ────────────────────────────────────────
-// Single-row config table (id = 1 always). Admin sets platformFeePct (what
-// TRICCI keeps) and the consultant automatically gets the remainder.
-// e.g. employer pays 8% → admin sets platformFeePct = 2 → consultant gets 6%.
+// Single-row config table (id = 1 always). The platform keeps 20% of the
+// placement fee and the consultant gets 80% (see employerFee.ts).
 
 export const commissionConfig = pgTable('commission_config', {
   id: serial('id').primaryKey(),
@@ -407,8 +406,6 @@ export const commissionConfig = pgTable('commission_config', {
   minFeeAmountRupees: integer('min_fee_amount_rupees').notNull().default(50000),
   // Default fee % charged to employer when posting a job
   defaultFeePercent: doublePrecision('default_fee_percent').notNull().default(8),
-  // Platform margin — what TRICCI retains from the employer fee
-  platformFeePct: doublePrecision('platform_fee_pct').notNull().default(2),
   // Consultant payout SLA (business days)
   payoutDays: integer('payout_days').notNull().default(3),
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),

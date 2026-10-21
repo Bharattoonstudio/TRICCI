@@ -255,12 +255,12 @@ describe('P0 #3: Atomic Placement Creation', () => {
       .from(placement)
       .where(eq(placement.submissionId, submissionId));
 
-    // Platform gets 2% of 15% = 0.3 LPA
+    // Platform gets 20% of a 15% fee on 12 LPA = 0.36 LPA
     const platformFeeAmountLpa = (plc.ctcLpa || 0) * ((plc.platformFeePercent || 0) / 100);
-    expect(platformFeeAmountLpa).toBeCloseTo(0.24, 1);
+    expect(platformFeeAmountLpa).toBeCloseTo(0.36, 1);
 
-    // Consultant gets remaining 13% = 1.56 LPA
-    expect(plc.consultantFeeAmountLpa).toBeCloseTo(1.56, 1);
+    // Consultant gets remaining 80% of the fee = 1.44 LPA
+    expect(plc.consultantFeeAmountLpa).toBeCloseTo(1.44, 1);
 
     // Total should equal job fee amount
     const totalFee = (plc.consultantFeeAmountLpa || 0) + platformFeeAmountLpa;

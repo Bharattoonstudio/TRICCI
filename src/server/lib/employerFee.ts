@@ -85,7 +85,7 @@ export function validateEmployerFee(
 /**
  * Work out the placement fee once an offer CTC is known.
  * Percentage fees are applied to the offer CTC; amount fees are used as they are.
- * Consultant split: the platform keeps its margin (platformFeePct of offer CTC)
+ * Consultant split: the platform keeps its share (20% of the placement fee)
  * and the consultant gets the rest of the fee.
  */
 export function placementFeeForOffer(

@@ -421,6 +421,7 @@ import("./db/migrations/agreement_all_roles.js").then(m => m.migrateAgreementAll
 import("./db/migrations/application_ctc_notice.js").then(m => m.migrateApplicationCtcNotice()).catch(console.error);
 import("./db/migrations/rejection_and_unlock.js").then(m => m.migrateRejectionAndUnlock()).catch(console.error);
 import("./db/migrations/consultant_payout.js").then(m => m.migrateConsultantPayout()).catch(console.error);
+import("./db/migrations/consultant_agreement_reaccept.js").then(m => m.migrateConsultantAgreementReaccept()).catch(console.error);
 import("./db/migrations/funnel_viewed_at.js").then(m => m.migrateFunnelViewedAt()).catch(console.error);
 import("./db/migrations/consultant_industries.js").then(m => m.migrateConsultantIndustries()).catch(console.error);
 import("./db/migrations/interview_schedule.js").then(m => m.migrateInterviewSchedule()).catch(console.error);

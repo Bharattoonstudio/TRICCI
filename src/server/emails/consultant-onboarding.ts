@@ -250,7 +250,7 @@ Accept the ones that match your candidate pool and start submitting.
 ${[
     { label: '0% upfront', sub: 'No subscription fee', color: ORANGE },
     { label: 'Maximum commission', sub: 'On every placement', color: PURPLE },
-    { label: 'Payout after day 90', sub: 'Invoice due by day 90', color: '#22c55e' },
+    { label: 'Paid on employer payment', sub: 'Invoice from day 90', color: '#22c55e' },
   ].map(c => `
 <td style="width:33%;padding:0 6px 0 0;">
 <div style="background:${c.color}10;border:1px solid ${c.color}25;border-radius:10px;padding:14px;text-align:center;">
@@ -273,6 +273,6 @@ ${btn('Browse Mandates Now', `${BASE_URL}/consultant/dashboard`)}
     to,
     subject: `${jobCount > 0 ? `${jobCount} mandates` : 'Live mandates'} ready for you on TRICCI`,
     html,
-    text: `Hi ${firstName},\n\nYour agreement is signed — you now have full access to all live mandates on TRICCI.\n\n• 0% upfront cost\n• Maximum commission on every placement\n• Payout after day 90 (invoice due by day 90)\n\nBrowse mandates: ${BASE_URL}/consultant/dashboard\n\nThe TRICCI Team`,
+    text: `Hi ${firstName},\n\nYour agreement is signed — you now have full access to all live mandates on TRICCI.\n\n• 0% upfront cost\n• Maximum commission on every placement\n• Invoice from day 90; paid when the employer pays\n\nBrowse mandates: ${BASE_URL}/consultant/dashboard\n\nThe TRICCI Team`,
   });
 }

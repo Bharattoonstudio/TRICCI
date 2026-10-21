@@ -1,11 +1,12 @@
 /**
  * POST /api/consultant/submissions/:id/payout/invoice
- * Consultant submits the invoice for a successful placement. The invoice must
- * be submitted by the end of day 90 (counted from the candidate's joining date).
- * Payout is released on day 92, after the employer has paid and an invoice is on file.
+ * The consultant raises the invoice for a successful placement. Invoices can be
+ * raised on or after day 90 from the candidate's joining date. The employer then
+ * pays within 10 days of the invoice date through the TRICCI payment link, and the
+ * consultant's share is settled when that payment is received.
  *
  * Body: { invoiceNumber: string }
- * Returns: { ok, status, invoiceDeadlineAt, releaseDueAt, canRelease }
+ * Returns: { ok, status, evaluationEndsAt, paymentDueAt }
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
@@ -51,11 +52,29 @@ export default async function handler(req: Request, res: Response) {
       .where(eq(consultantPayout.submissionId, id))
       .limit(1);
 
+    const joiningDate = row.joiningDate ?? existing?.joiningDate ?? null;
+    const preview = decidePayoutRelease({
+      joiningDate,
+      invoiceSubmittedAt: existing?.invoiceSubmittedAt ?? null,
+      employerPaidAt: existing?.employerPaidAt ?? null,
+      adminHold: existing?.adminHold ?? false,
+      refundedAt: existing?.refundedAt ?? null,
+    }, now);
+
+    // First invoice must be raised on or after day 90. Later edits to the number are allowed.
+    if (!existing?.invoiceSubmittedAt && !preview.canInvoice) {
+      return res.status(409).json({
+        error: 'Invoices can be raised from day 90 after the candidate joins.',
+        evaluationEndsAt: preview.evaluationEndsAt,
+        status: preview.status,
+      });
+    }
+
     const invoiceSubmittedAt = existing?.invoiceSubmittedAt ?? now;
     const updated = {
       invoiceNumber,
       invoiceSubmittedAt,
-      joiningDate: row.joiningDate ?? existing?.joiningDate ?? null,
+      joiningDate,
       updatedAt: now,
     };
 
@@ -73,9 +92,9 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const decision = decidePayoutRelease({
-      joiningDate: updated.joiningDate,
-      employerPaidAt: existing?.employerPaidAt ?? null,
+      joiningDate,
       invoiceSubmittedAt,
+      employerPaidAt: existing?.employerPaidAt ?? null,
       adminHold: existing?.adminHold ?? false,
       refundedAt: existing?.refundedAt ?? null,
     }, now);
@@ -83,9 +102,8 @@ export default async function handler(req: Request, res: Response) {
     res.json({
       ok: true,
       status: decision.status,
-      invoiceDeadlineAt: decision.invoiceDeadlineAt,
-      releaseDueAt: decision.releaseDueAt,
-      canRelease: decision.canRelease,
+      evaluationEndsAt: decision.evaluationEndsAt,
+      paymentDueAt: decision.paymentDueAt,
     });
   } catch (err) {
     console.error('[payout.invoice] error:', err);

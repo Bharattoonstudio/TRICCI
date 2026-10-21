@@ -19,7 +19,7 @@ Last Updated: [DD/MM/YYYY]
 
 1. AGREEMENT AND ACCEPTANCE
 
-This Consultant Master Service Agreement ("Agreement" or "MSA") is a legally binding agreement between TRICCI ("TRICCI", "Platform", "We", "Us", or "Our"), the owner and operator of the online recruitment marketplace available at www.tricci.in, and the individual, agency, recruitment firm, partnership, LLP, or other legal entity registering as a Recruitment Consultant or Freelance Recruiter on the Platform ("Consultant", "You", or "Your"). TRICCI means [LEGAL ENTITY NAME], a [company / LLP] incorporated under [●], having its registered office at [●], CIN/LLPIN [●], GSTIN [●].
+This Consultant Master Service Agreement ("Agreement" or "MSA") is a legally binding agreement between TRICCI ("TRICCI", "Platform", "We", "Us", or "Our"), the owner and operator of the online recruitment marketplace available at www.tricci.in, and the individual, agency, recruitment firm, partnership, LLP, or other legal entity registering as a Recruitment Consultant or Freelance Recruiter on the Platform ("Consultant", "You", or "Your"). TRICCI means TRICCI, a [company / LLP] incorporated under [●], having its registered office at Jankalyan Nagar, Malad West, Mumbai, CIN/LLPIN [●], not currently registered under GST.
 
 By registering a Consultant account, clicking "I Agree", electronically accepting this Agreement, or accessing or using the Platform, the Consultant confirms that:
 
@@ -163,7 +163,7 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 10. TAXES
 
-All Commission amounts are exclusive of GST and other applicable statutory taxes unless expressly stated otherwise. Where required by law, TRICCI (or the Employer, as applicable) shall deduct Tax Deducted at Source (TDS) under the applicable provision of the Income-tax Act, 1961 [section to be confirmed by counsel and tax adviser] from Commission payments, and shall issue the TDS certificate as required by law. The Consultant shall provide its PAN and any other documentation (such as GST registration) reasonably required to ensure correct tax treatment. Any liability arising from the Consultant's failure to comply with applicable tax laws is solely the Consultant's.
+TRICCI is not currently registered under GST and does not charge GST on the Platform Fee or on any Commission payable to the Consultant. Any GST payable on the Consultant's own supply of services is the Consultant's responsibility. Other applicable statutory taxes are payable as required by law. Where required by law, TRICCI (or the Employer, as applicable) shall deduct Tax Deducted at Source (TDS) under the applicable provision of the Income-tax Act, 1961 [section to be confirmed by counsel and tax adviser] from Commission payments, and shall issue the TDS certificate as required by law. The Consultant shall provide its PAN and any other documentation (such as GST registration) reasonably required to ensure correct tax treatment. Any liability arising from the Consultant's failure to comply with applicable tax laws is solely the Consultant's.
 
 ────────────────────────────────────────
 
@@ -277,7 +277,7 @@ By registering on TRICCI, clicking "I Agree", electronically accepting this Agre
 
 25.1 This Agreement takes effect on acceptance and continues until terminated under this Section.
 
-25.2 Either Party may terminate this Agreement by giving [30] days' written notice. TRICCI may terminate with immediate effect in the circumstances set out in Section 20.
+25.2 Either Party may terminate this Agreement by giving one (1) month's written notice. TRICCI may terminate with immediate effect in the circumstances set out in Section 20.
 
 25.3 Termination does not affect Commission for Placements made before the termination date, which remain subject to Section 9.
 
@@ -297,14 +297,14 @@ By registering on TRICCI, clicking "I Agree", electronically accepting this Agre
 
 27.1 Notices to TRICCI shall be sent to [●]. Notices to the Consultant shall be sent to the email address registered on the Platform.
 
-27.2 In accordance with the Information Technology Act, 2000 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, complaints may be addressed to the Grievance Officer: [name, contact details].
+27.2 In accordance with the Information Technology Act, 2000 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, complaints may be addressed to the Grievance Officer: Ritesh Kumar Bhatia, connect@tricci.in.
 
 ────────────────────────────────────────
 
 CONTACT
 
-[LEGAL ENTITY NAME]
-Registered office: [●]
-Grievance Officer: [●]
+TRICCI
+Registered office: Jankalyan Nagar, Malad West, Mumbai
+Grievance Officer: Ritesh Kumar Bhatia (connect@tricci.in)
 Website: https://tricci.in
 Email: connect@tricci.in`;

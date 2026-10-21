@@ -7,7 +7,7 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { submission, job, user, placement, candidateProfile } from '@/server/db/schema.js';
+import { submission, job, user, placement, candidateProfile, consultantPayout } from '@/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { isReadOnlyOrgViewer } from '@/server/lib/orgPermissions.js';
@@ -152,7 +152,7 @@ const STATUS_META: Record<SubmissionStatus, {
     candidateSubject: '', candidateHeadline: '', candidateBody: '',
     consultantSubject: 'Payment has been processed',
     consultantHeadline: 'Your placement fee is being processed',
-    consultantBody: 'The employer has confirmed the candidate\'s joining and your placement fee is now being processed. You\'ll receive the payout within the agreed SLA.',
+    consultantBody: 'The employer has confirmed the candidate\'s joining. Payouts are made only after day 90 from the joining date. Submit your invoice by day 90 and your payout is released on day 92.',
     employerSubject: 'Placement fee payment processed',
     employerHeadline: 'Payment processing confirmed',
     employerBody: 'The placement fee for this candidate has been marked as payment processed. The consultant will be notified.',
@@ -161,9 +161,9 @@ const STATUS_META: Record<SubmissionStatus, {
     label: 'Payment Done', emoji: '✅💰', color: '#22c55e',
     skipCandidate: true,
     candidateSubject: '', candidateHeadline: '', candidateBody: '',
-    consultantSubject: 'Payment completed — funds transferred',
-    consultantHeadline: 'Your placement fee has been paid!',
-    consultantBody: 'Your placement fee for this successful hire has been fully paid. Thank you for your partnership with TRICCI. Keep submitting great candidates!',
+    consultantSubject: 'Employer payment received',
+    consultantHeadline: 'Employer payment received for your placement',
+    consultantBody: 'TRICCI has received the employer\'s payment for this hire. Payouts are made only after day 90 from the joining date. Submit your invoice by day 90 and your payout is released on day 92.',
     employerSubject: 'Placement fee payment completed',
     employerHeadline: 'Payment cycle closed',
     employerBody: 'The placement fee for this hire has been fully settled. The consultant has been notified. Thank you for using TRICCI.',
@@ -250,6 +250,7 @@ export default async function handler(req: Request, res: Response) {
         currentStatus: submission.status,
         jobId: submission.jobId,
         consultantUserId: submission.consultantUserId,
+        joiningDate: submission.joiningDate,
         jobTitle: job.title,
         company: job.company,
         postedByUserId: job.postedByUserId,
@@ -454,6 +455,32 @@ export default async function handler(req: Request, res: Response) {
               .where(eq(job.id, row.jobId))
               .catch(err => console.error('[submissions] interview sync failed:', err));
       }
+
+    // ── Consultant payout ledger (records dates only; no money moves here) ──
+    if (status === 'selected' || status === 'payment_processed' || status === 'payment_done') {
+      try {
+        const now = new Date();
+        await db
+          .insert(consultantPayout)
+          .values({
+            submissionId: id,
+            consultantUserId: row.consultantUserId,
+            joiningDate: row.joiningDate ?? null,
+            employerPaidAt: status === 'payment_done' ? now : null,
+            updatedAt: now,
+          })
+          .onConflictDoUpdate({
+            target: consultantPayout.submissionId,
+            set: {
+              joiningDate: row.joiningDate ?? null,
+              ...(status === 'payment_done' ? { employerPaidAt: now } : {}),
+              updatedAt: now,
+            },
+          });
+      } catch (ledgerErr) {
+        console.error('[payout] failed to update ledger:', ledgerErr);
+      }
+    }
 
     res.json({ ok: true, id, status });
   } catch (err) {

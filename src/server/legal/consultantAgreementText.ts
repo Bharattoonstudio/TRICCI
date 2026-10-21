@@ -140,6 +140,8 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 9.5 Where an Employer defaults on payment, disputes a placement, or exercises a replacement right under its agreement with TRICCI, the corresponding Consultant Commission payment may be delayed, adjusted, or withheld in proportion, and TRICCI shall inform the Consultant of the reason without undue delay.
 
+9.6 Payout Release and Invoice. Consultant Commission is payable only after (a) the Employer's payment has been received and realized by TRICCI, (b) the Consultant has submitted a valid invoice for the placement by the end of the 90th calendar day from the Candidate's actual Date of Joining (DOJ), and (c) the 92nd calendar day from DOJ has passed. Commission is not released before day 92. If no valid invoice is received by the end of day 90, release is held for review and is not automatic.
+
 ────────────────────────────────────────
 
 10. TAXES

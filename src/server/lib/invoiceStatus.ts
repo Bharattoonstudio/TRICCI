@@ -1,10 +1,10 @@
 /**
  * Consultant invoice status rules (pure logic, shared by routes and tests).
- * Flow: draft -> submitted -> approved -> sent_to_employer.
+ * Flow: draft -> submitted -> approved -> sent_to_employer -> paid (employer paid via Razorpay).
  * Admin may send a submitted or approved invoice back (sent_back); the consultant
  * edits and resubmits, which returns it to submitted.
  */
-export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer';
+export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
 
 /** The consultant may generate, save and submit only in these states. */
 export function canConsultantEdit(status: InvoiceStatus | null): boolean {

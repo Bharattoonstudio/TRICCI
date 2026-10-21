@@ -754,6 +754,22 @@ export const consultantPayout = pgTable('consultant_payout', {
 
 // Consultant invoice for a placement. Draft until the consultant submits; once
 // submitted it is locked and goes to admin for approval.
+// Razorpay order for a consultant invoice. Split (platform / consultant / GST) is fixed in paise at order time.
+export const invoicePayment = pgTable('invoice_payment', {
+  id: serial('id').primaryKey(),
+  placementId: integer('placement_id').notNull().references(() => placement.id, { onDelete: 'cascade' }),
+  razorpayOrderId: varchar('razorpay_order_id', { length: 128 }).notNull().unique(),
+  razorpayPaymentId: varchar('razorpay_payment_id', { length: 128 }),
+  amountPaise: integer('amount_paise').notNull(),
+  feePaise: integer('fee_paise').notNull(),
+  platformPaise: integer('platform_paise').notNull(),
+  consultantPaise: integer('consultant_paise').notNull(),
+  gstPaise: integer('gst_paise').notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('created'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  paidAt: timestamp('paid_at'),
+}, (t) => [index('idx_invoice_payment_placement').on(t.placementId)]);
+
 export const consultantInvoice = pgTable('consultant_invoice', {
   id: serial('id').primaryKey(),
   placementId: integer('placement_id').notNull().unique().references(() => placement.id, { onDelete: 'cascade' }),

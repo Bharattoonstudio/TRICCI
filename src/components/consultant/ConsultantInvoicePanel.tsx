@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
-type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer';
+type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
 
 interface InvoiceRow {
   status: InvoiceStatus;
@@ -113,11 +113,12 @@ export default function ConsultantInvoicePanel({ placementId }: { placementId: n
 
   const invoice = data.invoice;
   // Locked while TRICCI reviews or after it has gone to the employer. Editable in draft and after send-back.
-  const locked = invoice ? ['submitted', 'approved', 'sent_to_employer'].includes(invoice.status) : false;
+  const locked = invoice ? ['submitted', 'approved', 'sent_to_employer', 'paid'].includes(invoice.status) : false;
   const lockedLabel: Record<string, string> = {
     submitted: 'Submitted — awaiting TRICCI review',
     approved: 'Approved by TRICCI — will be sent to the employer',
     sent_to_employer: 'Sent to employer — awaiting payment',
+    paid: 'Paid by employer',
   };
   const amounts = invoice
     ? { ...invoice, platformSharePct: 100 - (data.preview?.consultantSharePct ?? 80), consultantSharePct: data.preview?.consultantSharePct ?? 80 }

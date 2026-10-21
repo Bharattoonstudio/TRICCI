@@ -7,11 +7,11 @@
  * is treated as final/binding — flagged clearly in the UI, not just here.
  */
 /** Bump when the consultant agreement changes. Consultants who signed an older version must re-accept. */
-export const CONSULTANT_AGREEMENT_VERSION = '1.2';
+export const CONSULTANT_AGREEMENT_VERSION = '1.3';
 
 export const CONSULTANT_AGREEMENT_TEXT = `TRICCI CONSULTANT MASTER SERVICE AGREEMENT (MSA)
 
-Version: 1.2 (Draft — pending legal review)
+Version: 1.3 (Draft — pending legal review)
 Effective Date: [DD/MM/YYYY]
 Last Updated: [DD/MM/YYYY]
 
@@ -131,7 +131,7 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 8. COMMERCIAL TERMS — FEE STRUCTURE
 
-8.1 Each Job Posting displays a total Placement Fee percentage agreed between TRICCI and the Employer. TRICCI retains twenty percent (20%) of the Placement Fee as its Platform Fee, and the remaining eighty percent (80%) is the Consultant Commission.
+8.1 Each Job Posting displays a Placement Fee, stated before GST. TRICCI retains twenty percent (20%) of the Placement Fee as its Platform Fee, and the remaining eighty percent (80%) is the Consultant Commission. Any GST payable is charged in addition to the Placement Fee and is not part of the split.
 
 8.2 The exact Consultant Commission for a given placement is calculated and displayed to the Consultant once a Candidate reaches Selected status for that Job Posting. The Consultant must Accept or Reject the calculated Commission through the Platform before it is confirmed.
 
@@ -143,9 +143,9 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 9. PAYMENT TERMS
 
-9.1 Candidate Evaluation Period. Every successful placement is subject to a payment term of Forty-Five (45) or Ninety (90) calendar days (as specified on the relevant Job Posting) commencing from the Candidate's actual Date of Joining (DOJ), during which the Employer's payment to TRICCI falls due per the Employer Master Service Agreement. For the avoidance of doubt, the Evaluation Period governs only the Employer's payment term. The payout timeline in Section 9.6 applies to every Placement, whether the Job Posting specifies a 45-day or 90-day Evaluation Period, and is measured from the same DOJ.
+9.1 Candidate Evaluation Period. Every successful placement is subject to a payment term of Forty-Five (45) or Ninety (90) calendar days (as specified on the relevant Job Posting) commencing from the Candidate's actual Date of Joining (DOJ), during which the Employer's payment to TRICCI falls due per the Employer Master Service Agreement. For the avoidance of doubt, the Evaluation Period governs only the Employer's payment term. The invoice timing in Section 9.6 applies to every Placement, whether the Job Posting specifies a 45-day or 90-day Evaluation Period, and is measured from the same DOJ.
 
-9.2 Consultant Payment. Subject to Sections 9.6 and 9.8, TRICCI shall remit the accepted Consultant Commission to the Consultant within [●] Business Days after all conditions in Section 9.6 are satisfied. TRICCI is not obligated to advance Commission to the Consultant before the Employer's payment has actually been received and realized.
+9.2 Consultant Payment. The Consultant's Commission is paid only when the Employer's payment for the Placement has been received and realized through the Platform, and only after the Invoice has been raised under Section 9.6. TRICCI is not obligated to advance Commission to the Consultant before that payment is received.
 
 9.3 The Consultant shall promptly acknowledge receipt of Commission payments through the Platform once credited.
 
@@ -153,9 +153,9 @@ TRICCI does not guarantee that any submitted Candidate will be shortlisted, inte
 
 9.5 Replacement Period and Employer Default. Where, during the Replacement Period, an Employer defaults on payment, disputes a Placement, or exercises a replacement right under its agreement with TRICCI, the corresponding Consultant Commission may be delayed, adjusted, or withheld in proportion to the affected amount, and TRICCI shall inform the Consultant in writing of the reason without undue delay. Any Commission withheld under this Section 9.5 shall be released or finally adjusted within [●] days after the Replacement Period ends or the dispute is resolved, whichever is later.
 
-9.6 Payout Release and Invoice. Consultant Commission is payable only after (a) the Employer's payment has been received and realized by TRICCI, (b) the Consultant has submitted a valid invoice for the placement by the end of the 90th calendar day from the Candidate's actual Date of Joining (DOJ), and (c) the 92nd calendar day from DOJ has passed. Commission is not released before day 92. If no valid invoice is received by the end of day 90, release is held for review and is not automatic.
+9.6 Invoice and Payment. The Consultant may raise an Invoice for a Placement on or after the 90th calendar day from the Candidate's actual Date of Joining (DOJ). The Invoice is addressed to the Employer. The Employer shall pay the Invoice within ten (10) days of the Invoice date through the payment link provided on the Platform. When the Employer's payment is received, the Platform Fee is retained by TRICCI and the balance is paid to the Consultant. TRICCI collects the Employer's payment as the Consultant's collection agent for the Consultant's share, and holds no part of that share for its own account.
 
-9.7 Invoice Requirements. The Invoice for each Placement shall be issued by the Consultant to [TRICCI / the Employer, as TRICCI directs], shall state the Consultant's legal name, PAN, GSTIN (where registered), the bank account details verified through the Platform, the Job Posting reference, the Candidate's DOJ and the Commission amount, and shall otherwise comply with the Central Goods and Services Tax Act, 2017 and applicable rules. An Invoice is valid only if it meets these requirements and is received through the Platform within the period set out in Section 9.6(b).
+9.7 Invoice Requirements. The Invoice shall show the Placement Fee before GST, any GST charged by the Consultant (where the Consultant is GST-registered), the Consultant's legal name, PAN, GSTIN (where registered), the bank account details verified through the Platform, the Job Posting reference, the Candidate's DOJ and the Placement Fee. TRICCI issues the Employer such receipt or bill of supply for the Platform Fee as its own tax position requires.
 
 9.8 Clawback and Set-Off. If a Placement Reversal occurs after Commission has been paid, the Consultant shall repay the Commission attributable to the reversed amount within [30] days of TRICCI's written demand. TRICCI may set off any such amount against any Commission or other amount payable to the Consultant under this Agreement, and may withhold future Commission until repayment is made.
 

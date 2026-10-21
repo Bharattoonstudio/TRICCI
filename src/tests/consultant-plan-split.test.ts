@@ -10,11 +10,11 @@ describe('consultantSharePctForPlan', () => {
   });
   it('gives Pro consultants 80% while the Pro plan is not active', () => {
     expect(consultantSharePctForPlan('pro')).toBe(80);
-    expect(consultantSharePctForPlan('pro', '1.3')).toBe(80);
+    expect(consultantSharePctForPlan('pro', '1.4')).toBe(80);
   });
   it('gives Pro consultants 85% only when Pro is active and the Pro agreement is accepted', () => {
-    expect(consultantSharePctForPlan('pro', '1.3', true)).toBe(85);
-    expect(consultantSharePctForPlan('pro', '1.2', true)).toBe(80);
+    expect(consultantSharePctForPlan('pro', '1.4', true)).toBe(85);
+    expect(consultantSharePctForPlan('pro', '1.3', true)).toBe(80);
     expect(consultantSharePctForPlan('pro', null, true)).toBe(80);
   });
   it('falls back to Free for unknown or missing plans', () => {

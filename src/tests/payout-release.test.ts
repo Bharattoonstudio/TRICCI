@@ -3,9 +3,10 @@ import { decidePayoutRelease, payoutIdempotencyKey, RELEASE_DAY, REFUND_WINDOW_D
 
 const joining = new Date('2026-01-01T10:00:00Z');
 const paid = new Date('2026-01-10T00:00:00Z');
+const invoiced = new Date('2026-02-01T00:00:00Z'); // well before day 90
 const dayN = (n: number) => new Date(Date.UTC(2026, 0, 1) + n * 86400000);
 
-const base = { joiningDate: joining, employerPaidAt: paid, adminHold: false, refundedAt: null };
+const base = { joiningDate: joining, employerPaidAt: paid, invoiceSubmittedAt: invoiced, adminHold: false, refundedAt: null };
 
 describe('decidePayoutRelease', () => {
   it('uses day 90 for the refund window and day 92 for release', () => {
@@ -22,12 +23,12 @@ describe('decidePayoutRelease', () => {
     expect(d.canRelease).toBe(false);
   });
 
-  it('is held before day 92 even if the employer has paid', () => {
+  it('is held before day 92 when employer has paid and invoice is on file', () => {
     expect(decidePayoutRelease(base, dayN(91)).status).toBe('held');
     expect(decidePayoutRelease(base, dayN(91)).canRelease).toBe(false);
   });
 
-  it('is releasable on day 92 once the employer has paid', () => {
+  it('is releasable on day 92 once employer has paid and invoice is on file', () => {
     const d = decidePayoutRelease(base, dayN(92));
     expect(d.status).toBe('releasable');
     expect(d.canRelease).toBe(true);
@@ -37,6 +38,30 @@ describe('decidePayoutRelease', () => {
     const d = decidePayoutRelease({ ...base, employerPaidAt: null }, dayN(120));
     expect(d.status).toBe('awaiting_employer_payment');
     expect(d.canRelease).toBe(false);
+  });
+
+  it('waits for an invoice when none is submitted yet', () => {
+    const d = decidePayoutRelease({ ...base, invoiceSubmittedAt: null }, dayN(50));
+    expect(d.status).toBe('awaiting_invoice');
+    expect(d.canRelease).toBe(false);
+  });
+
+  it('flags invoice_late when no invoice is submitted by the end of day 90', () => {
+    const d = decidePayoutRelease({ ...base, invoiceSubmittedAt: null }, dayN(92));
+    expect(d.status).toBe('invoice_late');
+    expect(d.canRelease).toBe(false);
+  });
+
+  it('flags invoice_late when the invoice arrives after day 90 even if released later', () => {
+    const d = decidePayoutRelease({ ...base, invoiceSubmittedAt: dayN(95) }, dayN(120));
+    expect(d.status).toBe('invoice_late');
+    expect(d.canRelease).toBe(false);
+  });
+
+  it('accepts an invoice submitted on the last day of day 90', () => {
+    const lastMoment = new Date(dayN(91).getTime() - 1);
+    const d = decidePayoutRelease({ ...base, invoiceSubmittedAt: lastMoment }, dayN(92));
+    expect(d.status).toBe('releasable');
   });
 
   it('blocks release while an admin hold is set', () => {
@@ -61,5 +86,6 @@ describe('decidePayoutRelease', () => {
 describe('payoutIdempotencyKey', () => {
   it('is stable per submission', () => {
     expect(payoutIdempotencyKey('abc')).toBe('consultant-payout:abc');
+    expect(payoutIdempotencyKey(42)).toBe('consultant-payout:42');
   });
 });

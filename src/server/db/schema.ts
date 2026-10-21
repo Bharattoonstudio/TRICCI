@@ -736,3 +736,20 @@ export const notification = pgTable('notification', {
 }, (table) => ({
   userReadIdx: index('notification_user_read_idx').on(table.userId, table.read),
 }));
+
+// Consultant payout ledger: one row per placement. Tracks joining date, employer
+// payment, consultant invoice, admin hold and refund. No money moves from here;
+// release status is derived by decidePayoutRelease() in server/lib/payoutRelease.ts.
+export const consultantPayout = pgTable('consultant_payout', {
+  id: serial('id').primaryKey(),
+  submissionId: integer('submission_id').notNull().unique().references(() => submission.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull(),
+  joiningDate: timestamp('joining_date'),
+  employerPaidAt: timestamp('employer_paid_at'),
+  invoiceNumber: varchar('invoice_number', { length: 64 }),
+  invoiceSubmittedAt: timestamp('invoice_submitted_at'),
+  adminHold: boolean('admin_hold').notNull().default(false),
+  refundedAt: timestamp('refunded_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [index('idx_consultant_payout_consultant').on(t.consultantUserId)]);

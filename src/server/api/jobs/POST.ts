@@ -4,6 +4,7 @@ import { db } from '../../db/client.js';
 import { job as jobTable, employerProfile, user } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { notifyMatchingSubscribers } from '../../lib/jobAlertMatcher.js';
+import { notifyConsultantsOfNewJob } from '../../lib/consultantJobNotice.js';
 import { logAudit } from '@/lib/audit.js';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -267,6 +268,13 @@ export default async function handler(req: Request, res: Response) {
     if (visibility === 'public') {
       notifyMatchingSubscribers(newJob).catch(err =>
         console.error('[POST /api/jobs] alert notification failed:', err),
+      );
+    }
+
+    // Tell consultants about the new job, with the payout terms. Confidential roles are excluded.
+    if (visibility !== 'confidential') {
+      notifyConsultantsOfNewJob(String(id), newJob.title, newJob.company).catch(err =>
+        console.error('[POST /api/jobs] consultant notification failed:', err),
       );
     }
 

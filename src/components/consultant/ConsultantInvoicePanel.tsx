@@ -6,8 +6,11 @@
 import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
+type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer';
+
 interface InvoiceRow {
-  status: 'draft' | 'submitted';
+  status: InvoiceStatus;
+  adminRemarks: string | null;
   gstEnabled: boolean;
   gstRatePct: number;
   feeAmountLpa: number;
@@ -109,7 +112,13 @@ export default function ConsultantInvoicePanel({ placementId }: { placementId: n
   }
 
   const invoice = data.invoice;
-  const locked = invoice?.status === 'submitted';
+  // Locked while TRICCI reviews or after it has gone to the employer. Editable in draft and after send-back.
+  const locked = invoice ? ['submitted', 'approved', 'sent_to_employer'].includes(invoice.status) : false;
+  const lockedLabel: Record<string, string> = {
+    submitted: 'Submitted — awaiting TRICCI review',
+    approved: 'Approved by TRICCI — will be sent to the employer',
+    sent_to_employer: 'Sent to employer — awaiting payment',
+  };
   const amounts = invoice
     ? { ...invoice, platformSharePct: 100 - (data.preview?.consultantSharePct ?? 80), consultantSharePct: data.preview?.consultantSharePct ?? 80 }
     : data.preview;
@@ -118,8 +127,16 @@ export default function ConsultantInvoicePanel({ placementId }: { placementId: n
     <div className="rounded-xl border p-4 mt-3 space-y-3" style={{ borderColor: '#ffffff0d', background: '#080808' }}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold text-white">Invoice to employer</p>
-        {locked && <span className="text-[11px] text-green-400 flex items-center gap-1"><CheckCircle2 size={11} /> Submitted — awaiting admin approval</span>}
+        {locked && invoice && <span className="text-[11px] text-green-400 flex items-center gap-1"><CheckCircle2 size={11} /> {lockedLabel[invoice.status]}</span>}
       </div>
+
+      {invoice?.status === 'sent_back' && (
+        <div className="rounded-lg border p-3 text-xs text-amber-300" style={{ borderColor: '#f59e0b33', background: '#f59e0b0d' }}>
+          <p className="font-bold mb-1">TRICCI sent this invoice back for changes</p>
+          <p className="text-amber-200/80 whitespace-pre-wrap">{invoice.adminRemarks}</p>
+          <p className="text-white/40 mt-2">Edit the invoice, save, then submit again.</p>
+        </div>
+      )}
 
       {amounts && (
         <div className="text-[12px] text-white/70 space-y-1">

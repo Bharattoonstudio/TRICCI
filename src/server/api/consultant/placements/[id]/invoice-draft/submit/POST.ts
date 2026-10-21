@@ -10,6 +10,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { loadInvoiceContext } from '@/server/lib/consultantInvoiceLoad.js';
+import { canConsultantEdit } from '@/server/lib/invoiceStatus.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -30,7 +31,9 @@ export default async function handler(req: Request, res: Response) {
 
     const [invoice] = await db.select().from(consultantInvoice).where(eq(consultantInvoice.placementId, placementId)).limit(1);
     if (!invoice) return res.status(409).json({ error: 'Generate the invoice before submitting.' });
-    if (invoice.status === 'submitted') return res.status(409).json({ error: 'This invoice has already been submitted.' });
+    if (!canConsultantEdit(invoice.status)) {
+      return res.status(409).json({ error: 'This invoice has already been submitted.' });
+    }
 
     const now = new Date();
     await db.update(consultantInvoice).set({
@@ -38,7 +41,7 @@ export default async function handler(req: Request, res: Response) {
       submittedAt: now,
       invoiceNumber: `INV-${placementId}`,
       updatedAt: now,
-    }).where(and(eq(consultantInvoice.placementId, placementId), eq(consultantInvoice.status, 'draft')));
+    }).where(eq(consultantInvoice.placementId, placementId));
 
     // Tell every admin an invoice is waiting for approval.
     const admins = await db.select({ id: user.id }).from(user).where(and(eq(user.role, 'admin'), isNull(user.suspendedAt)));

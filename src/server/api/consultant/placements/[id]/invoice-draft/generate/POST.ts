@@ -13,6 +13,7 @@ import { getAuth } from '@/lib/auth/auth.js';
 import { loadInvoiceContext } from '@/server/lib/consultantInvoiceLoad.js';
 import { computeInvoiceAmounts, DEFAULT_GST_RATE_PCT } from '@/server/lib/consultantInvoice.js';
 import { consultantSharePctFor } from '@/server/lib/consultantPlan.js';
+import { canConsultantEdit } from '@/server/lib/invoiceStatus.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -34,7 +35,7 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const [existing] = await db.select().from(consultantInvoice).where(eq(consultantInvoice.placementId, placementId)).limit(1);
-    if (existing?.status === 'submitted') {
+    if (existing && !canConsultantEdit(existing.status)) {
       return res.status(409).json({ error: 'This invoice has been submitted and can no longer be edited.' });
     }
 
@@ -56,6 +57,7 @@ export default async function handler(req: Request, res: Response) {
       consultantAmountLpa: amounts.consultantAmountLpa,
       gstAmountLpa: amounts.gstAmountLpa,
       totalAmountLpa: amounts.totalAmountLpa,
+      status: 'draft' as const,
       updatedAt: new Date(),
     };
 

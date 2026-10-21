@@ -769,6 +769,11 @@ export const consultantInvoice = pgTable('consultant_invoice', {
   totalAmountLpa: doublePrecision('total_amount_lpa').notNull(),
   invoiceNumber: varchar('invoice_number', { length: 64 }),
   submittedAt: timestamp('submitted_at'),
+  adminRemarks: text('admin_remarks'),
+  reviewedAt: timestamp('reviewed_at'),
+  reviewedByUserId: varchar('reviewed_by_user_id', { length: 36 }),
+  approvedAt: timestamp('approved_at'),
+  sentToEmployerAt: timestamp('sent_to_employer_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => [index('idx_consultant_invoice_consultant').on(t.consultantUserId)]);

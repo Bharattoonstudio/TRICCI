@@ -39,6 +39,7 @@ const CandidateDocuments = lazy(() => import('./pages/candidate/documents'));
 const BillingPage = lazy(() => import('./pages/billing'));
 const AdminDashboard = lazy(() => import('./pages/admin/dashboard'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
+const AdminInvoicesPage = lazy(() => import('./pages/admin/invoices'));
 
 function App() {
   return (
@@ -87,6 +88,7 @@ function App() {
           {/* Admin (admin role only) */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/audit-log" element={<ProtectedRoute allowedRoles={['admin']}><AdminAuditLogPage /></ProtectedRoute>} />
+          <Route path="/admin/invoices" element={<ProtectedRoute allowedRoles={['admin']}><AdminInvoicesPage /></ProtectedRoute>} />
 
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -6,9 +6,12 @@
  * legally reviewed. Recommend qualified legal counsel review before this
  * is treated as final/binding — flagged clearly in the UI, not just here.
  */
+/** Bump when the consultant agreement changes. Consultants who signed an older version must re-accept. */
+export const CONSULTANT_AGREEMENT_VERSION = '1.1';
+
 export const CONSULTANT_AGREEMENT_TEXT = `TRICCI CONSULTANT MASTER SERVICE AGREEMENT (MSA)
 
-Version: 1.0 (Draft — pending legal review)
+Version: 1.1 (Draft — pending legal review)
 Effective Date: [DD/MM/YYYY]
 Last Updated: [DD/MM/YYYY]
 

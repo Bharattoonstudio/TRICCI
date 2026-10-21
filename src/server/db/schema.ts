@@ -136,6 +136,7 @@ export const consultantProfile = pgTable('consultant_profile', {
   agreementSignedAt: timestamp('agreement_signed_at'),
   agreementIp: varchar('agreement_ip', { length: 64 }),
   agreementHash: varchar('agreement_hash', { length: 128 }),
+  agreementVersion: varchar('agreement_version', { length: 16 }),
   reminderSentAt: timestamp('reminder_sent_at'),
   organizationId: varchar('organization_id', { length: 36 }),
   // Gamification (points, badges, leaderboard rank are all computed live

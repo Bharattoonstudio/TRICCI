@@ -10,6 +10,7 @@ import { db } from '@/server/db/client.js';
 import { consultantProfile, job, user } from '@/server/db/schema.js';
 import { eq, count } from 'drizzle-orm';
 import { createHash } from 'crypto';
+import { CONSULTANT_AGREEMENT_VERSION } from '@/server/legal/consultantAgreementText.js';
 import {
   sendAgreementConfirmedEmail,
   sendJobsReadyEmail,
@@ -63,6 +64,7 @@ export default async function handler(req: Request, res: Response) {
           agreementSignedAt: signedAt,
           agreementIp: ip,
           agreementHash: hash,
+          agreementVersion: CONSULTANT_AGREEMENT_VERSION,
         })
         .where(eq(consultantProfile.userId, session.user.id));
     } else {
@@ -74,6 +76,7 @@ export default async function handler(req: Request, res: Response) {
         agreementSignedAt: signedAt,
         agreementIp: ip,
         agreementHash: hash,
+        agreementVersion: CONSULTANT_AGREEMENT_VERSION,
       });
     }
 

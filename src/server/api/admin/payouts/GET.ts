@@ -4,7 +4,7 @@ import { db } from '@/server/db/client.js';
 import { invoicePayment, placement, consultantTransfer, user } from '@/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import { requireAdmin } from '@/server/lib/adminAuth.js';
-import { consultantDuePaise, summarisePayouts } from '@/server/lib/consultantTransferMath.js';
+import { consultantDuePaise, gstDuePaise, summarisePayouts } from '@/server/lib/consultantTransferMath.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -29,13 +29,15 @@ export default async function handler(req: Request, res: Response) {
 
     const ids = paid.map(p => p.placementId);
     const transfers = ids.length === 0 ? [] : await db
-      .select({ placementId: consultantTransfer.placementId, amountPaise: consultantTransfer.amountPaise, reference: consultantTransfer.reference, paidAt: consultantTransfer.paidAt })
+      .select({ placementId: consultantTransfer.placementId, amountPaise: consultantTransfer.amountPaise, gstPaise: consultantTransfer.gstPaise, reference: consultantTransfer.reference, paidAt: consultantTransfer.paidAt })
       .from(consultantTransfer)
       .where(inArray(consultantTransfer.placementId, ids));
 
     const rows = paid.map(p => {
       const mine = transfers.filter(t => t.placementId === p.placementId);
       const paidOutPaise = mine.reduce((sum, t) => sum + t.amountPaise, 0);
+      const gstPaidPaise = mine.reduce((sum, t) => sum + t.gstPaise, 0);
+      const basePaidPaise = paidOutPaise - gstPaidPaise;
       return {
         placementId: p.placementId,
         candidateName: p.candidateName,
@@ -48,11 +50,13 @@ export default async function handler(req: Request, res: Response) {
         gstPaise: p.gstPaise,
         employerPaidAt: p.paidAt,
         paidOutPaise,
-        duePaise: consultantDuePaise(p.consultantPaise, paidOutPaise),
-        transfers: mine.map(t => ({ amountPaise: t.amountPaise, reference: t.reference, paidAt: t.paidAt })),
+        duePaise: consultantDuePaise(p.consultantPaise, basePaidPaise),
+        gstDuePaise: gstDuePaise(p.gstPaise, gstPaidPaise),
+        transfers: mine.map(t => ({ amountPaise: t.amountPaise, gstPaise: t.gstPaise, reference: t.reference, paidAt: t.paidAt })),
       };
     });
-    res.json({ payouts: rows, totals: summarisePayouts(rows) });
+    const totals = { ...summarisePayouts(rows), gstDuePaise: rows.reduce((s, r) => s + r.gstDuePaise, 0) };
+    res.json({ payouts: rows, totals });
   } catch (err) {
     console.error('[admin.payouts.list] ERROR:', err);
     res.status(500).json({ error: 'Failed to load payouts' });

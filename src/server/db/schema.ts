@@ -760,6 +760,7 @@ export const consultantTransfer = pgTable('consultant_transfer', {
   placementId: integer('placement_id').notNull().references(() => placement.id, { onDelete: 'cascade' }),
   consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull(),
   amountPaise: integer('amount_paise').notNull(),
+  gstPaise: integer('gst_paise').notNull().default(0),
   reference: varchar('reference', { length: 128 }).notNull(),
   paidAt: timestamp('paid_at').notNull().defaultNow(),
   recordedByUserId: varchar('recorded_by_user_id', { length: 36 }).notNull(),

@@ -19,6 +19,7 @@ export async function migrateConsultantTransfer() {
       )
     `);
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_consultant_transfer_placement ON consultant_transfer(placement_id)`);
+    await db.execute(`ALTER TABLE consultant_transfer ADD COLUMN IF NOT EXISTS gst_paise INTEGER NOT NULL DEFAULT 0`);
     console.log('[migration] consultant_transfer: ok');
   } catch (err) {
     console.error('[migration] consultant_transfer failed:', err);

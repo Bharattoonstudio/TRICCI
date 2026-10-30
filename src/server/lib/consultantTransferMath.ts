@@ -1,11 +1,16 @@
 /**
  * Manual consultant payout bookkeeping (pure, no DB or money movement).
  * Flow: employer pays TRICCI -> TRICCI pays the consultant by bank/UPI -> admin records
- * each transfer here with its bank or UPI reference. Recording never sends money.
+ * each transfer here. A transfer = consultant share (base) + optional GST on that share.
+ * Recording never sends money.
  */
 
-export function consultantDuePaise(consultantPaise: number, transferredPaise: number): number {
-  return Math.max(0, consultantPaise - transferredPaise);
+export function consultantDuePaise(consultantPaise: number, basePaidPaise: number): number {
+  return Math.max(0, consultantPaise - basePaidPaise);
+}
+
+export function gstDuePaise(gstPaise: number, gstPaidPaise: number): number {
+  return Math.max(0, gstPaise - gstPaidPaise);
 }
 
 export function formatPaise(paise: number): string {
@@ -13,16 +18,25 @@ export function formatPaise(paise: number): string {
 }
 
 /** Returns an error message for the admin, or null when the transfer may be recorded. */
-export function validateTransfer(input: { amountPaise: unknown; reference: unknown }, duePaise: number): string | null {
-  const { amountPaise, reference } = input;
+export function validateTransfer(
+  input: { amountPaise: unknown; gstPaise: unknown; reference: unknown },
+  baseDuePaise: number,
+  gstDue: number,
+): string | null {
+  const { amountPaise, gstPaise, reference } = input;
   if (typeof amountPaise !== 'number' || !Number.isInteger(amountPaise) || amountPaise <= 0) {
     return 'Amount must be a positive whole number of paise.';
+  }
+  const gst = gstPaise === undefined || gstPaise === null ? 0 : gstPaise;
+  if (typeof gst !== 'number' || !Number.isInteger(gst) || gst < 0) {
+    return 'GST must be zero or a positive whole number of paise.';
   }
   if (typeof reference !== 'string' || reference.trim().length < 3 || reference.trim().length > 128) {
     return 'Enter the bank or UPI reference (3 to 128 characters).';
   }
-  if (duePaise <= 0) return 'Nothing is due to this consultant on this placement.';
-  if (amountPaise > duePaise) return `Amount is more than the amount due (${formatPaise(duePaise)}).`;
+  if (baseDuePaise <= 0) return 'Nothing is due to this consultant on this placement.';
+  if (amountPaise > baseDuePaise) return `Amount is more than the amount due (${formatPaise(baseDuePaise)}).`;
+  if (gst > gstDue) return `GST is more than the GST due (${formatPaise(gstDue)}).`;
   return null;
 }
 

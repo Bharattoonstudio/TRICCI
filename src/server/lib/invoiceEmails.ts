@@ -8,7 +8,7 @@ import { db } from '../db/client.js';
 import { invoicePayment, placement, user, consultantTransfer } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { sendEmail } from '../email.js';
-import { formatPaise } from './consultantTransferMath.js';
+import { formatPaise, consultantDuePaise, gstDuePaise } from './consultantTransferMath.js';
 
 const ORANGE = '#E8470A';
 const PURPLE = '#6B4FBB';
@@ -105,29 +105,35 @@ export async function notifyAdminsInvoicePaid(placementId: number): Promise<void
   }
 }
 
-export async function sendConsultantReceipt(placementId: number, amountPaise: number, reference: string): Promise<void> {
+export async function sendConsultantReceipt(placementId: number, basePaise: number, gstPaise: number, reference: string): Promise<void> {
   try {
     const d = await loadPaidDetails(placementId);
     if (!d || !d.consultantEmail) return;
-    const transfers = await db.select({ amountPaise: consultantTransfer.amountPaise })
+    const transfers = await db.select({ amountPaise: consultantTransfer.amountPaise, gstPaise: consultantTransfer.gstPaise })
       .from(consultantTransfer).where(eq(consultantTransfer.placementId, placementId));
-    const paidSoFar = transfers.reduce((s, t) => s + t.amountPaise, 0);
-    const remaining = Math.max(0, d.consultantPaise - paidSoFar);
-    const subject = `Payment receipt ${formatPaise(amountPaise)} from TRICCI · ${d.jobTitle}`;
+    const gstPaidSoFar = transfers.reduce((s, t) => s + t.gstPaise, 0);
+    const basePaidSoFar = transfers.reduce((s, t) => s + (t.amountPaise - t.gstPaise), 0);
+    const remaining = consultantDuePaise(d.consultantPaise, basePaidSoFar);
+    const gstRemaining = gstDuePaise(d.gstPaise, gstPaidSoFar);
+    const totalNow = basePaise + gstPaise;
+    const subject = `Payment receipt ${formatPaise(totalNow)} from TRICCI · ${d.jobTitle}`;
     const html = shell(
       'Payment receipt',
-      `${formatPaise(amountPaise)} paid to you`,
+      `${formatPaise(totalNow)} paid to you`,
       `Hi ${d.consultantName ?? 'there'}, TRICCI has paid you for the placement below.`,
       [
         ['Candidate', d.candidateName],
         ['Role', d.jobTitle],
         ['Company', d.companyName],
-        ['Amount paid now', formatPaise(amountPaise)],
+        ['Consultant share paid now', formatPaise(basePaise)],
+        ['GST paid now', gstPaise > 0 ? formatPaise(gstPaise) : 'Not included'],
+        ['Total paid now', formatPaise(totalNow)],
         ['Bank / UPI reference', reference],
         ['Date', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })],
         ['Your total share for this placement', formatPaise(d.consultantPaise)],
-        ['Paid to date', formatPaise(paidSoFar)],
-        ['Still to be paid', formatPaise(remaining)],
+        ['Consultant share paid to date', formatPaise(basePaidSoFar)],
+        ['Consultant share still to be paid', formatPaise(remaining)],
+        ['GST still to be paid', formatPaise(gstRemaining)],
       ],
     );
     await sendEmail({ to: d.consultantEmail, subject, html });

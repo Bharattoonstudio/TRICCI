@@ -9,7 +9,7 @@ import { db } from '@/server/db/client.js';
 import { invoicePayment, placement, consultantTransfer } from '@/server/db/schema.js';
 import { and, eq } from 'drizzle-orm';
 import { requireAdmin } from '@/server/lib/adminAuth.js';
-import { consultantDuePaise, validateTransfer } from '@/server/lib/consultantTransferMath.js';
+import { consultantDuePaise, gstDuePaise, validateTransfer } from '@/server/lib/consultantTransferMath.js';
 import { sendConsultantReceipt } from '@/server/lib/invoiceEmails.js';
 
 export default async function handler(req: Request, res: Response) {
@@ -19,7 +19,7 @@ export default async function handler(req: Request, res: Response) {
     const placementId = parseInt(String(req.params.placementId), 10);
     if (!Number.isFinite(placementId)) return res.status(400).json({ error: 'Invalid placement ID' });
 
-    const { amountPaise, reference } = (req.body ?? {}) as { amountPaise?: unknown; reference?: unknown };
+    const { amountPaise, gstPaise, reference } = (req.body ?? {}) as { amountPaise?: unknown; gstPaise?: unknown; reference?: unknown };
     const ref = typeof reference === 'string' ? reference.trim() : reference;
 
     const outcome = await db.transaction(async (tx) => {
@@ -34,28 +34,33 @@ export default async function handler(req: Request, res: Response) {
         .from(placement).where(eq(placement.id, placementId)).limit(1);
       if (!plc?.consultantUserId) return { code: 409 as const, error: 'This placement has no consultant.' };
 
-      const prior = await tx.select({ amountPaise: consultantTransfer.amountPaise })
+      const prior = await tx.select({ amountPaise: consultantTransfer.amountPaise, gstPaise: consultantTransfer.gstPaise })
         .from(consultantTransfer).where(eq(consultantTransfer.placementId, placementId));
-      const paidOut = prior.reduce((sum, t) => sum + t.amountPaise, 0);
-      const due = consultantDuePaise(pay.consultantPaise, paidOut);
+      const basePaid = prior.reduce((sum, t) => sum + (t.amountPaise - t.gstPaise), 0);
+      const gstPaid = prior.reduce((sum, t) => sum + t.gstPaise, 0);
+      const baseDue = consultantDuePaise(pay.consultantPaise, basePaid);
+      const gstOwed = gstDuePaise(pay.gstPaise, gstPaid);
+      const gst = gstPaise === undefined || gstPaise === null ? 0 : (gstPaise as number);
 
-      const error = validateTransfer({ amountPaise, reference: ref }, due);
+      const error = validateTransfer({ amountPaise, gstPaise: gst, reference: ref }, baseDue, gstOwed);
       if (error) return { code: 400 as const, error };
 
+      const base = amountPaise as number;
       await tx.insert(consultantTransfer).values({
         placementId,
         consultantUserId: plc.consultantUserId,
-        amountPaise: amountPaise as number,
+        amountPaise: base + gst,
+        gstPaise: gst,
         reference: ref as string,
         recordedByUserId: adminId,
       });
-      return { code: 200 as const, duePaise: due - (amountPaise as number) };
+      return { code: 200 as const, duePaise: baseDue - base, gstDuePaise: gstOwed - gst, gstPaid: gst };
     });
 
     if (outcome.code !== 200) return res.status(outcome.code).json({ error: outcome.error });
-    void sendConsultantReceipt(placementId, amountPaise as number, ref as string);
+    void sendConsultantReceipt(placementId, amountPaise as number, outcome.gstPaid, ref as string);
     console.log(`[admin.payouts.record] placement=${placementId} amount=${amountPaise} by=${adminId}`);
-    res.json({ ok: true, remainingDuePaise: outcome.duePaise });
+    res.json({ ok: true, remainingDuePaise: outcome.duePaise, remainingGstDuePaise: outcome.gstDuePaise });
   } catch (err) {
     console.error('[admin.payouts.record] ERROR:', err);
     res.status(500).json({ error: 'Failed to record payout' });

@@ -7,11 +7,11 @@
  * is treated as final/binding — flagged clearly in the UI, not just here.
  */
 /** Bump when the consultant agreement changes. Consultants who signed an older version must re-accept. */
-export const CONSULTANT_AGREEMENT_VERSION = '1.3';
+export const CONSULTANT_AGREEMENT_VERSION = '1.4';
 
 export const CONSULTANT_AGREEMENT_TEXT = `TRICCI CONSULTANT MASTER SERVICE AGREEMENT (MSA)
 
-Version: 1.3 (Draft — pending legal review)
+Version: 1.4 (Draft — pending legal review)
 Effective Date: [DD/MM/YYYY]
 Last Updated: [DD/MM/YYYY]
 

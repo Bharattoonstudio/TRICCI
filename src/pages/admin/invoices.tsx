@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { ReceiptText, RefreshCw, Loader2, ChevronLeft } from 'lucide-react';
 import ConsultantPayoutsPanel from '@/components/admin/ConsultantPayoutsPanel';
 import InvoiceGstControl from '@/components/admin/InvoiceGstControl';
+import InvoiceThread from '@/components/invoices/InvoiceThread';
 
-type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
+type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'employer_approved' | 'paid';
 
 interface InvoiceListRow {
   placementId: number;
@@ -36,13 +37,14 @@ interface Journey {
   firstSelectedAt: string | null;
 }
 
-const STATUSES: Array<'' | InvoiceStatus> = ['', 'submitted', 'approved', 'sent_back', 'sent_to_employer', 'paid', 'draft'];
+const STATUSES: Array<'' | InvoiceStatus> = ['', 'submitted', 'approved', 'sent_back', 'sent_to_employer', 'employer_approved', 'paid', 'draft'];
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft: 'Draft',
   submitted: 'Awaiting review',
   approved: 'Approved',
   sent_back: 'Sent back',
   sent_to_employer: 'Sent to employer',
+  employer_approved: 'Approved by employer',
   paid: 'Paid by employer',
 };
 
@@ -172,6 +174,7 @@ export default function AdminInvoicesPage() {
             {error && <p className="text-xs text-red-400">{error}</p>}
 
             <InvoiceGstControl placementId={current.placementId} status={current.status} onChanged={load} />
+            <InvoiceThread placementId={current.placementId} viewerRole="admin" onChanged={load} />
 
             {current.status === 'submitted' && (
               <div className="flex flex-wrap gap-2">

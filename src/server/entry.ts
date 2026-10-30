@@ -138,6 +138,10 @@ import admin_invoice_approve_post from "./api/admin/invoices/[placementId]/appro
 import admin_invoice_send_back_post from "./api/admin/invoices/[placementId]/send-back/POST";
 import admin_invoice_send_to_employer_post from "./api/admin/invoices/[placementId]/send-to-employer/POST";
 import admin_invoice_gst_post from "./api/admin/invoices/[placementId]/gst/POST";
+import invoice_thread_get from "./api/invoices/[placementId]/thread/GET";
+import invoice_thread_post from "./api/invoices/[placementId]/thread/POST";
+import employer_invoices_get from "./api/employer/invoices/GET";
+import employer_invoice_approve_post from "./api/employer/invoices/[placementId]/approve/POST";
 import employer_invoice_pay_post from "./api/employer/placements/[id]/invoice/pay/POST";
 import employer_invoice_verify_payment_post from "./api/employer/placements/[id]/invoice/verify-payment/POST";
 import payments_invoice_webhook_post from "./api/payments/invoice-webhook/POST";
@@ -359,6 +363,10 @@ app.post("/api/admin/invoices/:placementId/approve", admin_invoice_approve_post)
 app.post("/api/admin/invoices/:placementId/send-back", admin_invoice_send_back_post);
 app.post("/api/admin/invoices/:placementId/send-to-employer", admin_invoice_send_to_employer_post);
 app.post("/api/admin/invoices/:placementId/gst", admin_invoice_gst_post);
+app.get("/api/invoices/:placementId/thread", invoice_thread_get);
+app.post("/api/invoices/:placementId/thread", invoice_thread_post);
+app.get("/api/employer/invoices", employer_invoices_get);
+app.post("/api/employer/invoices/:placementId/approve", employer_invoice_approve_post);
 app.post("/api/employer/placements/:id/invoice/pay", employer_invoice_pay_post);
 app.post("/api/employer/placements/:id/invoice/verify-payment", employer_invoice_verify_payment_post);
 app.get("/api/admin/payouts", admin_payouts_get);
@@ -442,6 +450,7 @@ import("./db/migrations/consultant_invoice.js").then(m => m.migrateConsultantInv
 import("./db/migrations/consultant_invoice_review.js").then(m => m.migrateConsultantInvoiceReview()).catch(console.error);
 import("./db/migrations/invoice_payment.js").then(m => m.migrateInvoicePayment()).catch(console.error);
 import("./db/migrations/consultant_transfer.js").then(m => m.migrateConsultantTransfer()).catch(console.error);
+import("./db/migrations/invoice_message.js").then(m => m.migrateInvoiceMessage()).catch(console.error);
 import("./db/migrations/interview_rounds.js").then(m => m.migrateInterviewRounds()).catch(console.error);
 import("./db/migrations/consultant_agreement.js").then(m => m.migrateConsultantAgreement()).catch(console.error);
 import("./db/migrations/consultant_reminder_sent_at.js").then(m => m.up()).catch(console.error);

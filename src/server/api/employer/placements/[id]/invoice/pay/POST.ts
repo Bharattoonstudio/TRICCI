@@ -14,6 +14,7 @@ import { getAuth } from '@/lib/auth/auth.js';
 import { getOrgRole, canManageBilling } from '@/server/lib/orgPermissions.js';
 import { getRazorpay } from '@/server/lib/razorpayClient.js';
 import { invoiceSplitPaise } from '@/server/lib/invoicePaymentMath.js';
+import { canPay, type InvoiceStatus } from '@/server/lib/invoiceStatus.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -33,7 +34,7 @@ export default async function handler(req: Request, res: Response) {
     if (plc.employerUserId !== session.user.id) return res.status(403).json({ error: 'Not your placement' });
 
     const [invoice] = await db.select().from(consultantInvoice).where(eq(consultantInvoice.placementId, placementId)).limit(1);
-    if (!invoice || invoice.status !== 'sent_to_employer') {
+    if (!invoice || !canPay(invoice.status as InvoiceStatus)) {
       return res.status(409).json({ error: 'This invoice is not ready for payment yet.' });
     }
 

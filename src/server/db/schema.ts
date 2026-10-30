@@ -754,6 +754,35 @@ export const consultantPayout = pgTable('consultant_payout', {
 
 // Consultant invoice for a placement. Draft until the consultant submits; once
 // submitted it is locked and goes to admin for approval.
+// Manual payout from TRICCI to a consultant after an employer payment. Records only.
+export const consultantTransfer = pgTable('consultant_transfer', {
+  id: serial('id').primaryKey(),
+  placementId: integer('placement_id').notNull().references(() => placement.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull(),
+  amountPaise: integer('amount_paise').notNull(),
+  gstPaise: integer('gst_paise').notNull().default(0),
+  reference: varchar('reference', { length: 128 }).notNull(),
+  paidAt: timestamp('paid_at').notNull().defaultNow(),
+  recordedByUserId: varchar('recorded_by_user_id', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [index('idx_consultant_transfer_placement').on(t.placementId)]);
+
+// Razorpay order for a consultant invoice. Split (platform / consultant / GST) is fixed in paise at order time.
+export const invoicePayment = pgTable('invoice_payment', {
+  id: serial('id').primaryKey(),
+  placementId: integer('placement_id').notNull().references(() => placement.id, { onDelete: 'cascade' }),
+  razorpayOrderId: varchar('razorpay_order_id', { length: 128 }).notNull().unique(),
+  razorpayPaymentId: varchar('razorpay_payment_id', { length: 128 }),
+  amountPaise: integer('amount_paise').notNull(),
+  feePaise: integer('fee_paise').notNull(),
+  platformPaise: integer('platform_paise').notNull(),
+  consultantPaise: integer('consultant_paise').notNull(),
+  gstPaise: integer('gst_paise').notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('created'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  paidAt: timestamp('paid_at'),
+}, (t) => [index('idx_invoice_payment_placement').on(t.placementId)]);
+
 export const consultantInvoice = pgTable('consultant_invoice', {
   id: serial('id').primaryKey(),
   placementId: integer('placement_id').notNull().unique().references(() => placement.id, { onDelete: 'cascade' }),

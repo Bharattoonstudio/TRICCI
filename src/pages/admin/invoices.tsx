@@ -2,8 +2,10 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ReceiptText, RefreshCw, Loader2, ChevronLeft } from 'lucide-react';
+import ConsultantPayoutsPanel from '@/components/admin/ConsultantPayoutsPanel';
+import InvoiceGstControl from '@/components/admin/InvoiceGstControl';
 
-type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer';
+type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
 
 interface InvoiceListRow {
   placementId: number;
@@ -34,13 +36,14 @@ interface Journey {
   firstSelectedAt: string | null;
 }
 
-const STATUSES: Array<'' | InvoiceStatus> = ['', 'submitted', 'approved', 'sent_back', 'sent_to_employer', 'draft'];
+const STATUSES: Array<'' | InvoiceStatus> = ['', 'submitted', 'approved', 'sent_back', 'sent_to_employer', 'paid', 'draft'];
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft: 'Draft',
   submitted: 'Awaiting review',
   approved: 'Approved',
   sent_back: 'Sent back',
   sent_to_employer: 'Sent to employer',
+  paid: 'Paid by employer',
 };
 
 const rupees = (lpa: number) => `₹${Math.round(lpa * 100000).toLocaleString('en-IN')}`;
@@ -168,6 +171,8 @@ export default function AdminInvoicesPage() {
 
             {error && <p className="text-xs text-red-400">{error}</p>}
 
+            <InvoiceGstControl placementId={current.placementId} status={current.status} onChanged={load} />
+
             {current.status === 'submitted' && (
               <div className="flex flex-wrap gap-2">
                 <button disabled={busy} onClick={() => act(`/api/admin/invoices/${current.placementId}/approve`)}
@@ -190,6 +195,8 @@ export default function AdminInvoicesPage() {
             )}
           </div>
         )}
+
+        <ConsultantPayoutsPanel />
 
         <h2 className="text-lg font-bold text-foreground mb-3">Job journeys</h2>
         {journeys.length === 0 ? (

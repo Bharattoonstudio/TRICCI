@@ -2,6 +2,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ReceiptText, RefreshCw, Loader2, ChevronLeft } from 'lucide-react';
+import ConsultantPayoutsPanel from '@/components/admin/ConsultantPayoutsPanel';
 
 type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
 
@@ -191,6 +192,8 @@ export default function AdminInvoicesPage() {
             )}
           </div>
         )}
+
+        <ConsultantPayoutsPanel />
 
         <h2 className="text-lg font-bold text-foreground mb-3">Job journeys</h2>
         {journeys.length === 0 ? (

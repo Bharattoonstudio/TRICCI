@@ -754,6 +754,18 @@ export const consultantPayout = pgTable('consultant_payout', {
 
 // Consultant invoice for a placement. Draft until the consultant submits; once
 // submitted it is locked and goes to admin for approval.
+// Manual payout from TRICCI to a consultant after an employer payment. Records only.
+export const consultantTransfer = pgTable('consultant_transfer', {
+  id: serial('id').primaryKey(),
+  placementId: integer('placement_id').notNull().references(() => placement.id, { onDelete: 'cascade' }),
+  consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull(),
+  amountPaise: integer('amount_paise').notNull(),
+  reference: varchar('reference', { length: 128 }).notNull(),
+  paidAt: timestamp('paid_at').notNull().defaultNow(),
+  recordedByUserId: varchar('recorded_by_user_id', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [index('idx_consultant_transfer_placement').on(t.placementId)]);
+
 // Razorpay order for a consultant invoice. Split (platform / consultant / GST) is fixed in paise at order time.
 export const invoicePayment = pgTable('invoice_payment', {
   id: serial('id').primaryKey(),

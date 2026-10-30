@@ -140,6 +140,8 @@ import admin_invoice_send_to_employer_post from "./api/admin/invoices/[placement
 import employer_invoice_pay_post from "./api/employer/placements/[id]/invoice/pay/POST";
 import employer_invoice_verify_payment_post from "./api/employer/placements/[id]/invoice/verify-payment/POST";
 import payments_invoice_webhook_post from "./api/payments/invoice-webhook/POST";
+import admin_payouts_get from "./api/admin/payouts/GET";
+import admin_payout_record_post from "./api/admin/payouts/[placementId]/record/POST";
 import employer_placements_invoice_get_112 from "./api/employer/placements/[id]/invoice/GET";
 import candidate_consultant_submissions_get_113 from "./api/candidate/consultant-submissions/GET";
 import candidate_submissions_interview_acknowledge_post_114 from "./api/candidate/submissions/[id]/interview/acknowledge/POST";
@@ -357,6 +359,8 @@ app.post("/api/admin/invoices/:placementId/send-back", admin_invoice_send_back_p
 app.post("/api/admin/invoices/:placementId/send-to-employer", admin_invoice_send_to_employer_post);
 app.post("/api/employer/placements/:id/invoice/pay", employer_invoice_pay_post);
 app.post("/api/employer/placements/:id/invoice/verify-payment", employer_invoice_verify_payment_post);
+app.get("/api/admin/payouts", admin_payouts_get);
+app.post("/api/admin/payouts/:placementId/record", admin_payout_record_post);
 app.post("/api/consultant/placements/:id/fee/respond", consultant_placements_fee_respond_post_88);
 app.post("/api/consultant/placements/:id/acknowledge", consultant_placements_acknowledge_post_89);
 app.get("/api/employer/placements", employer_placements_get_90);
@@ -435,6 +439,7 @@ import("./db/migrations/drop_platform_fee_pct.js").then(m => m.migrateDropPlatfo
 import("./db/migrations/consultant_invoice.js").then(m => m.migrateConsultantInvoice()).catch(console.error);
 import("./db/migrations/consultant_invoice_review.js").then(m => m.migrateConsultantInvoiceReview()).catch(console.error);
 import("./db/migrations/invoice_payment.js").then(m => m.migrateInvoicePayment()).catch(console.error);
+import("./db/migrations/consultant_transfer.js").then(m => m.migrateConsultantTransfer()).catch(console.error);
 import("./db/migrations/interview_rounds.js").then(m => m.migrateInterviewRounds()).catch(console.error);
 import("./db/migrations/consultant_agreement.js").then(m => m.migrateConsultantAgreement()).catch(console.error);
 import("./db/migrations/consultant_reminder_sent_at.js").then(m => m.up()).catch(console.error);

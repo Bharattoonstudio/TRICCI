@@ -23,7 +23,7 @@ export default async function handler(req: Request, res: Response) {
     const ref = typeof reference === 'string' ? reference.trim() : reference;
 
     const outcome = await db.transaction(async (tx) => {
-      const [pay] = await tx.select({ consultantPaise: invoicePayment.consultantPaise })
+      const [pay] = await tx.select({ consultantPaise: invoicePayment.consultantPaise, gstPaise: invoicePayment.gstPaise })
         .from(invoicePayment)
         .where(and(eq(invoicePayment.placementId, placementId), eq(invoicePayment.status, 'paid')))
         .limit(1)

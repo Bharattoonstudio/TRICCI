@@ -451,6 +451,7 @@ import("./db/migrations/consultant_invoice_review.js").then(m => m.migrateConsul
 import("./db/migrations/invoice_payment.js").then(m => m.migrateInvoicePayment()).catch(console.error);
 import("./db/migrations/consultant_transfer.js").then(m => m.migrateConsultantTransfer()).catch(console.error);
 import("./db/migrations/invoice_message.js").then(m => m.migrateInvoiceMessage()).catch(console.error);
+import("./db/migrations/invoice_status_length.js").then(m => m.migrateInvoiceStatusLength()).catch(console.error);
 import("./db/migrations/interview_rounds.js").then(m => m.migrateInterviewRounds()).catch(console.error);
 import("./db/migrations/consultant_agreement.js").then(m => m.migrateConsultantAgreement()).catch(console.error);
 import("./db/migrations/consultant_reminder_sent_at.js").then(m => m.up()).catch(console.error);

@@ -8,7 +8,7 @@ export default defineConfig({
     environment: 'jsdom',
     // p0-* tests are database integration tests. They are skipped by default so a normal run never
     // touches a database. Set RUN_DB_TESTS=1 with a dedicated test DATABASE_URL to run them.
-    exclude: process.env.RUN_DB_TESTS ? ['node_modules/**'] : ['node_modules/**', 'src/tests/p0-*.test.ts'],
+    exclude: process.env.RUN_DB_TESTS ? ['node_modules/**'] : ['node_modules/**', 'src/tests/p0-*.test.ts', 'src/tests/*.db.test.ts'],
     globals: true,
     setupFiles: './src/test/setup.ts',
     // Use forks pool to isolate memory per test file (prevents OOM)

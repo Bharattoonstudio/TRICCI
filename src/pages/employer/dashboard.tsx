@@ -1743,6 +1743,18 @@ export default function EmployerDashboard() {
                   <p className="text-sm text-muted-foreground mt-1">Deposit funds to your TRICCI account via Razorpay. Use credits for premium services and placements.</p>
                 </div>
                 <WalletPanel />
+                <div className="bg-card border border-border rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="text-base font-bold text-foreground mb-1">Invoices</h3>
+                    <p className="text-muted-foreground text-sm">Review invoices from TRICCI, approve them, or ask for a change.</p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/employer/invoices')}
+                    className="bg-primary text-primary-foreground font-semibold text-sm px-4 py-2 rounded-lg hover:opacity-90 transition whitespace-nowrap"
+                  >
+                    View Invoices
+                  </button>
+                </div>
               </motion.div>
             )}
 

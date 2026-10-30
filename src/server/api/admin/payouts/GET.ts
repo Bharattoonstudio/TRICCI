@@ -1,10 +1,10 @@
-/** GET /api/admin/payouts — paid employer invoices with the consultant share, amount already paid out, and amount due. */
+/** GET /api/admin/payouts — paid employer invoices, the TRICCI / consultant / GST split, amounts paid out, and totals. */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
 import { invoicePayment, placement, consultantTransfer, user } from '@/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import { requireAdmin } from '@/server/lib/adminAuth.js';
-import { consultantDuePaise } from '@/server/lib/consultantTransferMath.js';
+import { consultantDuePaise, summarisePayouts } from '@/server/lib/consultantTransferMath.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -12,13 +12,14 @@ export default async function handler(req: Request, res: Response) {
     const paid = await db
       .select({
         placementId: invoicePayment.placementId,
+        amountPaise: invoicePayment.amountPaise,
+        platformPaise: invoicePayment.platformPaise,
         consultantPaise: invoicePayment.consultantPaise,
         gstPaise: invoicePayment.gstPaise,
         paidAt: invoicePayment.paidAt,
         candidateName: placement.candidateName,
         jobTitle: placement.jobTitle,
         companyName: placement.companyName,
-        consultantUserId: placement.consultantUserId,
         consultantName: user.name,
       })
       .from(invoicePayment)
@@ -41,6 +42,8 @@ export default async function handler(req: Request, res: Response) {
         jobTitle: p.jobTitle,
         companyName: p.companyName,
         consultantName: p.consultantName,
+        amountPaise: p.amountPaise,
+        platformPaise: p.platformPaise,
         consultantPaise: p.consultantPaise,
         gstPaise: p.gstPaise,
         employerPaidAt: p.paidAt,
@@ -49,7 +52,7 @@ export default async function handler(req: Request, res: Response) {
         transfers: mine.map(t => ({ amountPaise: t.amountPaise, reference: t.reference, paidAt: t.paidAt })),
       };
     });
-    res.json({ payouts: rows });
+    res.json({ payouts: rows, totals: summarisePayouts(rows) });
   } catch (err) {
     console.error('[admin.payouts.list] ERROR:', err);
     res.status(500).json({ error: 'Failed to load payouts' });

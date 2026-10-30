@@ -8,6 +8,7 @@
 import type { Request, Response } from 'express';
 import { verifyWebhookSignature } from '@/server/lib/invoicePaymentMath.js';
 import { markInvoicePaid } from '@/server/lib/invoicePaymentStore.js';
+import { notifyAdminsInvoicePaid } from '@/server/lib/invoiceEmails.js';
 import { db } from '@/server/db/client.js';
 import { invoicePayment } from '@/server/db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -39,6 +40,7 @@ export default async function handler(req: Request, res: Response) {
     if (!row) return res.json({ ok: true, ignored: true });
 
     const result = await markInvoicePaid(entity.order_id, entity.id, entity.amount);
+    if (result.ok) void notifyAdminsInvoicePaid(result.placementId);
     if (!result.ok && result.reason === 'amount_mismatch') {
       console.error(`[invoice.webhook] AMOUNT MISMATCH order=${entity.order_id} payment=${entity.id}`);
     }

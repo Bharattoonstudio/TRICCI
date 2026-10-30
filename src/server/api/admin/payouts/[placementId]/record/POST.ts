@@ -10,6 +10,7 @@ import { invoicePayment, placement, consultantTransfer } from '@/server/db/schem
 import { and, eq } from 'drizzle-orm';
 import { requireAdmin } from '@/server/lib/adminAuth.js';
 import { consultantDuePaise, validateTransfer } from '@/server/lib/consultantTransferMath.js';
+import { sendConsultantReceipt } from '@/server/lib/invoiceEmails.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -52,6 +53,7 @@ export default async function handler(req: Request, res: Response) {
     });
 
     if (outcome.code !== 200) return res.status(outcome.code).json({ error: outcome.error });
+    void sendConsultantReceipt(placementId, amountPaise as number, ref as string);
     console.log(`[admin.payouts.record] placement=${placementId} amount=${amountPaise} by=${adminId}`);
     res.json({ ok: true, remainingDuePaise: outcome.duePaise });
   } catch (err) {

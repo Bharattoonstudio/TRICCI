@@ -31,3 +31,18 @@ describe('validateTransfer', () => {
     expect(validateTransfer(ok, 0)).toMatch(/Nothing is due/);
   });
 });
+
+import { summarisePayouts } from '../server/lib/consultantTransferMath';
+describe('summarisePayouts', () => {
+  it('totals the TRICCI share, consultant share, paid out and still due', () => {
+    const t = summarisePayouts([
+      { amountPaise: 21_240_000, platformPaise: 3_600_000, gstPaise: 3_240_000, consultantPaise: 14_400_000, paidOutPaise: 4_400_000, duePaise: 10_000_000 },
+      { amountPaise: 10_000_000, platformPaise: 2_000_000, gstPaise: 0, consultantPaise: 8_000_000, paidOutPaise: 8_000_000, duePaise: 0 },
+    ]);
+    expect(t.receivedPaise).toBe(31_240_000);
+    expect(t.tricciPaise).toBe(5_600_000);
+    expect(t.consultantPaise).toBe(22_400_000);
+    expect(t.paidOutPaise).toBe(12_400_000);
+    expect(t.duePaise).toBe(10_000_000);
+  });
+});

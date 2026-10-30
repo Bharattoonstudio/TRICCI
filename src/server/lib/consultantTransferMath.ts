@@ -25,3 +25,25 @@ export function validateTransfer(input: { amountPaise: unknown; reference: unkno
   if (amountPaise > duePaise) return `Amount is more than the amount due (${formatPaise(duePaise)}).`;
   return null;
 }
+
+export interface PayoutRowAmounts {
+  amountPaise: number;
+  platformPaise: number;
+  gstPaise: number;
+  consultantPaise: number;
+  paidOutPaise: number;
+  duePaise: number;
+}
+
+/** Totals for the admin tracker: what employers paid, TRICCI's share, and what consultants are owed. */
+export function summarisePayouts(rows: PayoutRowAmounts[]) {
+  const sum = (f: (r: PayoutRowAmounts) => number) => rows.reduce((s, r) => s + f(r), 0);
+  return {
+    receivedPaise: sum(r => r.amountPaise),
+    tricciPaise: sum(r => r.platformPaise),
+    gstPaise: sum(r => r.gstPaise),
+    consultantPaise: sum(r => r.consultantPaise),
+    paidOutPaise: sum(r => r.paidOutPaise),
+    duePaise: sum(r => r.duePaise),
+  };
+}

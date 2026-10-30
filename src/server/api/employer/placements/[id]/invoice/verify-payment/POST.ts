@@ -11,6 +11,7 @@ import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { verifyPaymentSignature } from '@/server/lib/invoicePaymentMath.js';
 import { markInvoicePaid } from '@/server/lib/invoicePaymentStore.js';
+import { notifyAdminsInvoicePaid } from '@/server/lib/invoiceEmails.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -42,6 +43,7 @@ export default async function handler(req: Request, res: Response) {
     if (!row) return res.status(404).json({ error: 'Payment not found for this placement' });
 
     const result = await markInvoicePaid(razorpay_order_id, razorpay_payment_id);
+    if (result.ok) void notifyAdminsInvoicePaid(result.placementId);
     if (!result.ok && result.reason !== 'already_paid') {
       return res.status(409).json({ error: 'Payment could not be recorded.' });
     }

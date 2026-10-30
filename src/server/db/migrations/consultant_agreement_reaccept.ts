@@ -10,6 +10,17 @@ import { CONSULTANT_AGREEMENT_VERSION } from '../../legal/consultantAgreementTex
 export async function migrateConsultantAgreementReaccept() {
   try {
     await db.execute(`ALTER TABLE consultant_profile ADD COLUMN IF NOT EXISTS agreement_version VARCHAR(16)`);
+    // Tell each consultant whose signature is about to be cleared. Runs once: after the UPDATE
+    // below their signature is null, so the next startup finds nothing to notify.
+    await db.execute(`
+      INSERT INTO notification (user_id, type, message, link)
+      SELECT user_id, 'agreement_update',
+             'TRICCI has updated the consultant agreement. Please read and accept the new version to continue.',
+             '/consultant/dashboard'
+        FROM consultant_profile
+       WHERE agreement_signed_at IS NOT NULL
+         AND (agreement_version IS NULL OR agreement_version <> '${CONSULTANT_AGREEMENT_VERSION}')
+    `);
     const result = await db.execute(`
       UPDATE consultant_profile
          SET agreement_signed_at = NULL

@@ -22,7 +22,6 @@ export async function migrateCommissionConfig() {
         min_fee_percent DOUBLE PRECISION NOT NULL DEFAULT 5,
         max_fee_percent DOUBLE PRECISION NOT NULL DEFAULT 15,
         default_fee_percent DOUBLE PRECISION NOT NULL DEFAULT 8,
-        platform_fee_pct DOUBLE PRECISION NOT NULL DEFAULT 2,
         payout_days INTEGER NOT NULL DEFAULT 3,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -33,8 +32,8 @@ export async function migrateCommissionConfig() {
     const rows = (result as unknown as { rows?: unknown[] }).rows ?? (result as unknown as unknown[]);
     if (!rows || rows.length === 0) {
       await db.execute(sql`
-        INSERT INTO commission_config (min_fee_percent, max_fee_percent, default_fee_percent, platform_fee_pct, payout_days)
-        VALUES (5, 15, 8, 2, 3)
+        INSERT INTO commission_config (min_fee_percent, max_fee_percent, default_fee_percent, payout_days)
+        VALUES (5, 15, 8, 3)
       `);
       console.log('[migration] commission_config: seeded default row');
     }

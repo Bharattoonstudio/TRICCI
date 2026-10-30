@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    // p0-* tests are database integration tests. They are skipped by default so a normal run never
+    // touches a database. Set RUN_DB_TESTS=1 with a dedicated test DATABASE_URL to run them.
+    exclude: process.env.RUN_DB_TESTS ? ['node_modules/**'] : ['node_modules/**', 'src/tests/p0-*.test.ts'],
     globals: true,
     setupFiles: './src/test/setup.ts',
     // Use forks pool to isolate memory per test file (prevents OOM)
@@ -31,18 +34,18 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      'virtual:format-overrides': path.resolve(__dirname, './src/test/format-overrides-module.ts'),
-      '@/': path.resolve(__dirname, './src/'),
-      '@/components': path.resolve(__dirname, './src/components'),
-      '@/lib': path.resolve(__dirname, './src/lib'),
-      '@/api': path.resolve(__dirname, './src/server/api'),
-      '@/db': path.resolve(__dirname, './src/server/db'),
-      '@/layouts': path.resolve(__dirname, './src/layouts'),
-      '@/patterns': path.resolve(__dirname, './src/patterns'),
-      '@/pages': path.resolve(__dirname, './src/pages'),
-      '@/hooks': path.resolve(__dirname, './src/hooks'),
-      '@/styles': path.resolve(__dirname, './src/styles'),
-    },
+    alias: [
+      { find: 'virtual:format-overrides', replacement: path.resolve(__dirname, './src/test/format-overrides-module.ts') },
+      { find: /^@\//, replacement: path.resolve(__dirname, './src') + '/' },
+      { find: '@/components', replacement: path.resolve(__dirname, './src/components') },
+      { find: '@/lib', replacement: path.resolve(__dirname, './src/lib') },
+      { find: '@/api', replacement: path.resolve(__dirname, './src/server/api') },
+      { find: '@/db', replacement: path.resolve(__dirname, './src/server/db') },
+      { find: '@/layouts', replacement: path.resolve(__dirname, './src/layouts') },
+      { find: '@/patterns', replacement: path.resolve(__dirname, './src/patterns') },
+      { find: '@/pages', replacement: path.resolve(__dirname, './src/pages') },
+      { find: '@/hooks', replacement: path.resolve(__dirname, './src/hooks') },
+      { find: '@/styles', replacement: path.resolve(__dirname, './src/styles') },
+    ],
   },
 });

@@ -11,6 +11,11 @@ export function canConsultantEdit(status: InvoiceStatus | null): boolean {
   return status === null || status === 'draft' || status === 'sent_back';
 }
 
+/** Admin may turn GST collection on or off until the invoice has gone to the employer. */
+export function canEditGst(status: InvoiceStatus | null): boolean {
+  return status === 'submitted' || status === 'approved' || status === 'sent_back';
+}
+
 export function canApprove(status: InvoiceStatus | null): boolean {
   return status === 'submitted';
 }

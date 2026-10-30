@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ReceiptText, RefreshCw, Loader2, ChevronLeft } from 'lucide-react';
 import ConsultantPayoutsPanel from '@/components/admin/ConsultantPayoutsPanel';
+import InvoiceGstControl from '@/components/admin/InvoiceGstControl';
 
 type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
 
@@ -169,6 +170,8 @@ export default function AdminInvoicesPage() {
             </div>
 
             {error && <p className="text-xs text-red-400">{error}</p>}
+
+            <InvoiceGstControl placementId={current.placementId} status={current.status} onChanged={load} />
 
             {current.status === 'submitted' && (
               <div className="flex flex-wrap gap-2">

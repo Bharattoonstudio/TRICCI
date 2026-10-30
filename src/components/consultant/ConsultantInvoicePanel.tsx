@@ -5,8 +5,9 @@
  */
 import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import InvoiceThread from '@/components/invoices/InvoiceThread';
 
-type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'paid';
+type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'sent_back' | 'sent_to_employer' | 'employer_approved' | 'paid';
 
 interface InvoiceRow {
   status: InvoiceStatus;
@@ -113,11 +114,12 @@ export default function ConsultantInvoicePanel({ placementId }: { placementId: n
 
   const invoice = data.invoice;
   // Locked while TRICCI reviews or after it has gone to the employer. Editable in draft and after send-back.
-  const locked = invoice ? ['submitted', 'approved', 'sent_to_employer', 'paid'].includes(invoice.status) : false;
+  const locked = invoice ? ['submitted', 'approved', 'sent_to_employer', 'employer_approved', 'paid'].includes(invoice.status) : false;
   const lockedLabel: Record<string, string> = {
     submitted: 'Submitted — awaiting TRICCI review',
     approved: 'Approved by TRICCI — will be sent to the employer',
-    sent_to_employer: 'Sent to employer — awaiting payment',
+    sent_to_employer: 'Sent to employer — waiting for their approval',
+    employer_approved: 'Approved by employer — payment is next',
     paid: 'Paid by employer',
   };
   const amounts = invoice
@@ -189,6 +191,7 @@ export default function ConsultantInvoicePanel({ placementId }: { placementId: n
           </div>
         </div>
       )}
+      {invoice && <InvoiceThread placementId={placementId} viewerRole="consultant" onChanged={load} />}
     </div>
   );
 }

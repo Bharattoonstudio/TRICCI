@@ -767,6 +767,17 @@ export const consultantTransfer = pgTable('consultant_transfer', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => [index('idx_consultant_transfer_placement').on(t.placementId)]);
 
+// Messages on a consultant invoice: replies from admin, consultant and employer, plus employer queries.
+export const invoiceMessage = pgTable('invoice_message', {
+  id: serial('id').primaryKey(),
+  placementId: integer('placement_id').notNull().references(() => placement.id, { onDelete: 'cascade' }),
+  authorUserId: varchar('author_user_id', { length: 36 }).notNull(),
+  authorRole: varchar('author_role', { length: 16 }).notNull(),
+  kind: varchar('kind', { length: 16 }).notNull().default('reply'),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [index('idx_invoice_message_placement').on(t.placementId)]);
+
 // Razorpay order for a consultant invoice. Split (platform / consultant / GST) is fixed in paise at order time.
 export const invoicePayment = pgTable('invoice_payment', {
   id: serial('id').primaryKey(),

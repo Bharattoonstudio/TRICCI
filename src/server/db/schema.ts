@@ -798,7 +798,7 @@ export const consultantInvoice = pgTable('consultant_invoice', {
   id: serial('id').primaryKey(),
   placementId: integer('placement_id').notNull().unique().references(() => placement.id, { onDelete: 'cascade' }),
   consultantUserId: varchar('consultant_user_id', { length: 36 }).notNull(),
-  status: varchar('status', { length: 16 }).notNull().default('draft'),
+  status: varchar('status', { length: 32 }).notNull().default('draft'),
   gstEnabled: boolean('gst_enabled').notNull().default(false),
   gstRatePct: doublePrecision('gst_rate_pct').notNull().default(18),
   offerCtcLpa: doublePrecision('offer_ctc_lpa').notNull(),

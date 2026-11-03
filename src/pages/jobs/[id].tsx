@@ -187,7 +187,7 @@ export default function JobDetailPage() {
     );
   }
 
-  const canonicalUrl = `https://tricci.in/jobs/${job.id}`;
+  const canonicalUrl = `https://www.tricci.in/jobs/${job.id}`;
   const title = `${job.title} at ${job.company} — TRICCI`;
   const description = `${job.title} role in ${job.location} (${job.locationType}). ${job.ctcLabel}. ${job.experience} experience. Apply via TRICCI — India's recruitment aggregator.`;
   const LocationIcon = LOCATION_TYPE_ICONS[job.locationType] ?? Briefcase;

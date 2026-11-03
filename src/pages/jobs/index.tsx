@@ -163,7 +163,7 @@ function JobCard({ job, index }: { job: Job; index: number }) {
               {/* Share — stop propagation so the card link doesn't fire */}
               <div onClick={e => e.preventDefault()}>
                 <ShareButtons
-                  url={`https://tricci.in/jobs/${job.id}`}
+                  url={`https://www.tricci.in/jobs/${job.id}`}
                   title={`${job.title} at ${job.company}`}
                   description={`${job.location} · ${job.ctcLabel}`}
                   variant="inline"
@@ -261,7 +261,7 @@ export default function JobsPage() {
     itemListElement: jobs.map((job, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: `https://tricci.in/jobs/${job.id}`,
+      url: `https://www.tricci.in/jobs/${job.id}`,
       item: {
         '@type': 'JobPosting',
         title: job.title,
@@ -293,7 +293,7 @@ export default function JobsPage() {
             unitText: 'YEAR',
           },
         },
-        url: `https://tricci.in/jobs/${job.id}`,
+        url: `https://www.tricci.in/jobs/${job.id}`,
       },
     })),
   };

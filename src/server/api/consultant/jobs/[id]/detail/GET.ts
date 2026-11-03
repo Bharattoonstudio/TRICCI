@@ -26,7 +26,7 @@ export default async function handler(req: Request, res: Response) {
 
     const [jobRow] = await db.select().from(job).where(eq(job.id, jobId)).limit(1);
     // A suspended or removed employer's jobs are hidden from consultants; admins can still open them.
-    if (!jobRow || (role === 'consultant' && (await posterIsInactive(jobRow.postedByUserId)))) {
+    if (!jobRow || (role === 'consultant' && (jobRow.visibility === 'candidates_only' || (await posterIsInactive(jobRow.postedByUserId))))) {
       return res.status(404).json({ error: 'Job not found' });
     }
 

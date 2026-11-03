@@ -36,9 +36,11 @@ export default async function handler(req: Request, res: Response) {
     const viewerId = session?.user?.id ?? null;
 
     const isOwnerOrAdmin = viewerRole === 'admin' || (viewerRole === 'employer' && viewerId === r.postedByUserId);
-    const canView = r.visibility === 'public' || !r.visibility
-      || viewerRole === 'admin' || viewerRole === 'consultant'
-      || (viewerRole === 'employer' && viewerId === r.postedByUserId);
+    const canView = r.visibility === 'candidates_only'
+      ? viewerRole !== 'consultant'
+      : r.visibility === 'public' || !r.visibility
+        || viewerRole === 'admin' || viewerRole === 'consultant'
+        || (viewerRole === 'employer' && viewerId === r.postedByUserId);
 
     if (!canView) {
       // Don't reveal that a restricted job exists — behave like a 404.

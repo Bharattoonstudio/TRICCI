@@ -29,8 +29,8 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const jobId = String(req.params.id);
-    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
-    if (!jobRow || (role === 'consultant' && (await posterIsInactive(jobRow.postedByUserId)))) {
+    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company, postedByUserId: job.postedByUserId, visibility: job.visibility }).from(job).where(eq(job.id, jobId)).limit(1);
+    if (!jobRow || (role === 'consultant' && (jobRow.visibility === 'candidates_only' || (await posterIsInactive(jobRow.postedByUserId))))) {
       return res.status(404).json({ error: 'Job not found' });
     }
 

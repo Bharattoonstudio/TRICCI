@@ -421,11 +421,12 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
               {/* Job Visibility */}
               <div>
                 <label className="text-sm font-semibold text-foreground mb-1.5 block">Job Visibility</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {([
                     { value: 'public', label: 'Public', hint: 'Shown to everyone' },
                     { value: 'consultant_only', label: 'Consultants Only', hint: 'Hidden from candidates' },
                     { value: 'confidential', label: 'Confidential', hint: 'Company name hidden too' },
+                    { value: 'candidates_only', label: 'Candidates Only', hint: 'Hidden from consultants' },
                   ] as const).map(opt => (
                     <button key={opt.value} type="button" onClick={() => update('visibility', opt.value)}
                       className={`text-left p-3 rounded-xl border transition-colors ${form.visibility === opt.value ? 'bg-primary/10 border-primary' : 'bg-muted border-border hover:border-primary/40'}`}>

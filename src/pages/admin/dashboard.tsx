@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -70,6 +71,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -332,7 +334,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-700 border-slate-600 hover:border-green-500 transition">
+          <Card onClick={() => navigate('/admin/jobs')} className="cursor-pointer bg-slate-700 border-slate-600 hover:border-green-500 transition">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-gray-300">Total Jobs</CardTitle>
             </CardHeader>

@@ -22,6 +22,7 @@ import DocumentsModal from '@/components/employer/DocumentsModal';
 interface JobDetail {
   id: string; title: string; department: string; location: string;
   ctcLabel: string; feePercent: number; feeType?: string; feeAmountRupees?: number | null; status: string; description?: string;
+  visibility?: string;
   skills?: string[];
 }
 interface Funnel {
@@ -64,6 +65,34 @@ export default function EmployerJobDetailPage() {
   const [offerTarget, setOfferTarget] = useState<PipelineCard | null>(null);
   const [interviewStageTarget, setInterviewStageTarget] = useState<PipelineCard | null>(null);
   const [docsTarget, setDocsTarget] = useState<PipelineCard | null>(null);
+  const [visibilityDraft, setVisibilityDraft] = useState<string>('public');
+  const [savingVisibility, setSavingVisibility] = useState(false);
+  const [visibilityMsg, setVisibilityMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function saveVisibility() {
+    if (!id) return;
+    setSavingVisibility(true);
+    setVisibilityMsg(null);
+    try {
+      const res = await fetch(`/api/employer/jobs/${encodeURIComponent(id)}/visibility`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ visibility: visibilityDraft }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setVisibilityMsg({ ok: false, text: data.error || 'Could not save visibility.' });
+        return;
+      }
+      setVisibilityMsg({ ok: true, text: 'Visibility saved.' });
+      setJobDetail(prev => (prev ? { ...prev, visibility: visibilityDraft } : prev));
+    } catch {
+      setVisibilityMsg({ ok: false, text: 'Could not save visibility.' });
+    } finally {
+      setSavingVisibility(false);
+    }
+  }
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -77,6 +106,7 @@ export default function EmployerJobDetailPage() {
       if (detailRes.ok) {
         const d = await detailRes.json();
         setJobDetail(d.job);
+        setVisibilityDraft(d.job?.visibility ?? 'public');
         setPostedBy(d.postedBy);
         setFunnel(d.funnel);
       }
@@ -187,6 +217,35 @@ export default function EmployerJobDetailPage() {
             {jobDetail.description && (
               <JobDescription text={jobDetail.description} className="text-sm text-muted-foreground mt-4" />
             )}
+
+            {/* Who can see this job */}
+            <div className="mt-5 pt-4 border-t border-border">
+              <label htmlFor="job-visibility" className="text-sm font-semibold text-foreground mb-1.5 block">Who can see this job</label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  id="job-visibility"
+                  value={visibilityDraft}
+                  onChange={(e) => { setVisibilityDraft(e.target.value); setVisibilityMsg(null); }}
+                  className="flex-1 rounded-lg bg-muted border border-border px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="public">Public: candidates and consultants</option>
+                  <option value="candidates_only">Candidates only: hidden from consultants</option>
+                  <option value="consultant_only">Consultants only: hidden from candidates</option>
+                  <option value="confidential">Confidential: company name hidden too</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={saveVisibility}
+                  disabled={savingVisibility || visibilityDraft === (jobDetail.visibility ?? 'public')}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40"
+                >
+                  {savingVisibility ? 'Saving…' : 'Save visibility'}
+                </button>
+              </div>
+              {visibilityMsg && (
+                <p className={`text-xs mt-2 ${visibilityMsg.ok ? 'text-green-600' : 'text-red-500'}`}>{visibilityMsg.text}</p>
+              )}
+            </div>
           </div>
 
           {/* ── Funnel mini dashboard ── */}

@@ -15,6 +15,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
+import { notifyAdminsActivity } from '@/server/lib/adminActivityEmail.js';
 
 export default async function handler(req: Request, res: Response) {
   try {
@@ -34,7 +35,7 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement first' });
     }
 
-    const [jobRow] = await db.select({ id: job.id }).from(job).where(eq(job.id, jobId)).limit(1);
+    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company }).from(job).where(eq(job.id, jobId)).limit(1);
     if (!jobRow) return res.status(404).json({ error: 'Job not found' });
 
     if (role === 'consultant') {
@@ -63,6 +64,7 @@ export default async function handler(req: Request, res: Response) {
 
     let added = 0, skippedDuplicate = 0, skippedInvalid = 0;
     const seenInBatch = new Set<string>();
+    const addedNames: string[] = [];
 
     for (const entry of entries) {
       const email = entry.email.toLowerCase();
@@ -86,6 +88,21 @@ export default async function handler(req: Request, res: Response) {
         consentProofUrl: null,
       });
       added++;
+      addedNames.push(`${entry.name} (${email})`);
+    }
+
+    if (added > 0) {
+      const [consultant] = await db.select({ name: user.name, email: user.email }).from(user).where(eq(user.id, session.user.id)).limit(1);
+      notifyAdminsActivity('Consultant shared candidates', `${consultant?.name ?? 'A consultant'} shared ${added} candidate${added > 1 ? 's' : ''} for ${jobRow?.title ?? 'a job'}`, [
+        ['Consultant', consultant?.name ?? '—'],
+        ['Consultant email', consultant?.email ?? '—'],
+        ['Job', jobRow?.title ?? '—'],
+        ['Company', jobRow?.company || '(company name not set)'],
+        ['Candidates added', String(added)],
+        ['Skipped (duplicate)', String(skippedDuplicate)],
+        ['Skipped (incomplete)', String(skippedInvalid)],
+        ['Candidates', addedNames.join('; ')],
+      ]).catch(() => {});
     }
 
     res.json({ ok: true, added, skippedDuplicate, skippedInvalid, requested: entryIds.length });

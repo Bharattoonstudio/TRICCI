@@ -11,6 +11,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { db } from '@/server/db/client.js';
 import { submission, job, jobAcceptance, candidateApplication, user } from '@/server/db/schema.js';
+import { notifyAdminsActivity } from '@/server/lib/adminActivityEmail.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { posterIsInactive } from '@/server/lib/posterStatus.js';
@@ -67,7 +68,7 @@ export default async function handler(req: Request, res: Response) {
     }
 
     // Verify job exists
-    const [jobRow] = await db.select({ id: job.id, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
+    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
     if (!jobRow || (await posterIsInactive(jobRow.postedByUserId))) {
       return res.status(404).json({ error: 'Job not found' });
     }
@@ -174,6 +175,26 @@ export default async function handler(req: Request, res: Response) {
     }).returning();
 
     const insertId = result?.id ?? 0;
+
+    // Tell admins a consultant shared a candidate (best effort, never blocks the response)
+    {
+      const [consultant] = await db.select({ name: user.name, email: user.email }).from(user).where(eq(user.id, session.user.id)).limit(1);
+      notifyAdminsActivity('Consultant shared a candidate', `${consultant?.name ?? 'A consultant'} shared ${candidateName.trim()} for ${jobRow?.title ?? 'a job'}`, [
+        ['Consultant', consultant?.name ?? '—'],
+        ['Consultant email', consultant?.email ?? '—'],
+        ['Candidate', candidateName.trim()],
+        ['Candidate email', normalizedEmail],
+        ['Candidate phone', candidatePhone?.trim() || '—'],
+        ['Current CTC (LPA)', currentCTC ? String(currentCTC) : '—'],
+        ['Expected CTC (LPA)', expectedCTC ? String(expectedCTC) : '—'],
+        ['Experience (years)', experience ? String(experience) : '—'],
+        ['Location', location.trim()],
+        ['Job', jobRow?.title ?? '—'],
+        ['Company', jobRow?.company || '(company name not set)'],
+        ['CV attached', cvUrl ? 'Yes' : 'No'],
+        ['Notes', notes?.trim() || '—'],
+      ]).catch(() => {});
+    }
 
     res.status(201).json({
       ok: true,

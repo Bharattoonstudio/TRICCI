@@ -87,7 +87,7 @@ function matchesJob(
 }
 
 function buildMatchEmail(job: Job, unsubscribeToken: string): string {
-  const jobUrl = `https://tricci.in/jobs/${job.id}`;
+  const jobUrl = `https://www.tricci.in/jobs/${job.id}`;
   const unsubUrl = `https://tricci.in/unsubscribe?token=${unsubscribeToken}`;
 
   const skillPills = job.skills
@@ -174,7 +174,7 @@ function buildMatchText(job: Job, unsubscribeToken: string): string {
     '',
     job.description.slice(0, 300),
     '',
-    `View & apply: https://tricci.in/jobs/${job.id}`,
+    `View & apply: https://www.tricci.in/jobs/${job.id}`,
     '',
     `Unsubscribe: https://tricci.in/unsubscribe?token=${unsubscribeToken}`,
   ].join('\n');

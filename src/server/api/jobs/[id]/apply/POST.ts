@@ -12,6 +12,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
 import { sendEmail } from '@/server/email.js';
+import { notifyAdminsActivity } from '@/server/lib/adminActivityEmail.js';
 import { hasSignedAgreement } from '@/server/lib/requireAgreement.js';
 import { posterIsInactive } from '@/server/lib/posterStatus.js';
 
@@ -264,6 +265,16 @@ export default async function handler(req: Request, res: Response) {
         .limit(1);
 
       if (candidateUser) {
+        // 0. Tell admins a candidate applied (best effort)
+        notifyAdminsActivity('Candidate applied', `${candidateUser.name} applied for ${jobRow.title}`, [
+          ['Candidate', candidateUser.name],
+          ['Candidate email', candidateUser.email],
+          ['Job', jobRow.title],
+          ['Company', jobRow.company || '(company name not set)'],
+          ['Job ID', String(req.params.id)],
+          ['Time', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })],
+        ]).catch(() => {});
+
         // 1. Confirmation to candidate
         sendEmail({
           to: candidateUser.email,

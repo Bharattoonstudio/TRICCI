@@ -8,7 +8,8 @@
  */
 import type { Request, Response } from 'express';
 import { db } from '@/server/db/client.js';
-import { job, jobAcceptance } from '@/server/db/schema.js';
+import { job, jobAcceptance, user } from '@/server/db/schema.js';
+import { notifyAdminsActivity } from '@/server/lib/adminActivityEmail.js';
 import { eq, and } from 'drizzle-orm';
 import { toWebRequest } from '@/lib/auth/express-adapter.js';
 import { getAuth } from '@/lib/auth/auth.js';
@@ -28,7 +29,7 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const jobId = String(req.params.id);
-    const [jobRow] = await db.select({ id: job.id, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
+    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company, postedByUserId: job.postedByUserId }).from(job).where(eq(job.id, jobId)).limit(1);
     if (!jobRow || (role === 'consultant' && (await posterIsInactive(jobRow.postedByUserId)))) {
       return res.status(404).json({ error: 'Job not found' });
     }
@@ -41,6 +42,15 @@ export default async function handler(req: Request, res: Response) {
 
     if (!existing) {
       await db.insert(jobAcceptance).values({ jobId, consultantUserId: session.user.id });
+      const [consultant] = await db.select({ name: user.name, email: user.email }).from(user).where(eq(user.id, session.user.id)).limit(1);
+      notifyAdminsActivity('Consultant accepted a job', `${consultant?.name ?? 'A consultant'} accepted ${jobRow.title}`, [
+        ['Consultant', consultant?.name ?? '—'],
+        ['Consultant email', consultant?.email ?? '—'],
+        ['Job', jobRow.title],
+        ['Company', jobRow.company || '(company name not set)'],
+        ['Job ID', jobId],
+        ['Time', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })],
+      ]).catch(() => {});
     }
 
     res.json({ ok: true, accepted: true });

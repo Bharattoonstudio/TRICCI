@@ -135,7 +135,8 @@ export default function PostJobModal({ onClose, onPosted }: PostJobModalProps) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error((data as { error?: string }).error || 'Failed to post job');
+        const d = data as { error?: string; message?: string };
+        throw new Error(d.message || d.error || 'Failed to post job');
       }
       setPostedJobCode(jobCode);
       setSuccess(true);

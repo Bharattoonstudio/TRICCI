@@ -459,6 +459,46 @@ export default function EmployerDashboard() {
     }
   }
 
+  // Company name required before posting jobs: check the saved profile and offer a field if it is blank
+  const [profileNeedsCompany, setProfileNeedsCompany] = useState(false);
+  const [companyDraft, setCompanyDraft] = useState('');
+  const [savingCompany, setSavingCompany] = useState(false);
+  const [companyError, setCompanyError] = useState('');
+  useEffect(() => {
+    fetch('/api/employer/profile', { credentials: 'include' })
+      .then(r => (r.ok ? r.json() : null))
+      .then((p: { companyName?: string | null } | null) => {
+        if (p && !p.companyName?.trim()) setProfileNeedsCompany(true);
+      })
+      .catch(() => { /* silent */ });
+  }, []);
+
+  async function saveCompanyName() {
+    const name = companyDraft.trim();
+    if (!name) { setCompanyError('Please enter your company name.'); return; }
+    setSavingCompany(true);
+    setCompanyError('');
+    try {
+      const res = await fetch('/api/employer/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ companyName: name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setCompanyError(data.error || 'Could not save. Please try again.');
+        return;
+      }
+      setProfileNeedsCompany(false);
+      setCompanyName(name);
+    } catch {
+      setCompanyError('Could not save. Please try again.');
+    } finally {
+      setSavingCompany(false);
+    }
+  }
+
   // Fetch the logged-in user's name/company for the top bar (replaces hardcoded placeholder)
   useEffect(() => {
     authClient.getSession()
@@ -724,6 +764,35 @@ export default function EmployerDashboard() {
 
       <div className="min-h-screen bg-background">
         <h1 className="sr-only">Employer Dashboard — TRICCI</h1>
+
+        {profileNeedsCompany && (
+          <div className="container mx-auto px-4 pt-6">
+            <div className="rounded-xl border border-primary/40 bg-card p-4">
+              <p className="text-sm font-semibold text-foreground">Add your company name</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your company name is shown to consultants and candidates on your jobs. You need it before you can post a job.
+              </p>
+              <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={companyDraft}
+                  onChange={(e) => setCompanyDraft(e.target.value)}
+                  placeholder="Company name"
+                  maxLength={255}
+                  className="flex-1 rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground"
+                />
+                <button
+                  onClick={saveCompanyName}
+                  disabled={savingCompany || !companyDraft.trim()}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40"
+                >
+                  {savingCompany ? 'Saving…' : 'Save company name'}
+                </button>
+              </div>
+              {companyError && <p className="text-xs text-red-400 mt-2">{companyError}</p>}
+            </div>
+          </div>
+        )}
 
         {/* ── Top Bar ── */}
         <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-[80px] z-30">

@@ -2,8 +2,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import JobDescription from '@/components/shared/JobDescription';
 import {
   MapPin, Briefcase, Clock, Users, ChevronLeft, CheckCircle2,
   Building2, Home, ArrowRight, Bookmark, BookOpen, ListChecks, Sparkles
@@ -63,27 +62,6 @@ function timeAgo(days: number) {
   if (days < 7) return `${days} days ago`;
   return `${Math.floor(days / 7)} weeks ago`;
 }
-
-// Stored job descriptions can lose their line breaks, which runs headings and
-// "**Label:**" lines together. Put the breaks back so the Markdown renders.
-function formatJobDescription(text: string): string {
-  return text
-    .replace(/\s+(#{2,4}\s)/g, '\n\n$1')
-    .replace(/\s+(\*\*[^*\n]{2,60}:\*\*)/g, '\n\n$1');
-}
-
-const jdComponents = {
-  h1: (p: React.HTMLAttributes<HTMLHeadingElement>) => <h3 className="text-base font-black text-foreground mt-6 mb-2" {...p} />,
-  h2: (p: React.HTMLAttributes<HTMLHeadingElement>) => <h3 className="text-base font-black text-foreground mt-6 mb-2" {...p} />,
-  h3: (p: React.HTMLAttributes<HTMLHeadingElement>) => <h4 className="text-sm font-bold text-foreground mt-5 mb-1.5 uppercase tracking-wide" {...p} />,
-  h4: (p: React.HTMLAttributes<HTMLHeadingElement>) => <h4 className="text-sm font-bold text-foreground mt-4 mb-1" {...p} />,
-  p: (p: React.HTMLAttributes<HTMLParagraphElement>) => <p className="mb-3 leading-relaxed" {...p} />,
-  strong: (p: React.HTMLAttributes<HTMLElement>) => <strong className="font-semibold text-foreground" {...p} />,
-  ul: (p: React.HTMLAttributes<HTMLUListElement>) => <ul className="list-disc pl-5 mb-3 space-y-1.5" {...p} />,
-  ol: (p: React.OlHTMLAttributes<HTMLOListElement>) => <ol className="list-decimal pl-5 mb-3 space-y-1.5" {...p} />,
-  li: (p: React.LiHTMLAttributes<HTMLLIElement>) => <li className="leading-relaxed" {...p} />,
-  a: (p: React.AnchorHTMLAttributes<HTMLAnchorElement>) => <a className="text-primary underline" target="_blank" rel="noopener noreferrer" {...p} />,
-};
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -355,9 +333,7 @@ export default function JobDetailPage() {
                 <h2 className="text-xl font-black text-foreground mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
                   About the Role
                 </h2>
-                <div className="text-muted-foreground">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={jdComponents}>{formatJobDescription(job.description)}</ReactMarkdown>
-                </div>
+                <JobDescription text={job.description} className="text-muted-foreground" />
               </div>
 
               {/* Responsibilities */}

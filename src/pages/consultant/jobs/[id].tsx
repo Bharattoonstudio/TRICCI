@@ -13,12 +13,14 @@ import {
   CalendarClock, AlertCircle,
 } from 'lucide-react';
 import ProposeInterviewModal from '@/components/consultant/ProposeInterviewModal';
+import JobDescription from '@/components/shared/JobDescription';
 
 interface JobDetail {
   id: string; title: string; department: string; location: string;
   ctcLabel: string; ctcMin: number; ctcMax: number; feePercent: number; status: string;
   feeType?: string; feeAmountRupees?: number | null;
   consultantFeePercent?: number | null; consultantFeeAmountRupees?: number | null; consultantFeeLabel?: string;
+  description?: string | null; responsibilities?: string[] | null; requirements?: string[] | null; skills?: string[] | null;
 }
 interface Funnel {
   submitted: number; seen: number; shortlisted: number; interview: number; rejected: number; selected: number;
@@ -122,6 +124,32 @@ export default function ConsultantJobDetailPage() {
                 <p className="text-sm font-black text-white mt-0.5">{feeLabel} estimated · {jobDetail.consultantFeeLabel}</p>
               </div>
             </div>
+          </div>
+
+          {/* ── Job details (as posted by the employer) ── */}
+          <div className="rounded-2xl border p-6 mb-5 text-white/70" style={{ background: '#0d0d0d', borderColor: '#ffffff0d' }}>
+            <h2 className="text-sm font-bold text-white mb-3">About the Role</h2>
+            {jobDetail.description?.trim() ? (
+              <JobDescription text={jobDetail.description} className="text-sm" />
+            ) : (
+              <p className="text-sm text-white/40">No description provided by the employer.</p>
+            )}
+            {jobDetail.responsibilities && jobDetail.responsibilities.length > 0 && (
+              <>
+                <h3 className="text-sm font-bold text-white mt-6 mb-2">Key Responsibilities</h3>
+                <ul className="list-disc pl-5 space-y-1.5 text-sm">
+                  {jobDetail.responsibilities.map((r, i) => <li key={i}>{r.replace(/^•\s*/, '')}</li>)}
+                </ul>
+              </>
+            )}
+            {jobDetail.requirements && jobDetail.requirements.length > 0 && (
+              <>
+                <h3 className="text-sm font-bold text-white mt-6 mb-2">Requirements</h3>
+                <ul className="list-disc pl-5 space-y-1.5 text-sm">
+                  {jobDetail.requirements.map((r, i) => <li key={i}>{r.replace(/^•\s*/, '')}</li>)}
+                </ul>
+              </>
+            )}
           </div>
 
           {/* ── Your funnel for this job ── */}

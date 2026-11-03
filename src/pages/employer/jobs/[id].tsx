@@ -1,3 +1,4 @@
+import JobDescription from '@/components/shared/JobDescription';
 /**
  * Employer Job Detail Page — /employer/jobs/:id
  * Full page (not a modal): job details, who posted it, a funnel
@@ -184,7 +185,7 @@ export default function EmployerJobDetailPage() {
               </span>
             </div>
             {jobDetail.description && (
-              <p className="text-sm text-muted-foreground mt-4 whitespace-pre-wrap">{jobDetail.description}</p>
+              <JobDescription text={jobDetail.description} className="text-sm text-muted-foreground mt-4" />
             )}
           </div>
 

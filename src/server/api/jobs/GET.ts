@@ -100,6 +100,8 @@ export default async function handler(req: Request, res: Response) {
     // admins, or the employer who posted them.
     rows = rows.filter(r => {
       if (r.visibility === 'public' || !r.visibility) return true;
+      // 'candidates_only': open to everyone except consultants (employer wants direct candidates).
+      if (r.visibility === 'candidates_only') return viewerRole !== 'consultant';
       if (viewerRole === 'admin' || viewerRole === 'consultant') return true;
       if (viewerRole === 'employer' && viewerId === r.postedByUserId) return true;
       return false;

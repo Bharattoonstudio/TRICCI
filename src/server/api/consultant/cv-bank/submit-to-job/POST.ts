@@ -35,8 +35,8 @@ export default async function handler(req: Request, res: Response) {
       return res.status(403).json({ error: 'agreement_required', message: 'Please accept the TRICCI agreement first' });
     }
 
-    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company }).from(job).where(eq(job.id, jobId)).limit(1);
-    if (!jobRow) return res.status(404).json({ error: 'Job not found' });
+    const [jobRow] = await db.select({ id: job.id, title: job.title, company: job.company, visibility: job.visibility }).from(job).where(eq(job.id, jobId)).limit(1);
+    if (!jobRow || (role === 'consultant' && jobRow.visibility === 'candidates_only')) return res.status(404).json({ error: 'Job not found' });
 
     if (role === 'consultant') {
       const [accepted] = await db.select({ id: jobAcceptance.id }).from(jobAcceptance)

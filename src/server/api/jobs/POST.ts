@@ -158,7 +158,7 @@ export default async function handler(req: Request, res: Response) {
       ? (interviewRounds as { label: string; description: string }[])
       : [];
 
-    const VALID_VISIBILITY = ['public', 'consultant_only', 'confidential'] as const;
+    const VALID_VISIBILITY = ['public', 'consultant_only', 'confidential', 'candidates_only'] as const;
     const visibility = typeof rawVisibility === 'string' && (VALID_VISIBILITY as readonly string[]).includes(rawVisibility)
       ? rawVisibility
       : 'public';
@@ -281,7 +281,8 @@ export default async function handler(req: Request, res: Response) {
     }
 
     // Tell consultants about the new job, with the payout terms. Confidential roles are excluded.
-    if (visibility !== 'confidential') {
+    // 'candidates_only' roles are deliberately not shown to consultants, so they are not told about them.
+    if (visibility !== 'confidential' && visibility !== 'candidates_only') {
       notifyConsultantsOfNewJob(String(id), newJob.title, newJob.company).catch(err =>
         console.error('[POST /api/jobs] consultant notification failed:', err),
       );

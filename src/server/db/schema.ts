@@ -229,6 +229,7 @@ export const job = pgTable('job', {
   // until placement fee is due). Common values: 45 or 90.
   paymentTermDays: integer('payment_term_days').notNull().default(45),
   interviewRounds: jsonb('interview_rounds').$type<{ label: string; description: string }[]>(),
+  // 'candidates_only' = visible to everyone except consultants (no consultant submissions).
   // Job visibility: 'public' (default, shown to everyone) | 'consultant_only'
   // (hidden from the public candidate job board, visible to consultants/admin)
   // | 'confidential' (same as consultant_only, PLUS company name is masked

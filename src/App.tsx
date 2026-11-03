@@ -40,6 +40,8 @@ const BillingPage = lazy(() => import('./pages/billing'));
 const AdminDashboard = lazy(() => import('./pages/admin/dashboard'));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/audit-log'));
 const AdminInvoicesPage = lazy(() => import('./pages/admin/invoices'));
+const AdminJobsPage = lazy(() => import('./pages/admin/jobs'));
+const AdminJobDetailPage = lazy(() => import('./pages/admin/job-detail'));
 const EmployerInvoicesPage = lazy(() => import('./pages/employer/invoices'));
 
 function App() {
@@ -90,6 +92,8 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/audit-log" element={<ProtectedRoute allowedRoles={['admin']}><AdminAuditLogPage /></ProtectedRoute>} />
           <Route path="/admin/invoices" element={<ProtectedRoute allowedRoles={['admin']}><AdminInvoicesPage /></ProtectedRoute>} />
+          <Route path="/admin/jobs" element={<ProtectedRoute allowedRoles={['admin']}><AdminJobsPage /></ProtectedRoute>} />
+          <Route path="/admin/jobs/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminJobDetailPage /></ProtectedRoute>} />
           <Route path="/employer/invoices" element={<ProtectedRoute allowedRoles={['employer']}><EmployerInvoicesPage /></ProtectedRoute>} />
 
           {/* Catch all - redirect to home */}

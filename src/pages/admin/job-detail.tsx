@@ -83,7 +83,7 @@ export default function AdminJobDetailPage() {
     : '';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Helmet>
         <title>Job details — Admin — TRICCI</title>
         <meta name="robots" content="noindex" />
@@ -93,7 +93,7 @@ export default function AdminJobDetailPage() {
         <button
           type="button"
           onClick={() => navigate('/admin')}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors mb-6"
         >
           <ChevronLeft size={15} /> Back to Admin Dashboard
         </button>
@@ -105,7 +105,7 @@ export default function AdminJobDetailPage() {
         ) : data ? (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-black text-foreground flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h1 className="text-2xl font-black text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
                 <Briefcase size={22} className="text-primary" /> {data.job.title}
               </h1>
               <p className="text-sm text-white/60 mt-1">
@@ -113,7 +113,7 @@ export default function AdminJobDetailPage() {
               </p>
             </div>
 
-            <section className="rounded-xl border border-white/10 p-5">
+            <section className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
               <h2 className="text-sm font-bold text-white mb-4">Job</h2>
               <dl className="grid grid-cols-2 gap-4">
                 <Field label="Job ID" value={data.job.id} />
@@ -131,7 +131,7 @@ export default function AdminJobDetailPage() {
               </dl>
             </section>
 
-            <section className="rounded-xl border border-white/10 p-5">
+            <section className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
               <h2 className="text-sm font-bold text-white mb-4">Posted by</h2>
               <dl className="grid grid-cols-2 gap-4">
                 <Field label="Name" value={data.poster.name} />
@@ -139,12 +139,12 @@ export default function AdminJobDetailPage() {
               </dl>
             </section>
 
-            <section className="rounded-xl border border-white/10 p-5">
+            <section className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
               <h2 className="text-sm font-bold text-white mb-3">Description</h2>
               <p className="text-sm text-white/70 whitespace-pre-wrap">{data.job.description || '—'}</p>
             </section>
 
-            <section className="rounded-xl border border-white/10 p-5">
+            <section className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
               <h2 className="text-sm font-bold text-white mb-3">Consultant submissions ({data.submissions.length})</h2>
               {data.submissions.length === 0 ? (
                 <p className="text-sm text-white/50">No candidates shared yet.</p>
@@ -160,7 +160,7 @@ export default function AdminJobDetailPage() {
               )}
             </section>
 
-            <section className="rounded-xl border border-white/10 p-5">
+            <section className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
               <h2 className="text-sm font-bold text-white mb-3">Direct applications ({data.applications.length})</h2>
               {data.applications.length === 0 ? (
                 <p className="text-sm text-white/50">No direct applications yet.</p>

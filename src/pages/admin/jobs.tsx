@@ -35,7 +35,7 @@ export default function AdminJobsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Helmet>
         <title>Jobs — Admin — TRICCI</title>
         <meta name="robots" content="noindex" />
@@ -45,12 +45,12 @@ export default function AdminJobsPage() {
         <button
           type="button"
           onClick={() => navigate('/admin')}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors mb-6"
         >
           <ChevronLeft size={15} /> Back to Admin Dashboard
         </button>
 
-        <h1 className="text-2xl font-black text-foreground flex items-center gap-2 mb-6" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h1 className="text-2xl font-black text-white flex items-center gap-2 mb-6" style={{ fontFamily: 'var(--font-heading)' }}>
           <Briefcase size={22} className="text-primary" /> All Jobs
         </h1>
 
@@ -59,7 +59,7 @@ export default function AdminJobsPage() {
         {loading ? (
           <div className="py-12 flex justify-center"><Loader2 size={20} className="animate-spin text-white/30" /></div>
         ) : jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8">No jobs posted yet.</p>
+          <p className="text-sm text-white/50 py-8">No jobs posted yet.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-sm">
@@ -87,7 +87,7 @@ export default function AdminJobsPage() {
         )}
 
         <div className="mt-8">
-          <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">Admin Dashboard</Link>
+          <Link to="/admin" className="text-sm text-white/60 hover:text-white">Admin Dashboard</Link>
         </div>
       </div>
     </div>

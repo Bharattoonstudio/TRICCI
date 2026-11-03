@@ -12,6 +12,7 @@ const AboutPage = lazy(() => import('./pages/about'));
 const BlogPage = lazy(() => import('./pages/Blog'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 const JobsPage = lazy(() => import('./pages/jobs'));
+const JobDetailPage = lazy(() => import('./pages/jobs/[id]'));
 const FreeJobsPage = lazy(() => import('./pages/free-jobs'));
 
 // Auth Routes
@@ -60,7 +61,7 @@ function App() {
           
           {/* Jobs */}
           <Route path="/jobs" element={<JobsPage />} />
-          <Route path="/jobs/:id" element={<JobsPage />} />
+          <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/free-jobs" element={<FreeJobsPage />} />
 
           {/* Authentication Routes */}

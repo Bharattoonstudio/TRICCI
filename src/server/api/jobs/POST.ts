@@ -188,6 +188,15 @@ export default async function handler(req: Request, res: Response) {
       }
     }
 
+    // Employers must have saved a company name before a non-confidential job
+    // can go live; otherwise the job is published with a blank company.
+    if (role === 'employer' && visibility !== 'confidential' && !companyName.trim()) {
+      return res.status(400).json({
+        error: 'company_name_required',
+        message: 'Please add your company name in your employer profile before posting a job.',
+      });
+    }
+
     // Use provided job code or generate one with crypto.randomInt (never Math.random)
     const year = new Date().getFullYear();
     const num = String(randomInt(1000, 10000));
